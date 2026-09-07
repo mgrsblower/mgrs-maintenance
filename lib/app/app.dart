@@ -1,6 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../features/auth/login_screen.dart';
+import '../features/home/home_screen.dart';
+import '../features/home/home_skeleton.dart';
+import '../features/components/asset_catalog_screen.dart';
+import '../features/maintenance/action_center_screen.dart';
 import '../features/scan/scan_screen.dart';
 import '../features/schedule/schedule_screen.dart';
 import '../features/history/history_screen.dart';
@@ -90,7 +94,9 @@ class _MaintenanceAppState extends State<MaintenanceApp>
               color: AppTokens.canvas,
               child: SafeArea(
                 child: checking
-                    ? const Center(child: CircularProgressIndicator())
+                    ? (user != null
+                        ? const HomeSkeletonScreen()
+                        : const Center(child: CircularProgressIndicator()))
                     : PageBody(
                         children: [
                           const SizedBox(height: 48),
@@ -131,41 +137,34 @@ class MaintenanceHome extends StatefulWidget {
 
 class _MaintenanceHomeState extends State<MaintenanceHome> {
   int tab = 0;
+
+  void openScannerModal() {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => ScanScreen(gateway: widget.gateway),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: Text(['Scan', 'Berkala', 'Riwayat'][tab]),
-      actions: [
-        PopupMenuButton<String>(
-          tooltip: 'Akun',
-          onSelected: (_) async {
-            await widget.gateway.signOut();
-          },
-          itemBuilder: (_) => [
-            PopupMenuItem(enabled: false, child: Text(widget.user.role)),
-            const PopupMenuItem(value: 'logout', child: Text('Keluar')),
-          ],
+    body: switch (tab) {
+      0 => HomeScreen(
+          gateway: widget.gateway,
+          user: widget.user,
+          onNavigateToTab: (index) => setState(() => tab = index),
+          onOpenScanner: openScannerModal,
         ),
-      ],
-    ),
-    body: SafeArea(
-      child: switch (tab) {
-        0 => ScanScreen(gateway: widget.gateway),
-        1 => ScheduleScreen(gateway: widget.gateway),
-        _ => HistoryScreen(gateway: widget.gateway),
-      },
-    ),
-    bottomNavigationBar: NavigationBar(
-      selectedIndex: tab,
-      onDestinationSelected: (value) => setState(() => tab = value),
-      destinations: const [
-        NavigationDestination(icon: Icon(Icons.qr_code_scanner), label: 'Scan'),
-        NavigationDestination(
-          icon: Icon(Icons.event_available_outlined),
-          label: 'Berkala',
+      1 => AssetCatalogScreen(
+          gateway: widget.gateway,
+          onNavigateToTab: (index) => setState(() => tab = index),
+          onOpenScanner: openScannerModal,
         ),
-        NavigationDestination(icon: Icon(Icons.history), label: 'Riwayat'),
-      ],
-    ),
+      _ => ActionCenterScreen(
+          gateway: widget.gateway,
+          onNavigateToTab: (index) => setState(() => tab = index),
+          onOpenScanner: openScannerModal,
+        ),
+    },
   );
 }

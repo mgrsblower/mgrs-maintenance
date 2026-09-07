@@ -8,7 +8,9 @@ abstract final class AppTokens {
       border = Color(0xFFDDE2E8),
       danger = Color(0xFFB42318),
       success = Color(0xFF137333),
-      warning = Color(0xFF9A6700);
+      warning = Color(0xFF9A6700),
+      accentLime = Color(0xFFCEF284),
+      darkSlate = Color(0xFF0F172A);
   static const space = 16.0, radius = 12.0, maxWidth = 640.0;
 }
 

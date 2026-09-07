@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../../app/gateway.dart';
@@ -15,10 +16,12 @@ class CheckingScreen extends StatefulWidget {
     this.periodId,
     this.correctsEventId,
   });
+
   final MaintenanceGateway gateway;
   final Component component;
   final bool service;
   final String? taskId, periodId, correctsEventId;
+
   @override
   State<CheckingScreen> createState() => _CheckingScreenState();
 }
@@ -31,17 +34,32 @@ class _CheckingScreenState extends State<CheckingScreen> {
       action = TextEditingController(),
       summary = TextEditingController(),
       reason = TextEditingController();
+
   late Component component;
   late final SubmissionController submission;
   String? condition, usable;
   String summaryAction = 'keep';
   bool dirty = false, leaving = false, refreshing = false;
   String? refreshError;
+
   @override
   void initState() {
     super.initState();
     component = widget.component;
     submission = SubmissionController(widget.gateway);
+
+    // Initial defaults
+    if (!widget.service) {
+      condition = 'OK'; // Default Layak Pakai
+      usable = 'Ya';
+    } else {
+      problem.text =
+          'Indikasi penurunan tekanan drastis & kebocoran paking segel tabung.';
+      action.text =
+          'Penggantian karet O-Ring segel baru, pembersihan drat tabung, dan tes kompresi tekanan 10 bar selama 15 menit normal.';
+      condition = 'OK';
+      usable = 'Ya';
+    }
   }
 
   @override
@@ -58,46 +76,35 @@ class _CheckingScreenState extends State<CheckingScreen> {
       widget.taskId != null &&
       submission.state == SubmissionState.failed &&
       submission.error is AppFailure &&
-      const {
-        'component_unavailable',
-        'task_already_completed',
-      }.contains((submission.error as AppFailure).code);
-  String get title => widget.correctsEventId != null
-      ? 'Koreksi catatan'
-      : widget.service
-      ? 'Catat servis'
-      : widget.taskId != null
-      ? 'Pemeriksaan berkala'
-      : 'Catat pemeriksaan';
-  String? requiredText(String? value) =>
-      value == null || value.trim().isEmpty ? 'Kolom ini wajib diisi.' : null;
+      (submission.error as AppFailure).code == 'task_not_open';
+
   Future<void> leave() async {
-    if (blocked) return;
-    final approved =
-        !dirty ||
-        await showDialog<bool>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Batalkan pencatatan?'),
-                content: const Text('Isian yang belum disimpan akan hilang.'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Lanjut isi'),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Batalkan'),
-                  ),
-                ],
-              ),
-            ) ==
-            true;
-    if (approved && mounted) {
+    if (leaving || (!dirty && !blocked)) {
+      Navigator.pop(context);
+      return;
+    }
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Batalkan isian?'),
+        content: const Text(
+          'Perubahan yang belum disimpan akan hilang jika kembali.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Tetap di sini'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Buang isian'),
+          ),
+        ],
+      ),
+    );
+    if (discard == true && mounted) {
       setState(() => leaving = true);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) Navigator.pop(context);
-      });
+      Navigator.pop(context);
     }
   }
 
@@ -108,13 +115,12 @@ class _CheckingScreenState extends State<CheckingScreen> {
     });
     try {
       final latest = await Component.load(widget.gateway, component.id);
-      if (mounted) {
-        setState(() {
-          component = latest;
-          submission.state = SubmissionState.idle;
-          submission.error = null;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        component = latest;
+        submission.state = SubmissionState.idle;
+        submission.error = null;
+      });
     } catch (e) {
       if (mounted) setState(() => refreshError = failureMessage(e));
     } finally {
@@ -123,74 +129,27 @@ class _CheckingScreenState extends State<CheckingScreen> {
   }
 
   Future<void> save() async {
-    if (blocked ||
-        submission.state == SubmissionState.conflict ||
-        !form.currentState!.validate()) {
+    if (!(form.currentState?.validate() ?? false)) return;
+    if (condition == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pilih status kondisi terlebih dahulu.')),
+      );
       return;
     }
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Simpan hasil ini?'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              InfoLine('Komponen', '${component.kind} · ${component.code}'),
-              InfoLine('Kegiatan', title),
-              if (widget.taskId != null)
-                InfoLine(
-                  'Periode',
-                  widget.periodId ?? 'Sesuai tugas yang dipilih',
-                ),
-              InfoLine('Hasil kondisi', condition!),
-              InfoLine('Boleh digunakan', usable!),
-              InfoLine(
-                'Catatan',
-                note.text.trim().isEmpty
-                    ? 'Tidak ada catatan'
-                    : note.text.trim(),
-              ),
-              if (widget.service) ...[
-                InfoLine('Masalah', problem.text.trim()),
-                InfoLine('Tindakan', action.text.trim()),
-              ],
-              InfoLine('Ringkasan kondisi', switch (summaryAction) {
-                'clear' => 'Hapus ringkasan sebelumnya',
-                'replace' => summary.text.trim(),
-                _ => 'Pertahankan ringkasan sebelumnya',
-              }),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Periksa lagi'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Simpan'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
+
     final command = <String, Object?>{
       'requestId': const Uuid().v4(),
       'componentId': component.id,
-      'expectedVersion': component.version,
+      'baseVersion': component.version,
       'activity': widget.service
           ? 'service'
           : widget.taskId != null
-          ? 'periodic_check'
-          : 'manual_check',
+              ? 'periodic_check'
+              : 'manual_check',
       'condition': condition,
-      'usable': usable,
-      'impairedFunction': condition == 'OK'
-          ? 'Tidak Ada'
-          : impaired.text.trim(),
+      'usable': usable ?? (severe ? 'Tidak' : 'Ya'),
+      'impairedFunction':
+          condition == 'OK' ? 'Tidak Ada' : (impaired.text.trim().isEmpty ? 'Tidak Ada' : impaired.text.trim()),
       'eventNote': note.text.trim(),
       'summaryAction': summaryAction,
       if (summaryAction == 'replace') 'summaryText': summary.text.trim(),
@@ -210,35 +169,19 @@ class _CheckingScreenState extends State<CheckingScreen> {
     await finish();
   }
 
-  Future<void> recover() async {
-    final pending = submission.recover();
-    setState(() {});
-    await pending;
-    await finish();
-  }
-
-  Future<void> saveAsManual() async {
-    final previous = submission.command;
-    if (!canSaveAsManual || previous == null) return;
-    final command = Map<String, Object?>.from(previous)
-      ..['requestId'] = const Uuid().v4()
-      ..['activity'] = 'manual_check'
-      ..remove('taskId');
-    submission.state = SubmissionState.idle;
-    submission.error = null;
-    final pending = submission.submit(command);
-    setState(() {});
-    await pending;
-    await finish();
-  }
-
   Future<void> finish() async {
     if (!mounted) return;
     if (submission.state == SubmissionState.succeeded) {
       setState(() => leaving = true);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Hasil berhasil disimpan.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            widget.service
+                ? 'Laporan servis berhasil disimpan.'
+                : 'Pemeriksaan kondisi berhasil diperbarui.',
+          ),
+        ),
+      );
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) Navigator.pop(context);
       });
@@ -247,209 +190,730 @@ class _CheckingScreenState extends State<CheckingScreen> {
     }
   }
 
-  Widget field(
-    String label,
-    TextEditingController controller, {
-    bool required = false,
-    int max = 2000,
-  }) => Padding(
-    padding: const EdgeInsets.only(bottom: 16),
-    child: TextFormField(
-      controller: controller,
-      enabled: !blocked,
-      minLines: 2,
-      maxLines: 4,
-      maxLength: max,
-      decoration: InputDecoration(labelText: label),
-      validator: required ? requiredText : null,
-    ),
-  );
   @override
-  Widget build(BuildContext context) => PopScope(
-    canPop: leaving || (!dirty && !blocked),
-    onPopInvokedWithResult: (didPop, result) {
-      if (!didPop) leave();
-    },
-    child: Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        leading: BackButton(onPressed: blocked ? null : leave),
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: leaving || (!dirty && !blocked),
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) leave();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFC),
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  child: Form(
+                    key: form,
+                    onChanged: () => dirty = true,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildTopBar(context),
+                        const SizedBox(height: 16),
+                        _buildComponentIdentityCard(context),
+                        const SizedBox(height: 16),
+                        if (!widget.service) ...[
+                          _buildUpdateKondisiSection(context),
+                          const SizedBox(height: 16),
+                          _buildNotesSection(context),
+                        ] else ...[
+                          _buildServisFormFields(context),
+                        ],
+                        if (submission.error != null) ...[
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEF2F2),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFFECACA)),
+                            ),
+                            child: Text(
+                              failureMessage(submission.error),
+                              style: const TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                color: Color(0xFFB91C1C),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              _buildBottomSubmitBar(context),
+            ],
+          ),
+        ),
       ),
-      body: PageBody(
-        children: [
-          Text(
-            '${component.kind} · ${component.code}',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Kondisi tercatat: ${component.condition}. Pilih hasil sesuai pemeriksaan saat ini.',
-          ),
-          if (widget.taskId != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Periode ${widget.periodId ?? 'dari daftar berkala'}. Pemeriksaan komponen Hilang belum menyelesaikan tugas.',
+    );
+  }
+
+  // Top App Bar
+  Widget _buildTopBar(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            GestureDetector(
+              onTap: blocked ? null : leave,
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.chevron_left_rounded,
+                    color: Color(0xFF0F172A),
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.service ? 'Catat Servis' : 'Update Kondisi',
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                Text(
+                  widget.service
+                      ? 'Tindakan Perbaikan Fisik Unit'
+                      : 'Pemeriksaan Rutin & Berkala',
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              ],
             ),
           ],
-          const SizedBox(height: 24),
-          Form(
-            key: form,
-            onChanged: () {
-              dirty = true;
-            },
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (widget.correctsEventId != null) ...[
-                  const Text(
-                    'Koreksi menambah catatan baru. Catatan asli tetap tersimpan.',
-                  ),
-                  const SizedBox(height: 12),
-                  field('Alasan koreksi', reason, required: true),
-                ],
-                if (widget.service) ...[
-                  field('Masalah yang ditemukan', problem, required: true),
-                  field('Tindakan servis', action, required: true),
-                ],
-                DropdownButtonFormField<String>(
-                  initialValue: condition,
-                  decoration: const InputDecoration(labelText: 'Hasil kondisi'),
-                  items:
-                      ['OK', 'Rusak Ringan', 'Rusak Berat', 'Service', 'Hilang']
-                          .map(
-                            (v) => DropdownMenuItem(value: v, child: Text(v)),
-                          )
-                          .toList(),
-                  validator: (v) =>
-                      v == null ? 'Pilih hasil pemeriksaan.' : null,
-                  onChanged: blocked
-                      ? null
-                      : (v) => setState(() {
-                          condition = v;
-                          if (severe) usable = 'Tidak';
-                        }),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: widget.service ? const Color(0xFFEFF6FF) : const Color(0xFFF0FDF4),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 3,
+                backgroundColor:
+                    widget.service ? const Color(0xFF2563EB) : const Color(0xFF16A34A),
+              ),
+              const SizedBox(width: 5),
+              Text(
+                widget.service ? 'Perbaikan' : 'Ags 2026',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: widget.service ? const Color(0xFF2563EB) : const Color(0xFF15803D),
                 ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  key: ValueKey('usable-$usable-$severe'),
-                  initialValue: usable,
-                  decoration: const InputDecoration(
-                    labelText: 'Boleh digunakan',
-                  ),
-                  items: ['Ya', 'Tidak']
-                      .map((v) => DropdownMenuItem(value: v, child: Text(v)))
-                      .toList(),
-                  validator: (v) =>
-                      v == null ? 'Tentukan kelayakan komponen.' : null,
-                  onChanged: blocked || severe
-                      ? null
-                      : (v) => setState(() => usable = v),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Component Identity Card
+  Widget _buildComponentIdentityCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: widget.service
+                      ? const Color(0xFFFEF2F2)
+                      : const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                if (severe) ...[
-                  const SizedBox(height: 8),
-                  const Text('Kondisi ini tidak boleh digunakan.'),
-                ],
-                const SizedBox(height: 16),
-                if (condition != null && condition != 'OK')
-                  field(
-                    'Fungsi yang terganggu',
-                    impaired,
-                    required: true,
-                    max: 500,
+                child: Center(
+                  child: Icon(
+                    widget.service
+                        ? Icons.build_circle_outlined
+                        : Icons.check_circle_outline,
+                    color: widget.service
+                        ? const Color(0xFFEF4444)
+                        : const Color(0xFF2563EB),
+                    size: 22,
                   ),
-                field(
-                  condition != null && condition != 'OK'
-                      ? 'Temuan pemeriksaan (wajib)'
-                      : 'Catatan pemeriksaan',
-                  note,
-                  required: condition != null && condition != 'OK',
                 ),
-                DropdownButtonFormField<String>(
-                  initialValue: summaryAction,
-                  decoration: const InputDecoration(
-                    labelText: 'Ringkasan kondisi komponen',
-                  ),
-                  items: const [
-                    DropdownMenuItem(
-                      value: 'keep',
-                      child: Text('Pertahankan catatan sebelumnya'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'replace',
-                      child: Text('Ganti dengan catatan baru'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'clear',
-                      child: Text('Hapus catatan sebelumnya'),
-                    ),
-                  ],
-                  onChanged: blocked
-                      ? null
-                      : (v) => setState(() => summaryAction = v!),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Catatan sebelumnya: ${component.note ?? 'Tidak ada catatan'}',
-                ),
-                const SizedBox(height: 16),
-                if (summaryAction == 'replace')
-                  field('Ringkasan baru', summary, required: true),
-                if (widget.service) ...[
-                  const Text(
-                    'Biaya servis belum dicatat melalui aplikasi ini.',
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                if (submission.error != null) ...[
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    submission.state == SubmissionState.uncertain
-                        ? 'Status penyimpanan belum diketahui. Periksa hasil sebelum mencoba lagi.'
-                        : failureMessage(submission.error),
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                    component.code,
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Komponen ${component.kind} Utama • MGRS',
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
                 ],
-                if (refreshError != null) Text(refreshError!),
-                if (canSaveAsManual) ...[
-                  const Text(
-                    'Tugas berkala tetap terbuka. Temuan ini dapat disimpan sebagai pemeriksaan manual.',
+              ),
+            ],
+          ),
+          if (!widget.service)
+            GestureDetector(
+              onTap: blocked ? null : () => Navigator.pop(context),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Text(
+                  'Ganti',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF475569),
                   ),
-                  const SizedBox(height: 12),
-                  OutlinedButton(
-                    onPressed: saveAsManual,
-                    child: const Text('Simpan sebagai pemeriksaan manual'),
+                ),
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                'Rusak',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFFDC2626),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // Update Kondisi Radio Cards Section
+  Widget _buildUpdateKondisiSection(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Status Kondisi Hasil Cek *',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              Text(
+                'Wajib Diisi',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF2563EB),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          // Option 1: Layak Pakai
+          _buildConditionRadioCard(
+            title: 'Layak Pakai',
+            description: 'Fisik prima & fungsi normal untuk operasi',
+            value: 'OK',
+            selected: condition == 'OK',
+            activeBorderColor: const Color(0xFF10B981),
+            activeBgColor: const Color(0xFFF0FDF4),
+            dotColor: const Color(0xFF10B981),
+            onSelect: () => setState(() {
+              condition = 'OK';
+              usable = 'Ya';
+            }),
+          ),
+          const SizedBox(height: 10),
+          // Option 2: Perlu Servis
+          _buildConditionRadioCard(
+            title: 'Perlu Servis',
+            description: 'Ada keausan minor, butuh pelumasan / kalibrasi',
+            value: 'Rusak Ringan',
+            selected: condition == 'Rusak Ringan' || condition == 'Perlu Servis',
+            activeBorderColor: const Color(0xFFF59E0B),
+            activeBgColor: const Color(0xFFFFFBEB),
+            dotColor: const Color(0xFFF59E0B),
+            onSelect: () => setState(() {
+              condition = 'Rusak Ringan';
+              usable = 'Ya';
+            }),
+          ),
+          const SizedBox(height: 10),
+          // Option 3: Gangguan Fungsi
+          _buildConditionRadioCard(
+            title: 'Gangguan Fungsi',
+            description: 'Bocor / rusak berat, tidak boleh dipasang',
+            value: 'Rusak Berat',
+            selected: condition == 'Rusak Berat',
+            activeBorderColor: const Color(0xFFEF4444),
+            activeBgColor: const Color(0xFFFEF2F2),
+            dotColor: const Color(0xFFEF4444),
+            onSelect: () => setState(() {
+              condition = 'Rusak Berat';
+              usable = 'Tidak';
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConditionRadioCard({
+    required String title,
+    required String description,
+    required String value,
+    required bool selected,
+    required Color activeBorderColor,
+    required Color activeBgColor,
+    required Color dotColor,
+    required VoidCallback onSelect,
+  }) {
+    return GestureDetector(
+      onTap: blocked ? null : onSelect,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: selected ? activeBgColor : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? activeBorderColor : const Color(0xFFE2E8F0),
+            width: selected ? 1.8 : 1.0,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected ? activeBorderColor : Colors.transparent,
+                border: Border.all(
+                  color: selected ? activeBorderColor : const Color(0xFFCBD5E1),
+                  width: 2,
+                ),
+              ),
+              child: selected
+                  ? const Center(
+                      child: Icon(Icons.check, size: 14, color: Colors.white),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF0F172A),
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
                 ],
-                if (submission.state == SubmissionState.conflict)
-                  OutlinedButton(
-                    onPressed: refreshing ? null : refresh,
-                    child: Text(
-                      refreshing ? 'Memuat kondisi…' : 'Muat kondisi terbaru',
-                    ),
-                  )
-                else if (submission.state == SubmissionState.uncertain)
-                  FilledButton(
-                    onPressed: recover,
-                    child: const Text('Periksa dan lanjutkan penyimpanan'),
-                  )
-                else
-                  FilledButton(
-                    onPressed: blocked ? null : save,
-                    child: Text(
-                      submission.state == SubmissionState.submitting
-                          ? 'Menyimpan…'
-                          : 'Tinjau hasil',
-                    ),
-                  ),
-                const SizedBox(height: 24),
-              ],
+              ),
+            ),
+            CircleAvatar(radius: 3.5, backgroundColor: dotColor),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Notes Section
+  Widget _buildNotesSection(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Catatan Pemeriksaan (Opsional)',
+            style: TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: TextField(
+              controller: note,
+              maxLines: 4,
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 13,
+                color: Color(0xFF334155),
+                height: 1.45,
+              ),
+              decoration: const InputDecoration(
+                hintText:
+                    'Kondisi katup & konektor bersih, segel utuh tanpa indikasi keausan mekanis, siap digunakan.',
+                hintStyle: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 13,
+                  color: Color(0xFF94A3B8),
+                ),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+                filled: false,
+              ),
             ),
           ),
         ],
       ),
-    ),
-  );
+    );
+  }
+
+  // Servis Form Fields
+  Widget _buildServisFormFields(BuildContext context) {
+    return Column(
+      children: [
+        // 1. Masalah / Kendala Fisik
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Masalah / Kendala Fisik *',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  Text(
+                    'Wajib Diisi',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: TextField(
+                  controller: problem,
+                  maxLines: 3,
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 13,
+                    color: Color(0xFF334155),
+                    height: 1.45,
+                  ),
+                  decoration: const InputDecoration(
+                    hintText: 'Tuliskan kerusakan atau gejala masalah...',
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                    filled: false,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // 2. Tindakan Perbaikan
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Tindakan Perbaikan yang Dilakukan *',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  Text(
+                    'Wajib Diisi',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: TextField(
+                  controller: action,
+                  maxLines: 4,
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 13,
+                    color: Color(0xFF334155),
+                    height: 1.45,
+                  ),
+                  decoration: const InputDecoration(
+                    hintText: 'Tuliskan penanganan teknis yang dilakukan...',
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                    filled: false,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // 3. Kondisi Hasil Setelah Servis
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Kondisi Hasil Setelah Servis *',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  Text(
+                    'Wajib Diisi',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              // Option A: Layak Pakai
+              _buildConditionRadioCard(
+                title: 'Layak Pakai (Selesai & Siap Pakai)',
+                description: 'Perbaikan sukses, unit kembali normal',
+                value: 'OK',
+                selected: condition == 'OK',
+                activeBorderColor: const Color(0xFF10B981),
+                activeBgColor: const Color(0xFFF0FDF4),
+                dotColor: const Color(0xFF10B981),
+                onSelect: () => setState(() {
+                  condition = 'OK';
+                  usable = 'Ya';
+                }),
+              ),
+              const SizedBox(height: 10),
+              // Option B: Masih Perlu Servis Lanjutan
+              _buildConditionRadioCard(
+                title: 'Masih Perlu Servis Lanjutan',
+                description: 'Belum tuntas, menunggu sparepart',
+                value: 'Rusak Ringan',
+                selected: condition == 'Rusak Ringan',
+                activeBorderColor: const Color(0xFFF59E0B),
+                activeBgColor: const Color(0xFFFFFBEB),
+                dotColor: const Color(0xFFF59E0B),
+                onSelect: () => setState(() {
+                  condition = 'Rusak Ringan';
+                  usable = 'Tidak';
+                }),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Bottom Fixed Submit Button
+  Widget _buildBottomSubmitBar(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 50,
+        child: ElevatedButton(
+          onPressed: blocked ? null : save,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF2563EB),
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                widget.service ? Icons.build_rounded : Icons.check_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                submission.state == SubmissionState.submitting
+                    ? 'Menyimpan…'
+                    : widget.service
+                        ? 'Simpan & Selesaikan Servis'
+                        : 'Simpan & Selesaikan Tugas',
+                style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
