@@ -1,0 +1,14 @@
+.dart_tool/
+build/
+.flutter-plugins-dependencies
+config/*.local.json
+.env
+.env.*
+!.env.example
+node_modules/
+.local/
+*.log
+supabase/.temp/
+supabase/.branches/
+.idea/
+*.iml

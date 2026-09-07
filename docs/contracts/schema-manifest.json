@@ -1,0 +1,952 @@
+{
+  "projectRef": "ztindtxlbkgykyasgpnd",
+  "verifiedAt": "2026-09-06T16:26:48.936Z",
+  "basis": "live_read_only_metadata",
+  "columns": [
+    {
+      "column_default": "gen_random_uuid()",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "table_name": "audit_log",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "timestamp",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO",
+      "table_name": "audit_log",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": null,
+      "column_name": "action",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "table_name": "audit_log",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "entity_type",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "table_name": "audit_log",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "entity_id",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "table_name": "audit_log",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "old_value",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "table_name": "audit_log",
+      "udt_name": "jsonb"
+    },
+    {
+      "column_default": null,
+      "column_name": "new_value",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "table_name": "audit_log",
+      "udt_name": "jsonb"
+    },
+    {
+      "column_default": null,
+      "column_name": "user_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "table_name": "audit_log",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": "gen_random_uuid()",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "table_name": "master_komponen",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "komponen_id",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "table_name": "master_komponen",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "jenis_komponen",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "table_name": "master_komponen",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "nomor_stiker",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "table_name": "master_komponen",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "'OK'::text",
+      "column_name": "kondisi",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "table_name": "master_komponen",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "'Ya'::text",
+      "column_name": "boleh_dipakai",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "table_name": "master_komponen",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "'Tidak Ada'::text",
+      "column_name": "fungsi_terganggu",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "table_name": "master_komponen",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "'-'::text",
+      "column_name": "keterangan",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "table_name": "master_komponen",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "'Tersedia'::text",
+      "column_name": "status_penggunaan",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "table_name": "master_komponen",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO",
+      "table_name": "master_komponen",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": null,
+      "column_name": "updated_by",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "table_name": "master_komponen",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "table_name": "profiles",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "full_name",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "table_name": "profiles",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "username",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "table_name": "profiles",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "phone_number",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "table_name": "profiles",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "role",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "table_name": "profiles",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "true",
+      "column_name": "is_active",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "table_name": "profiles",
+      "udt_name": "bool"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO",
+      "table_name": "profiles",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO",
+      "table_name": "profiles",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": "gen_random_uuid()",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "table_name": "riwayat_checking_komponen",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "timestamp",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO",
+      "table_name": "riwayat_checking_komponen",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": null,
+      "column_name": "nomor_stiker",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "table_name": "riwayat_checking_komponen",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "jenis_komponen",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "table_name": "riwayat_checking_komponen",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "kondisi_terbaru",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "table_name": "riwayat_checking_komponen",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "boleh_dipakai",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "table_name": "riwayat_checking_komponen",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "fungsi_terganggu",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "table_name": "riwayat_checking_komponen",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "catatan",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "table_name": "riwayat_checking_komponen",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "petugas",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "table_name": "riwayat_checking_komponen",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "tanggal_checking",
+      "data_type": "date",
+      "is_nullable": "YES",
+      "table_name": "riwayat_checking_komponen",
+      "udt_name": "date"
+    },
+    {
+      "column_default": "gen_random_uuid()",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "table_name": "riwayat_service",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": "now()",
+      "column_name": "timestamp",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO",
+      "table_name": "riwayat_service",
+      "udt_name": "timestamptz"
+    },
+    {
+      "column_default": null,
+      "column_name": "nomor_stiker",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "table_name": "riwayat_service",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "jenis_komponen",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "table_name": "riwayat_service",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "masalah",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "table_name": "riwayat_service",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "tindakan_service",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "table_name": "riwayat_service",
+      "udt_name": "text"
+    },
+    {
+      "column_default": "0",
+      "column_name": "biaya_service",
+      "data_type": "numeric",
+      "is_nullable": "NO",
+      "table_name": "riwayat_service",
+      "udt_name": "numeric"
+    },
+    {
+      "column_default": null,
+      "column_name": "teknisi",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "table_name": "riwayat_service",
+      "udt_name": "uuid"
+    },
+    {
+      "column_default": null,
+      "column_name": "hasil_kondisi",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "table_name": "riwayat_service",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "boleh_dipakai",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "table_name": "riwayat_service",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "fungsi_terganggu",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "table_name": "riwayat_service",
+      "udt_name": "text"
+    },
+    {
+      "column_default": null,
+      "column_name": "catatan",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "table_name": "riwayat_service",
+      "udt_name": "text"
+    }
+  ],
+  "component_counts": [
+    {
+      "count": 20,
+      "jenis_komponen": "Tabung"
+    },
+    {
+      "count": 20,
+      "jenis_komponen": "Kepala"
+    },
+    {
+      "count": 20,
+      "jenis_komponen": "Batang"
+    }
+  ],
+  "duplicate_sticker_groups": 0,
+  "extensions": [
+    "pgcrypto"
+  ],
+  "grants": [
+    {
+      "grantee": "anon",
+      "privilege_type": "INSERT",
+      "table_name": "master_komponen"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "SELECT",
+      "table_name": "master_komponen"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "UPDATE",
+      "table_name": "master_komponen"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "DELETE",
+      "table_name": "master_komponen"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "TRUNCATE",
+      "table_name": "master_komponen"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "REFERENCES",
+      "table_name": "master_komponen"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "TRIGGER",
+      "table_name": "master_komponen"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "INSERT",
+      "table_name": "master_komponen"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "SELECT",
+      "table_name": "master_komponen"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "UPDATE",
+      "table_name": "master_komponen"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "DELETE",
+      "table_name": "master_komponen"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "TRUNCATE",
+      "table_name": "master_komponen"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "REFERENCES",
+      "table_name": "master_komponen"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "TRIGGER",
+      "table_name": "master_komponen"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "INSERT",
+      "table_name": "master_komponen"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "SELECT",
+      "table_name": "master_komponen"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "UPDATE",
+      "table_name": "master_komponen"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "DELETE",
+      "table_name": "master_komponen"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE",
+      "table_name": "master_komponen"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES",
+      "table_name": "master_komponen"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER",
+      "table_name": "master_komponen"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "INSERT",
+      "table_name": "riwayat_service"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "SELECT",
+      "table_name": "riwayat_service"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "UPDATE",
+      "table_name": "riwayat_service"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "DELETE",
+      "table_name": "riwayat_service"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "TRUNCATE",
+      "table_name": "riwayat_service"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "REFERENCES",
+      "table_name": "riwayat_service"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "TRIGGER",
+      "table_name": "riwayat_service"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "INSERT",
+      "table_name": "riwayat_service"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "SELECT",
+      "table_name": "riwayat_service"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "UPDATE",
+      "table_name": "riwayat_service"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "DELETE",
+      "table_name": "riwayat_service"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "TRUNCATE",
+      "table_name": "riwayat_service"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "REFERENCES",
+      "table_name": "riwayat_service"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "TRIGGER",
+      "table_name": "riwayat_service"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "INSERT",
+      "table_name": "riwayat_service"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "SELECT",
+      "table_name": "riwayat_service"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "UPDATE",
+      "table_name": "riwayat_service"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "DELETE",
+      "table_name": "riwayat_service"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE",
+      "table_name": "riwayat_service"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES",
+      "table_name": "riwayat_service"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER",
+      "table_name": "riwayat_service"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "INSERT",
+      "table_name": "audit_log"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "SELECT",
+      "table_name": "audit_log"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "UPDATE",
+      "table_name": "audit_log"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "DELETE",
+      "table_name": "audit_log"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "TRUNCATE",
+      "table_name": "audit_log"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "REFERENCES",
+      "table_name": "audit_log"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "TRIGGER",
+      "table_name": "audit_log"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "INSERT",
+      "table_name": "audit_log"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "SELECT",
+      "table_name": "audit_log"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "UPDATE",
+      "table_name": "audit_log"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "DELETE",
+      "table_name": "audit_log"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "TRUNCATE",
+      "table_name": "audit_log"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "REFERENCES",
+      "table_name": "audit_log"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "TRIGGER",
+      "table_name": "audit_log"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "INSERT",
+      "table_name": "audit_log"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "SELECT",
+      "table_name": "audit_log"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "UPDATE",
+      "table_name": "audit_log"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "DELETE",
+      "table_name": "audit_log"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE",
+      "table_name": "audit_log"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES",
+      "table_name": "audit_log"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER",
+      "table_name": "audit_log"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "INSERT",
+      "table_name": "riwayat_checking_komponen"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "SELECT",
+      "table_name": "riwayat_checking_komponen"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "UPDATE",
+      "table_name": "riwayat_checking_komponen"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "DELETE",
+      "table_name": "riwayat_checking_komponen"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "TRUNCATE",
+      "table_name": "riwayat_checking_komponen"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "REFERENCES",
+      "table_name": "riwayat_checking_komponen"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "TRIGGER",
+      "table_name": "riwayat_checking_komponen"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "INSERT",
+      "table_name": "riwayat_checking_komponen"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "SELECT",
+      "table_name": "riwayat_checking_komponen"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "UPDATE",
+      "table_name": "riwayat_checking_komponen"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "DELETE",
+      "table_name": "riwayat_checking_komponen"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "TRUNCATE",
+      "table_name": "riwayat_checking_komponen"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "REFERENCES",
+      "table_name": "riwayat_checking_komponen"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "TRIGGER",
+      "table_name": "riwayat_checking_komponen"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "INSERT",
+      "table_name": "riwayat_checking_komponen"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "SELECT",
+      "table_name": "riwayat_checking_komponen"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "UPDATE",
+      "table_name": "riwayat_checking_komponen"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "DELETE",
+      "table_name": "riwayat_checking_komponen"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE",
+      "table_name": "riwayat_checking_komponen"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES",
+      "table_name": "riwayat_checking_komponen"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER",
+      "table_name": "riwayat_checking_komponen"
+    }
+  ],
+  "policies": [
+    {
+      "cmd": "SELECT",
+      "policyname": "audit_log_select_admin_pic",
+      "qual": "( SELECT private.current_user_has_role(ARRAY['Admin'::text, 'PIC Pemasangan'::text]) AS current_user_has_role)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "audit_log",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "policyname": "master_komponen_delete_admin",
+      "qual": "( SELECT private.current_user_has_role(ARRAY['Admin'::text]) AS current_user_has_role)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "master_komponen",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "policyname": "master_komponen_insert_admin",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "master_komponen",
+      "with_check": "( SELECT private.current_user_has_role(ARRAY['Admin'::text]) AS current_user_has_role)"
+    },
+    {
+      "cmd": "SELECT",
+      "policyname": "master_komponen_select_active",
+      "qual": "( SELECT private.current_user_has_role(ARRAY['Admin'::text, 'PIC Pemasangan'::text, 'Tim Pemasangan'::text, 'Tim Service'::text]) AS current_user_has_role)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "master_komponen",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "policyname": "master_komponen_update_operational",
+      "qual": "( SELECT private.current_user_has_role(ARRAY['Admin'::text, 'Tim Pemasangan'::text, 'Tim Service'::text]) AS current_user_has_role)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "master_komponen",
+      "with_check": "( SELECT private.current_user_has_role(ARRAY['Admin'::text, 'Tim Pemasangan'::text, 'Tim Service'::text]) AS current_user_has_role)"
+    },
+    {
+      "cmd": "SELECT",
+      "policyname": "profiles_select_self_or_admin",
+      "qual": "((id = ( SELECT auth.uid() AS uid)) OR ( SELECT private.current_user_has_role(ARRAY['Admin'::text]) AS current_user_has_role))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "profiles",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "policyname": "profiles_update_self",
+      "qual": "((id = ( SELECT auth.uid() AS uid)) AND ( SELECT private.current_user_has_role(ARRAY['Admin'::text, 'PIC Pemasangan'::text, 'Tim Pemasangan'::text, 'Tim Service'::text]) AS current_user_has_role))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "profiles",
+      "with_check": "((id = ( SELECT auth.uid() AS uid)) AND ( SELECT private.current_user_has_role(ARRAY['Admin'::text, 'PIC Pemasangan'::text, 'Tim Pemasangan'::text, 'Tim Service'::text]) AS current_user_has_role))"
+    },
+    {
+      "cmd": "INSERT",
+      "policyname": "riwayat_checking_komponen_insert_service",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "riwayat_checking_komponen",
+      "with_check": "( SELECT private.current_user_has_role(ARRAY['Admin'::text, 'Tim Service'::text]) AS current_user_has_role)"
+    },
+    {
+      "cmd": "SELECT",
+      "policyname": "riwayat_checking_komponen_select_active",
+      "qual": "( SELECT private.current_user_has_role(ARRAY['Admin'::text, 'PIC Pemasangan'::text, 'Tim Pemasangan'::text, 'Tim Service'::text]) AS current_user_has_role)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "riwayat_checking_komponen",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "policyname": "riwayat_service_insert_service",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "riwayat_service",
+      "with_check": "( SELECT private.current_user_has_role(ARRAY['Admin'::text, 'Tim Service'::text]) AS current_user_has_role)"
+    },
+    {
+      "cmd": "SELECT",
+      "policyname": "riwayat_service_select_active",
+      "qual": "( SELECT private.current_user_has_role(ARRAY['Admin'::text, 'PIC Pemasangan'::text, 'Tim Pemasangan'::text, 'Tim Service'::text]) AS current_user_has_role)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "riwayat_service",
+      "with_check": null
+    }
+  ],
+  "triggers": null
+}

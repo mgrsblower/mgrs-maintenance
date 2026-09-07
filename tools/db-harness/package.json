@@ -1,0 +1,11 @@
+{
+  "name": "mgrs-maintenance-db-harness",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local-only PostgreSQL baseline verification for MGRS-Maintenance",
+  "devDependencies": {
+    "@embedded-postgres/windows-x64": "17.10.0-beta.17",
+    "pg": "8.16.3"
+  }
+}

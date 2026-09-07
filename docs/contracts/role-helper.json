@@ -1,0 +1,7 @@
+[
+  {
+    "definition": "CREATE OR REPLACE FUNCTION private.current_user_has_role(allowed_roles text[])\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  select\n    (select auth.uid()) is not null\n    and exists (\n      select 1\n      from public.profiles as profile\n      where profile.id = (select auth.uid())\n        and profile.is_active = true\n        and profile.role = any(allowed_roles)\n    );\n$function$\n",
+    "proname": "current_user_has_role",
+    "schema_name": "private"
+  }
+]

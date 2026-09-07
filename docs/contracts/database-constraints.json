@@ -1,0 +1,77 @@
+[
+  {
+    "conname": "profiles_id_fkey",
+    "definition": "FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE",
+    "table_name": "profiles"
+  },
+  {
+    "conname": "profiles_pkey",
+    "definition": "PRIMARY KEY (id)",
+    "table_name": "profiles"
+  },
+  {
+    "conname": "profiles_role_check",
+    "definition": "CHECK ((role = ANY (ARRAY['Admin'::text, 'PIC Pemasangan'::text, 'Tim Pemasangan'::text, 'Tim Service'::text])))",
+    "table_name": "profiles"
+  },
+  {
+    "conname": "master_komponen_boleh_dipakai_check",
+    "definition": "CHECK ((boleh_dipakai = ANY (ARRAY['Ya'::text, 'Tidak'::text])))",
+    "table_name": "master_komponen"
+  },
+  {
+    "conname": "master_komponen_jenis_komponen_check",
+    "definition": "CHECK ((jenis_komponen = ANY (ARRAY['Kepala'::text, 'Batang'::text, 'Tabung'::text])))",
+    "table_name": "master_komponen"
+  },
+  {
+    "conname": "master_komponen_komponen_id_key",
+    "definition": "UNIQUE (komponen_id)",
+    "table_name": "master_komponen"
+  },
+  {
+    "conname": "master_komponen_kondisi_check",
+    "definition": "CHECK ((kondisi = ANY (ARRAY['OK'::text, 'Rusak Ringan'::text, 'Rusak Berat'::text, 'Service'::text, 'Hilang'::text])))",
+    "table_name": "master_komponen"
+  },
+  {
+    "conname": "master_komponen_nomor_stiker_key",
+    "definition": "UNIQUE (nomor_stiker)",
+    "table_name": "master_komponen"
+  },
+  {
+    "conname": "master_komponen_pkey",
+    "definition": "PRIMARY KEY (id)",
+    "table_name": "master_komponen"
+  },
+  {
+    "conname": "master_komponen_status_penggunaan_check",
+    "definition": "CHECK ((status_penggunaan = ANY (ARRAY['Tersedia'::text, 'Dipakai'::text, 'Service'::text, 'Hilang'::text])))",
+    "table_name": "master_komponen"
+  },
+  {
+    "conname": "master_komponen_updated_by_fkey",
+    "definition": "FOREIGN KEY (updated_by) REFERENCES profiles(id)",
+    "table_name": "master_komponen"
+  },
+  {
+    "conname": "riwayat_service_pkey",
+    "definition": "PRIMARY KEY (id)",
+    "table_name": "riwayat_service"
+  },
+  {
+    "conname": "riwayat_service_teknisi_fkey",
+    "definition": "FOREIGN KEY (teknisi) REFERENCES profiles(id)",
+    "table_name": "riwayat_service"
+  },
+  {
+    "conname": "riwayat_checking_komponen_petugas_fkey",
+    "definition": "FOREIGN KEY (petugas) REFERENCES profiles(id)",
+    "table_name": "riwayat_checking_komponen"
+  },
+  {
+    "conname": "riwayat_checking_komponen_pkey",
+    "definition": "PRIMARY KEY (id)",
+    "table_name": "riwayat_checking_komponen"
+  }
+]
