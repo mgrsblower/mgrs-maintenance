@@ -88,10 +88,10 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.88),
+                              color: Colors.white.withValues(alpha: 0.38),
                               borderRadius: BorderRadius.circular(30),
                               border: Border.all(
-                                color: const Color(0xFFE2E8F0),
+                                color: const Color(0xFFE2E8F0).withValues(alpha: 0.8),
                                 width: 1.2,
                               ),
                             ),
@@ -376,9 +376,9 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.white.withValues(alpha: _isEngaged ? 0.98 : 0.94),
+              Colors.white.withValues(alpha: _isEngaged ? 0.75 : 0.55),
               const Color(0xFFE0F2FE)
-                  .withValues(alpha: _isEngaged ? 0.85 : 0.70),
+                  .withValues(alpha: _isEngaged ? 0.65 : 0.40),
             ],
           ),
         ),
