@@ -464,13 +464,14 @@ class _ScanScreenState extends State<ScanScreen>
               ),
             ),
 
-          // 5. Lens & Zoom Switcher Pill + Tap-to-Focus Guide
-          Align(
-            alignment: const Alignment(0, 0.30),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
+          // 5. Lens & Zoom Switcher Pill (Floating cleanly right above the bottom sheet)
+          if (scannedComponent == null)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 148 + MediaQuery.paddingOf(context).bottom,
+              child: Center(
+                child: Container(
                   padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.65),
@@ -497,29 +498,8 @@ class _ScanScreenState extends State<ScanScreen>
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                IgnorePointer(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.45),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'Ketuk layar untuk fokus • Arahkan barcode ke kotak',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        color: Colors.white.withValues(alpha: 0.85),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
 
           // 6. Floating Top Bar
           Positioned(
