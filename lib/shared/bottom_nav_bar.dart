@@ -83,10 +83,10 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.6),
+                              color: Colors.white.withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(30),
                               border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.1),
+                                color: Colors.white.withValues(alpha: 0.6),
                                 width: 1.2,
                               ),
                             ),
@@ -209,13 +209,13 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                                       : const Duration(milliseconds: 720),
                                   curve: Curves.easeOutBack,
                                   left: currentLeft,
-                                  top: _isEngaged ? -6 : 0,
-                                  bottom: _isEngaged ? -6 : 0,
+                                  top: _isEngaged ? -7 : -3,
+                                  bottom: _isEngaged ? -7 : -3,
                                   width: tabWidth,
                                   child: AnimatedScale(
                                     duration: const Duration(milliseconds: 180),
                                     curve: Curves.easeOutBack,
-                                    scale: _isEngaged ? 1.08 : 1.0,
+                                    scale: _isEngaged ? 1.12 : 1.05,
                                     child: _buildLiquidGlassBubble(),
                                   ),
                                 ),
@@ -293,8 +293,8 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       margin: EdgeInsets.symmetric(
-        horizontal: _isEngaged ? 4.0 : 5.0,
-        vertical: _isEngaged ? 0.0 : 1.5,
+        horizontal: _isEngaged ? 2.5 : 3.5,
+        vertical: _isEngaged ? 0.0 : 1.0,
       ),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(36), // True stadium capsule (100% smooth curves)
@@ -433,7 +433,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
     return Expanded(
       child: AnimatedScale(
         duration: const Duration(milliseconds: 160),
-        scale: (isActive && _isEngaged) ? 1.15 : 1.0, // Optical lens magnification!
+        scale: (isActive && _isEngaged) ? 1.18 : (isActive ? 1.08 : 1.0), // Optical lens magnification!
         child: Container(
           color: Colors.transparent,
           alignment: Alignment.center,
@@ -449,7 +449,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                 child: Icon(
                   isActive ? activeIcon : inactiveIcon,
                   key: ValueKey<bool>(isActive),
-                  size: 20,
+                  size: isActive ? 22 : 20,
                   color: isActive
                       ? const Color(0xFF147CC1)
                       : const Color(0xFF64748B),
@@ -460,7 +460,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                 duration: const Duration(milliseconds: 200),
                 style: TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 11,
+                  fontSize: isActive ? 11.5 : 11,
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
                   color: isActive
                       ? const Color(0xFF147CC1)
