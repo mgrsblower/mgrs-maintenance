@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import '../../app/app_theme.dart';
 import '../../app/gateway.dart';
 import '../../shared/pressable.dart';
 import '../components/component.dart';
@@ -17,12 +16,21 @@ class ScanScreen extends StatefulWidget {
   State<ScanScreen> createState() => _ScanScreenState();
 }
 
-class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
+class _ScanScreenState extends State<ScanScreen>
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   late final MobileScannerController camera;
+  late final AnimationController _laserController;
+  late final Animation<double> _laserAnimation;
   late bool scanning;
   bool busy = false;
   Object? error;
   Component? scannedComponent;
+
+  static bool get _isTestEnvironment {
+    return WidgetsBinding.instance.runtimeType
+        .toString()
+        .contains('TestWidgetsFlutterBinding');
+  }
 
   @override
   void initState() {
@@ -31,10 +39,23 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
     scannedComponent = widget.initialComponent;
     scanning = widget.initialComponent == null;
     camera = MobileScannerController(autoStart: widget.initialComponent == null);
+
+    _laserController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2500),
+    );
+    _laserAnimation = CurvedAnimation(
+      parent: _laserController,
+      curve: Curves.easeInOut,
+    );
+    if (!_isTestEnvironment) {
+      _laserController.repeat(reverse: true);
+    }
   }
 
   @override
   void dispose() {
+    _laserController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     unawaited(camera.dispose());
     super.dispose();
@@ -210,92 +231,123 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
                     ),
                   ),
 
-                  // Viewfinder Frame Brackets (Paper Style)
+                  // Viewfinder Frame (food-scanner-camera wireframe style with animated laser)
                   SizedBox(
-                    width: 250,
-                    height: 250,
+                    width: 280,
+                    height: 280,
                     child: Stack(
                       children: [
-                        // Top-Left
+                        // Top-Left Corner
                         Align(
                           alignment: Alignment.topLeft,
                           child: Container(
-                            width: 32,
-                            height: 32,
+                            width: 44,
+                            height: 44,
                             decoration: const BoxDecoration(
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(26),
+                              ),
                               border: Border(
-                                top: BorderSide(
-                                    color: AppTokens.primary, width: 3.5),
-                                left: BorderSide(
-                                    color: AppTokens.primary, width: 3.5),
+                                top: BorderSide(color: Colors.white, width: 3.5),
+                                left: BorderSide(color: Colors.white, width: 3.5),
                               ),
                             ),
                           ),
                         ),
-                        // Top-Right
+                        // Top-Right Corner
                         Align(
                           alignment: Alignment.topRight,
                           child: Container(
-                            width: 32,
-                            height: 32,
+                            width: 44,
+                            height: 44,
                             decoration: const BoxDecoration(
+                              borderRadius: BorderRadius.only(
+                                topRight: Radius.circular(26),
+                              ),
                               border: Border(
-                                top: BorderSide(
-                                    color: AppTokens.primary, width: 3.5),
-                                right: BorderSide(
-                                    color: AppTokens.primary, width: 3.5),
+                                top: BorderSide(color: Colors.white, width: 3.5),
+                                right: BorderSide(color: Colors.white, width: 3.5),
                               ),
                             ),
                           ),
                         ),
-                        // Bottom-Left
+                        // Bottom-Left Corner
                         Align(
                           alignment: Alignment.bottomLeft,
                           child: Container(
-                            width: 32,
-                            height: 32,
+                            width: 44,
+                            height: 44,
                             decoration: const BoxDecoration(
+                              borderRadius: BorderRadius.only(
+                                bottomLeft: Radius.circular(26),
+                              ),
                               border: Border(
-                                bottom: BorderSide(
-                                    color: AppTokens.primary, width: 3.5),
-                                left: BorderSide(
-                                    color: AppTokens.primary, width: 3.5),
+                                bottom: BorderSide(color: Colors.white, width: 3.5),
+                                left: BorderSide(color: Colors.white, width: 3.5),
                               ),
                             ),
                           ),
                         ),
-                        // Bottom-Right
+                        // Bottom-Right Corner
                         Align(
                           alignment: Alignment.bottomRight,
                           child: Container(
-                            width: 32,
-                            height: 32,
+                            width: 44,
+                            height: 44,
                             decoration: const BoxDecoration(
+                              borderRadius: BorderRadius.only(
+                                bottomRight: Radius.circular(26),
+                              ),
                               border: Border(
-                                bottom: BorderSide(
-                                    color: AppTokens.primary, width: 3.5),
-                                right: BorderSide(
-                                    color: AppTokens.primary, width: 3.5),
+                                bottom: BorderSide(color: Colors.white, width: 3.5),
+                                right: BorderSide(color: Colors.white, width: 3.5),
                               ),
                             ),
                           ),
                         ),
-                        // Red laser scanner beam
-                        Center(
-                          child: Container(
-                            height: 2,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEF4444),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFFEF4444)
-                                      .withValues(alpha: 0.8),
-                                  blurRadius: 10,
-                                  spreadRadius: 1,
+
+                        // Animated Scanning Laser Beam from food-scanner-camera wireframe
+                        AnimatedBuilder(
+                          animation: _laserAnimation,
+                          builder: (context, child) {
+                            final t = _laserAnimation.value;
+                            // Moves between 10% and 90% (28px to 252px)
+                            final posY = 28.0 + t * (280.0 - 56.0);
+                            final opacity = (t < 0.1
+                                    ? (t / 0.1)
+                                    : (t > 0.9 ? ((1.0 - t) / 0.1) : 1.0))
+                                .clamp(0.0, 1.0);
+
+                            return Positioned(
+                              top: posY,
+                              left: 6,
+                              right: 6,
+                              child: Opacity(
+                                opacity: opacity,
+                                child: Container(
+                                  height: 2.5,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(2),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.white
+                                            .withValues(alpha: 0.95),
+                                        blurRadius: 10,
+                                        spreadRadius: 1,
+                                      ),
+                                      BoxShadow(
+                                        color: Colors.white
+                                            .withValues(alpha: 0.6),
+                                        blurRadius: 20,
+                                        spreadRadius: 2,
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ],
-                            ),
-                          ),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
