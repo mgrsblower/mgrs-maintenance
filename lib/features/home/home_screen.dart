@@ -677,10 +677,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        // 3 Gradient Status Cards
+        // 3 Vibrant Solid Status Cards
         Row(
           children: [
-            // Card 1: Beroperasi (Green Gradient)
+            // Card 1: Beroperasi (Vibrant Emerald Solid)
             Expanded(
               child: _buildGradientStatusCard(
                 icon: Icons.check_rounded,
@@ -690,13 +690,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 count: '$_operatingCount',
                 title: 'Beroperasi',
                 subtitle: 'Kondisi prima',
-                gradientColors: const [Color(0xFF10B981), Color(0xFF059669)],
-                shadowColor: const Color(0x4010B981),
-                subtitleColor: const Color(0xFFD1FAE5),
+                solidColor: const Color(0xFF059669),
               ),
             ),
             const SizedBox(width: 10),
-            // Card 2: Perlu Servis (Amber Gradient)
+            // Card 2: Perlu Servis (Vibrant Amber Solid)
             Expanded(
               child: _buildGradientStatusCard(
                 icon: Icons.build_rounded,
@@ -706,13 +704,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 count: '$_serviceCount',
                 title: 'Perlu Servis',
                 subtitle: 'Jadwal dekat',
-                gradientColors: const [Color(0xFFF59E0B), Color(0xFFD97706)],
-                shadowColor: const Color(0x40D97706),
-                subtitleColor: const Color(0xFFFEF3C7),
+                solidColor: const Color(0xFFD97706),
               ),
             ),
             const SizedBox(width: 10),
-            // Card 3: Kendala (Rose Gradient)
+            // Card 3: Kendala (Vibrant Rose Solid)
             Expanded(
               child: _buildGradientStatusCard(
                 icon: Icons.warning_amber_rounded,
@@ -722,9 +718,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 count: '$_problemCount',
                 title: 'Kendala',
                 subtitle: 'Cek fisik',
-                gradientColors: const [Color(0xFFF43F5E), Color(0xFFE11D48)],
-                shadowColor: const Color(0x40E11D48),
-                subtitleColor: const Color(0xFFFFE4E6),
+                solidColor: const Color(0xFFE11D48),
               ),
             ),
           ],
@@ -739,39 +733,20 @@ class _HomeScreenState extends State<HomeScreen> {
     required String count,
     required String title,
     required String subtitle,
-    required List<Color> gradientColors,
-    required Color shadowColor,
-    required Color subtitleColor,
+    required Color solidColor,
   }) {
-    final isSuccess = title == 'Beroperasi';
-    final isWarning = title == 'Perlu Servis';
-
-    final badgeBg = isSuccess
-        ? const Color(0xFFD1FAE5)
-        : (isWarning ? const Color(0xFFFEF3C7) : const Color(0xFFFFE4E6));
-    final badgeText = isSuccess
-        ? const Color(0xFF065F46)
-        : (isWarning ? const Color(0xFF92400E) : const Color(0xFF9F1239));
-    final iconBg = isSuccess
-        ? const Color(0xFFECFDF5)
-        : (isWarning ? const Color(0xFFFFFBEB) : const Color(0xFFFFF1F2));
-    final iconColor = isSuccess
-        ? const Color(0xFF059669)
-        : (isWarning ? const Color(0xFFD97706) : const Color(0xFFE11D48));
-
     return PressableScale(
       child: Container(
         height: 120,
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: solidColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-              color: Color(0x080F172A),
-              blurRadius: 8,
-              offset: Offset(0, 2),
+              color: solidColor.withValues(alpha: 0.28),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -783,27 +758,27 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  width: 26,
-                  height: 26,
+                  width: 28,
+                  height: 28,
                   decoration: BoxDecoration(
-                    color: iconBg,
+                    color: Colors.white.withValues(alpha: 0.22),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(icon, color: iconColor, size: 14),
+                  child: Icon(icon, color: Colors.white, size: 15),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
                   decoration: BoxDecoration(
-                    color: badgeBg,
+                    color: Colors.white.withValues(alpha: 0.24),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     percentage,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontFamily: 'Inter',
-                      fontSize: 9.5,
+                      fontSize: 10,
                       fontWeight: FontWeight.w700,
-                      color: badgeText,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -816,33 +791,34 @@ class _HomeScreenState extends State<HomeScreen> {
                   count,
                   style: const TextStyle(
                     fontFamily: 'Inter',
-                    fontSize: 20,
+                    fontSize: 22,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF0F172A),
+                    color: Colors.white,
                     height: 1.1,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 3),
                 Text(
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 11,
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF1E293B),
+                    color: Colors.white,
                   ),
                 ),
+                const SizedBox(height: 1),
                 Text(
                   subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 9,
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 9.5,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF64748B),
+                    color: Colors.white.withValues(alpha: 0.85),
                   ),
                 ),
               ],
