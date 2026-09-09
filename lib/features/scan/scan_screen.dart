@@ -186,23 +186,47 @@ class _ScanScreenState extends State<ScanScreen>
                       ],
                     ),
                   ),
-                  PressableScale(
-                    onTap: () => camera.toggleTorch(),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.14),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.15),
+                  ValueListenableBuilder<MobileScannerState>(
+                    valueListenable: camera,
+                    builder: (context, state, child) {
+                      final torchState = state.torchState;
+                      final isOn = torchState == TorchState.on;
+                      final isUnavailable = torchState == TorchState.unavailable;
+
+                      return PressableScale(
+                        onTap: isUnavailable ? null : () => camera.toggleTorch(),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: isOn
+                                ? const Color(0xFFFBBF24).withValues(alpha: 0.25)
+                                : Colors.white.withValues(alpha: 0.14),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isOn
+                                  ? const Color(0xFFFBBF24)
+                                  : Colors.white.withValues(alpha: 0.15),
+                              width: isOn ? 1.5 : 1.0,
+                            ),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              isOn
+                                  ? Icons.flash_on_rounded
+                                  : Icons.flash_off_rounded,
+                              color: isOn
+                                  ? const Color(0xFFFBBF24)
+                                  : (isUnavailable
+                                      ? Colors.white38
+                                      : Colors.white),
+                              size: 20,
+                            ),
+                          ),
                         ),
-                      ),
-                      child: const Center(
-                        child: Icon(Icons.flash_on_rounded,
-                            color: Colors.white, size: 20),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ],
               ),
