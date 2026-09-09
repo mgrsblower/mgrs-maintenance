@@ -83,10 +83,10 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.88),
+                              color: Colors.white.withValues(alpha: 0.6),
                               borderRadius: BorderRadius.circular(30),
                               border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.6),
+                                color: Colors.white.withValues(alpha: 0.1),
                                 width: 1.2,
                               ),
                             ),
@@ -206,7 +206,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                                 AnimatedPositioned(
                                   duration: _isDragging
                                       ? Duration.zero
-                                      : const Duration(milliseconds: 420),
+                                      : const Duration(milliseconds: 720),
                                   curve: Curves.easeOutBack,
                                   left: currentLeft,
                                   top: _isEngaged ? -6 : 0,

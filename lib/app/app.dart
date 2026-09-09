@@ -181,7 +181,7 @@ class _MaintenanceHomeState extends State<MaintenanceHome> {
   @override
   Widget build(BuildContext context) => Scaffold(
     extendBody: true,
-    backgroundColor: Colors.white,
+    backgroundColor: const Color(0xFFFBFBFB),
     body: PageView(
       controller: _pageController,
       onPageChanged: (index) => setState(() => tab = index),
