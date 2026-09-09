@@ -1,0 +1,58 @@
+workflows:
+  flutter-ios:
+    name: MGRS iOS
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+
+    scripts:
+      - name: Install Flutter dependencies
+        script: flutter pub get
+
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios
+          pod install --repo-update
+
+      - name: Build iOS App
+        script: >-
+          flutter build ios
+          --release
+          --no-codesign
+          --dart-define-from-file=dart_defines.json
+
+      - name: Package Unsigned IPA
+        script: |
+          cd build/ios/iphoneos
+          mkdir -p Payload
+          cp -r Runner.app Payload/
+          zip -qr MGRS.ipa Payload
+
+    artifacts:
+      - build/ios/iphoneos/MGRS.ipa
+      - build/ios/iphoneos/Runner.app
+      - /tmp/xcodebuild_logs/*.log
+
+  flutter-android-apk:
+    name: MGRS Android APK
+    max_build_duration: 60
+
+    environment:
+      flutter: stable
+
+    scripts:
+      - name: Install Flutter dependencies
+        script: flutter pub get
+
+      - name: Build Android APK
+        script: >-
+          flutter build apk
+          --release
+          --dart-define-from-file=dart_defines.json
+
+    artifacts:
+      - build/app/outputs/flutter-apk/app-release.apk

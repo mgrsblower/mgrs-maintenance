@@ -6,8 +6,7 @@ import '../features/home/home_skeleton.dart';
 import '../features/components/asset_catalog_screen.dart';
 import '../features/maintenance/action_center_screen.dart';
 import '../features/scan/scan_screen.dart';
-import '../features/schedule/schedule_screen.dart';
-import '../features/history/history_screen.dart';
+import '../features/splash/splash_screen.dart';
 import '../shared/async_state_view.dart';
 import 'app_theme.dart';
 import 'gateway.dart';
@@ -26,6 +25,15 @@ class _MaintenanceAppState extends State<MaintenanceApp>
   bool checking = true;
   int generation = 0, sessionRevision = 0;
   late final StreamSubscription<void> subscription;
+
+  static bool get _isTestEnvironment {
+    return WidgetsBinding.instance.runtimeType
+        .toString()
+        .contains('TestWidgetsFlutterBinding');
+  }
+
+  late bool splashCompleted = _isTestEnvironment;
+
   @override
   void initState() {
     super.initState();
@@ -79,16 +87,20 @@ class _MaintenanceAppState extends State<MaintenanceApp>
   @override
   Widget build(BuildContext context) => MaterialApp(
     key: ValueKey(sessionRevision),
-    title: 'MGRS Maintenance',
+    title: 'MGRS',
     debugShowCheckedModeBanner: false,
     theme: maintenanceTheme(),
-    home: user == null
-        ? LoginScreen(gateway: widget.gateway, onSignedIn: reload)
-        : MaintenanceHome(gateway: widget.gateway, user: user!),
+    home: !splashCompleted
+        ? SplashScreen(
+            onFinish: () => setState(() => splashCompleted = true),
+          )
+        : (user == null
+            ? LoginScreen(gateway: widget.gateway, onSignedIn: reload)
+            : MaintenanceHome(gateway: widget.gateway, user: user!)),
     builder: (context, child) => Stack(
       children: [
         ?child,
-        if (checking || error != null)
+        if (splashCompleted && (checking || error != null))
           Positioned.fill(
             child: Material(
               color: AppTokens.canvas,

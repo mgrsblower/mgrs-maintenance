@@ -1,6 +1,6 @@
 {
-    "name": "mgrs_maintenance",
-    "short_name": "mgrs_maintenance",
+    "name": "MGRS",
+    "short_name": "MGRS",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

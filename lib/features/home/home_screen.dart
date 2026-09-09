@@ -1,9 +1,13 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../app/gateway.dart';
+import '../../shared/bottom_nav_bar.dart';
+import '../../shared/pressable.dart';
 import '../schedule/order_detail_screen.dart';
+import '../schedule/order_model.dart';
+import '../schedule/upcoming_orders_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     required this.gateway,
@@ -18,6 +22,82 @@ class HomeScreen extends StatelessWidget {
   final VoidCallback onOpenScanner;
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _operatingCount = 0;
+  int _serviceCount = 0;
+  int _problemCount = 0;
+  int _totalMonitored = 0;
+  String _countdownDays = '0';
+  List<OrderanSewa> _upcomingOrders = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMetrics();
+  }
+
+  Future<void> _loadMetrics() async {
+    setState(() => _loading = true);
+    try {
+      final list = await widget.gateway.fetchComponents();
+      if (!mounted) return;
+      int ok = 0;
+      int service = 0;
+      int problem = 0;
+      for (final item in list) {
+        final cond = (item['kondisi'] ?? item['condition'] ?? 'OK').toString();
+        if (cond == 'OK') {
+          ok++;
+        } else if (cond == 'Service' || cond == 'Rusak Ringan') {
+          service++;
+        } else {
+          problem++;
+        }
+      }
+
+      String countdown = '0';
+      try {
+        final tasks = await widget.gateway.fetchTasksSummary();
+        if (tasks.isNotEmpty) {
+          final period = tasks['period'];
+          if (period is Map) {
+            final opensAtStr = period['opensAt']?.toString();
+            if (opensAtStr != null) {
+              final opensAt = DateTime.tryParse(opensAtStr);
+              if (opensAt != null) {
+                final now = DateTime.now();
+                final diff = opensAt.difference(now).inDays;
+                countdown = diff > 0 ? '$diff' : '0';
+              }
+            }
+          }
+        }
+      } catch (_) {}
+
+      List<OrderanSewa> upcoming = [];
+      try {
+        upcoming = await widget.gateway.fetchUpcomingOrders(limit: 5);
+      } catch (_) {}
+
+      setState(() {
+        _operatingCount = ok;
+        _serviceCount = service;
+        _problemCount = problem;
+        _totalMonitored = list.length;
+        _countdownDays = countdown;
+        _upcomingOrders = upcoming;
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
@@ -26,23 +106,29 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           children: [
             Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 10),
-                      _buildUserHeader(context),
-                      const SizedBox(height: 14),
-                      _buildWeeklyProgressBento(context),
-                      const SizedBox(height: 20),
-                      _buildUnitStatusSection(context),
-                      const SizedBox(height: 20),
-                      _buildUpcomingOrdersSection(context),
-                      const SizedBox(height: 90), // Spacing for floating navbar
-                    ],
+              child: RefreshIndicator(
+                onRefresh: _loadMetrics,
+                color: const Color(0xFF2563EB),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 10),
+                        _buildUserHeader(context),
+                        const SizedBox(height: 14),
+                        _buildWeeklyProgressBento(context),
+                        const SizedBox(height: 20),
+                        _buildUnitStatusSection(context),
+                        const SizedBox(height: 20),
+                        _buildUpcomingOrdersSection(context),
+                        const SizedBox(height: 90), // Spacing for floating navbar
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -50,7 +136,11 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: _buildPaperBottomNav(context),
+      bottomNavigationBar: AppBottomNavBar(
+        currentIndex: 0,
+        onNavigateToTab: widget.onNavigateToTab,
+        onOpenScanner: widget.onOpenScanner,
+      ),
     );
   }
 
@@ -59,71 +149,363 @@ class HomeScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: const BoxDecoration(
-                color: Color(0xFFE2E8F0),
-                shape: BoxShape.circle,
-              ),
-              child: const Center(
-                child: Text(
-                  'SR',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF334155),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        Expanded(
+          child: PressableScale(
+            onTap: () => _showUserProfileBottomSheet(context),
+            child: Row(
               children: [
-                const Text(
-                  'Selamat Pagi!',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF64748B),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE2E8F0),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      widget.user.initials,
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF334155),
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  user.role == 'Admin' ? 'Admin MGRS' : 'Salman Alfarras',
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A),
-                    letterSpacing: -0.3,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text(
+                            'Selamat Pagi!',
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            size: 16,
+                            color: Color(0xFF94A3B8),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.user.displayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ],
-        ),
-        Container(
-          width: 40,
-          height: 40,
-          decoration: const BoxDecoration(
-            color: Color(0xFFF1F5F9),
-            shape: BoxShape.circle,
           ),
-          child: const Center(
-            child: Icon(
-              Icons.notifications_none_rounded,
-              color: Color(0xFF334155),
-              size: 20,
+        ),
+        const SizedBox(width: 12),
+        PressableScale(
+          onTap: () {},
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.notifications_none_rounded,
+                color: Color(0xFF334155),
+                size: 20,
+              ),
             ),
           ),
         ),
       ],
+    );
+  }
+
+  void _showUserProfileBottomSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag Handle
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              // Sheet Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Profil Pengguna',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(sheetContext).pop(),
+                    icon: const Icon(Icons.close_rounded,
+                        size: 20, color: Color(0xFF64748B)),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+
+              // User Info Card
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1C3E66),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF1C3E66).withValues(alpha: 0.25),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          widget.user.initials,
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.user.displayName,
+                            style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEFF6FF),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xFFBFDBFE)),
+                                ),
+                                child: Text(
+                                  widget.user.role,
+                                  style: const TextStyle(
+                                    fontFamily: 'Plus Jakarta Sans',
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF2563EB),
+                                  ),
+                                ),
+                              ),
+                              if (widget.user.username != null) ...[
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '@${widget.user.username}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontFamily: 'Plus Jakarta Sans',
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xFF64748B),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Status Box
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.check_circle_rounded,
+                        size: 15, color: Color(0xFF16A34A)),
+                    SizedBox(width: 8),
+                    Text(
+                      'Sistem MGRS • Terhubung',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF334155),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Logout Button
+              PressableScale(
+                onTap: () => _confirmLogout(context, sheetContext),
+                child: Container(
+                  width: double.infinity,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFFECACA)),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.logout_rounded,
+                          color: Color(0xFFDC2626), size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        'Keluar dari Akun',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFDC2626),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _confirmLogout(BuildContext screenContext, BuildContext sheetContext) {
+    showDialog<void>(
+      context: screenContext,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Konfirmasi Keluar',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontWeight: FontWeight.w800,
+            fontSize: 18,
+          ),
+        ),
+        content: const Text(
+          'Apakah Anda yakin ingin keluar dari akun MGRS?',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 14,
+            color: Color(0xFF475569),
+          ),
+        ),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: const Text(
+              'Batal',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF64748B),
+              ),
+            ),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.of(dialogCtx).pop();
+              Navigator.of(sheetContext).pop();
+              await widget.gateway.signOut();
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text(
+              'Ya, Keluar',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -132,7 +514,8 @@ class HomeScreen extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFCEF284),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFBCE66E), width: 1.2),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       child: Row(
@@ -191,12 +574,12 @@ class HomeScreen extends StatelessWidget {
                   size: const Size(86, 86),
                   painter: _CircularCountdownPainter(),
                 ),
-                const Column(
+                Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      '6',
-                      style: TextStyle(
+                      _countdownDays,
+                      style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
@@ -204,8 +587,8 @@ class HomeScreen extends StatelessWidget {
                         height: 1.0,
                       ),
                     ),
-                    SizedBox(height: 2),
-                    Text(
+                    const SizedBox(height: 2),
+                    const Text(
                       'Hari Lagi',
                       style: TextStyle(
                         fontFamily: 'Inter',
@@ -232,31 +615,38 @@ class HomeScreen extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Status Unit Blower',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A),
-                    letterSpacing: -0.3,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Status Unit Blower',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF0F172A),
+                      letterSpacing: -0.3,
+                    ),
                   ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'Total 24 mesin aktif dipantau',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF64748B),
+                  const SizedBox(height: 2),
+                  Text(
+                    _totalMonitored == 0 && !_loading
+                        ? 'Belum ada unit terdata'
+                        : 'Total $_totalMonitored mesin aktif dipantau',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF64748B),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+            const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
@@ -271,7 +661,7 @@ class HomeScreen extends StatelessWidget {
                   Text(
                     'Live Data',
                     style: TextStyle(
-                      fontFamily: 'Inter',
+                      fontFamily: 'Plus Jakarta Sans',
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF334155),
@@ -286,12 +676,14 @@ class HomeScreen extends StatelessWidget {
         // 3 Gradient Status Cards
         Row(
           children: [
-            // Card 1: 19 Beroperasi (Green Gradient)
+            // Card 1: Beroperasi (Green Gradient)
             Expanded(
               child: _buildGradientStatusCard(
                 icon: Icons.check_rounded,
-                percentage: '79%',
-                count: '19',
+                percentage: _totalMonitored > 0
+                    ? '${((_operatingCount / _totalMonitored) * 100).round()}%'
+                    : '0%',
+                count: '$_operatingCount',
                 title: 'Beroperasi',
                 subtitle: 'Kondisi prima',
                 gradientColors: const [Color(0xFF10B981), Color(0xFF059669)],
@@ -300,12 +692,14 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            // Card 2: 3 Perlu Servis (Amber Gradient)
+            // Card 2: Perlu Servis (Amber Gradient)
             Expanded(
               child: _buildGradientStatusCard(
                 icon: Icons.build_rounded,
-                percentage: '13%',
-                count: '3',
+                percentage: _totalMonitored > 0
+                    ? '${((_serviceCount / _totalMonitored) * 100).round()}%'
+                    : '0%',
+                count: '$_serviceCount',
                 title: 'Perlu Servis',
                 subtitle: 'Jadwal dekat',
                 gradientColors: const [Color(0xFFF59E0B), Color(0xFFD97706)],
@@ -314,12 +708,14 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            // Card 3: 2 Kendala (Rose Gradient)
+            // Card 3: Kendala (Rose Gradient)
             Expanded(
               child: _buildGradientStatusCard(
                 icon: Icons.warning_amber_rounded,
-                percentage: '8%',
-                count: '2',
+                percentage: _totalMonitored > 0
+                    ? '${((_problemCount / _totalMonitored) * 100).round()}%'
+                    : '0%',
+                count: '$_problemCount',
                 title: 'Kendala',
                 subtitle: 'Cek fisik',
                 gradientColors: const [Color(0xFFF43F5E), Color(0xFFE11D48)],
@@ -343,98 +739,117 @@ class HomeScreen extends StatelessWidget {
     required Color shadowColor,
     required Color subtitleColor,
   }) {
-    return Container(
-      height: 124,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: gradientColors,
+    final isSuccess = title == 'Beroperasi';
+    final isWarning = title == 'Perlu Servis';
+
+    final badgeBg = isSuccess
+        ? const Color(0xFFD1FAE5)
+        : (isWarning ? const Color(0xFFFEF3C7) : const Color(0xFFFFE4E6));
+    final badgeText = isSuccess
+        ? const Color(0xFF065F46)
+        : (isWarning ? const Color(0xFF92400E) : const Color(0xFF9F1239));
+    final iconBg = isSuccess
+        ? const Color(0xFFECFDF5)
+        : (isWarning ? const Color(0xFFFFFBEB) : const Color(0xFFFFF1F2));
+    final iconColor = isSuccess
+        ? const Color(0xFF059669)
+        : (isWarning ? const Color(0xFFD97706) : const Color(0xFFE11D48));
+
+    return PressableScale(
+      child: Container(
+        height: 120,
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x080F172A),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: shadowColor,
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.25),
-                  borderRadius: BorderRadius.circular(9),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    color: iconBg,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: iconColor, size: 14),
                 ),
-                child: Icon(icon, color: Colors.white, size: 16),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.25),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  percentage,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: badgeBg,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    percentage,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                      color: badgeText,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                count,
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  height: 1.1,
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  count,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                    height: 1.1,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 1),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                const SizedBox(height: 2),
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E293B),
+                  ),
                 ),
-              ),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w500,
-                  color: subtitleColor,
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 9,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF64748B),
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // 4. Orderan Mendatang (Section title + count badge "3" + "Lihat Semua" + 2 Order Cards)
+  // 4. Orderan Mendatang (Section title + dynamic count badge + "Lihat Semua" + dynamic Order Cards)
   Widget _buildUpcomingOrdersSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -442,39 +857,52 @@ class HomeScreen extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                const Text(
-                  'Orderan Mendatang',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A),
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    '3',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF475569),
+            Expanded(
+              child: Row(
+                children: [
+                  const Flexible(
+                    child: Text(
+                      'Orderan Mendatang',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0F172A),
+                        letterSpacing: -0.3,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${_upcomingOrders.length}',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF475569),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(width: 8),
             GestureDetector(
-              onTap: () => onNavigateToTab(2),
+              onTap: () {
+                Navigator.of(context).push<void>(
+                  MaterialPageRoute(
+                    builder: (_) => UpcomingOrdersScreen(gateway: widget.gateway),
+                  ),
+                );
+              },
               child: const Text(
                 'Lihat Semua',
                 style: TextStyle(
@@ -488,37 +916,68 @@ class HomeScreen extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        // Order Card 1
-        _buildOrderCard(
-          context,
-          badgeColor: const Color(0xFFEF4444),
-          orderCode: 'ORD-2026-088',
-          units: '• 4 Unit',
-          dateText: 'Besok, 26 Jul 2029',
-          dateBgColor: const Color(0xFFFEF2F2),
-          dateTextColor: const Color(0xFFDC2626),
-          title: 'Pemasangan Panggung Event Pertamina',
-          venue: 'JCC Senayan, Hall B - Jakarta',
-        ),
-        const SizedBox(height: 10),
-        // Order Card 2
-        _buildOrderCard(
-          context,
-          badgeColor: const Color(0xFF3B82F6),
-          orderCode: 'ORD-2026-092',
-          units: '• 2 Unit',
-          dateText: 'Jumat, 27 Jul 2029',
-          dateBgColor: const Color(0xFFF1F5F9),
-          dateTextColor: const Color(0xFF475569),
-          title: 'Instalasi Outdoor Festival Musik',
-          venue: 'Lapangan Brigif, Cimahi',
-        ),
+        if (_upcomingOrders.isNotEmpty) ...[
+          ..._upcomingOrders.take(3).map((order) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _buildOrderCard(
+                context,
+                order: order,
+                badgeColor: const Color(0xFFEF4444),
+                orderCode: order.displayCode,
+                units: '• ${order.jumlahUnit} Unit',
+                dateText: order.dayDateYear,
+                dateBgColor: const Color(0xFFFEF2F2),
+                dateTextColor: const Color(0xFFDC2626),
+                title: order.namaEvent,
+                venue: order.alamat ?? 'Lokasi acara belum dicatat',
+              ),
+            );
+          }),
+        ] else ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: const Column(
+              children: [
+                Icon(Icons.event_available_rounded,
+                    size: 32, color: Color(0xFF94A3B8)),
+                SizedBox(height: 8),
+                Text(
+                  'Tidak ada orderan mendatang saat ini',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF334155),
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Jadwal pemasangan akan tersinkronisasi otomatis dari sistem web.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 11,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
 
   Widget _buildOrderCard(
     BuildContext context, {
+    OrderanSewa? order,
     required Color badgeColor,
     required String orderCode,
     required String units,
@@ -528,11 +987,14 @@ class HomeScreen extends StatelessWidget {
     required String title,
     required String venue,
   }) {
-    return GestureDetector(
+    return PressableScale(
       onTap: () {
         Navigator.of(context).push<void>(
           MaterialPageRoute(
-            builder: (_) => const OrderDetailScreen(),
+            builder: (_) => OrderDetailScreen(
+              order: order,
+              gateway: widget.gateway,
+            ),
           ),
         );
       },
@@ -556,51 +1018,63 @@ class HomeScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: badgeColor,
-                      borderRadius: BorderRadius.circular(2),
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: badgeColor,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    orderCode,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF0F172A),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        orderCode,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
                     ),
+                    const SizedBox(width: 4),
+                    Text(
+                      units,
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: dateBgColor,
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    units,
-                    style: const TextStyle(
+                  child: Text(
+                    dateText,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF64748B),
+                      fontWeight: FontWeight.w700,
+                      color: dateTextColor,
                     ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: dateBgColor,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  dateText,
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: dateTextColor,
                   ),
                 ),
               ),
@@ -626,27 +1100,33 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.location_on_outlined,
-                      size: 14,
-                      color: Color(0xFF64748B),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      venue,
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
+                Expanded(
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on_outlined,
+                        size: 14,
                         color: Color(0xFF64748B),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: Text(
+                          venue,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 const Icon(
                   Icons.chevron_right_rounded,
                   size: 16,
@@ -660,141 +1140,6 @@ class HomeScreen extends StatelessWidget {
     ),
   );
 }
-
-  // 5. Paper Glassmorphic Floating Bottom Bar: Pill Nav (Beranda, Aset, Servis) + Separate Floating QR Button
-  Widget _buildPaperBottomNav(BuildContext context) {
-    return Container(
-      color: Colors.transparent,
-      padding: const EdgeInsets.fromLTRB(20, 6, 20, 22),
-      child: Row(
-        children: [
-          // Glassmorphic Capsule Nav Bar
-          Expanded(
-            child: Container(
-              height: 58,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xCEE7E7E7),
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: const Color(0xC7FFFFFF), width: 1.5),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0D000000),
-                    blurRadius: 16,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  // Tab Beranda (Active Pill)
-                  Expanded(
-                    child: Container(
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: const Color(0x9EA6A6A6),
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.home_filled, size: 22, color: Colors.black),
-                          SizedBox(height: 2),
-                          Text(
-                            'Beranda',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Tab Aset
-                  Expanded(
-                    child: InkWell(
-                      onTap: () => onNavigateToTab(1),
-                      borderRadius: BorderRadius.circular(24),
-                      child: const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.view_in_ar_outlined, size: 20, color: Colors.black),
-                          SizedBox(height: 2),
-                          Text(
-                            'Aset',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Tab Servis
-                  Expanded(
-                    child: InkWell(
-                      onTap: () => onNavigateToTab(2),
-                      borderRadius: BorderRadius.circular(24),
-                      child: const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.build_rounded, size: 20, color: Colors.black),
-                          SizedBox(height: 2),
-                          Text(
-                            'Servis',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          // Separate Floating QR Scanner Button
-          GestureDetector(
-            onTap: onOpenScanner,
-            child: Container(
-              width: 58,
-              height: 58,
-              decoration: BoxDecoration(
-                color: const Color(0xC7E7E7E7),
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xC7FFFFFF), width: 1.5),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0D000000),
-                    blurRadius: 16,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.qr_code_scanner_rounded,
-                  color: Colors.black,
-                  size: 26,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 // Custom Painter for countdown circular ring in Bento Card

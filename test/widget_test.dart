@@ -24,7 +24,7 @@ void main() {
   ) async {
     await tester.pumpWidget(MaintenanceApp(gateway: SignedOutGateway()));
     await tester.pumpAndSettle();
-    expect(find.text('MGRS Maintenance'), findsOneWidget);
+    expect(find.text('Email / Akun MGRS'), findsOneWidget);
     await tester.tap(find.widgetWithText(FilledButton, 'Masuk'));
     await tester.pumpAndSettle();
     expect(find.text('Masukkan akun MGRS.'), findsOneWidget);

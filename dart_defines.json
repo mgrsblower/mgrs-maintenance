@@ -1,0 +1,6 @@
+{
+  "SUPABASE_URL": "https://ztindtxlbkgykyasgpnd.supabase.co",
+  "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0aW5kdHhsYmtneWt5YXNncG5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4NzczNTksImV4cCI6MjA5OTQ1MzM1OX0.-BxM9AR2rCqjCYwEHidx19Rs0EdbIHwUDiNU5sPqMxw",
+  "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_JJQltzNGw4ZXxRsH7SFasg_j7C2xefA",
+  "INVOICE_EXPORT_URL": "https://www.mgrs.biz.id/api/invoice/export"
+}

@@ -1,5 +1,8 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../app/gateway.dart';
+import '../../shared/bottom_nav_bar.dart';
+import '../../shared/pressable.dart';
 import '../components/component_detail_screen.dart';
 
 class AssetCatalogScreen extends StatefulWidget {
@@ -21,69 +24,47 @@ class AssetCatalogScreen extends StatefulWidget {
 class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
   String activeCategory = 'Semua';
   final searchController = TextEditingController();
-
-  final List<Map<String, dynamic>> allComponents = [
-    {
-      'id': 'c-1',
-      'code': 'KPL-2026-084',
-      'kind': 'Kepala',
-      'condition': 'Layak Pakai',
-      'conditionColor': Color(0xFF10B981),
-      'description':
-          'Kondisi katup & konektor bersih, segel utuh tanpa indikasi keausan.',
-      'inspector': '24 Ags 2026 • Salman A.',
-    },
-    {
-      'id': 'c-2',
-      'code': 'BTG-2026-112',
-      'kind': 'Batang',
-      'condition': 'Perlu Servis',
-      'conditionColor': Color(0xFFF59E0B),
-      'description':
-          'Drat sambungan sedikit aus, perlu pelumasan & pengecekan torsi.',
-      'inspector': '12 Jul 2026 • Rian P.',
-    },
-    {
-      'id': 'c-3',
-      'code': 'TBG-2026-039',
-      'kind': 'Tabung',
-      'condition': 'Gangguan Fungsi',
-      'conditionColor': Color(0xFFEF4444),
-      'description':
-          'Indikasi penurunan tekanan & kebocoran paking segel tabung.',
-      'inspector': '18 Ags 2026 • Hendra S.',
-    },
-    {
-      'id': 'c-4',
-      'code': 'KPL-2026-042',
-      'kind': 'Kepala',
-      'condition': 'Layak Pakai',
-      'conditionColor': Color(0xFF10B981),
-      'description':
-          'Kondisi prima, katup bersih terawat setelah kalibrasi pengunci.',
-      'inspector': '04 Ags 2026 • Salman A.',
-    },
-    {
-      'id': 'c-5',
-      'code': 'BTG-2026-095',
-      'kind': 'Batang',
-      'condition': 'Layak Pakai',
-      'conditionColor': Color(0xFF10B981),
-      'description':
-          'Aluminium mulus bebas penyok, konektor drat terpasang kencang.',
-      'inspector': '20 Jul 2026 • Rian P.',
-    },
-  ];
+  final ScrollController scrollController = ScrollController();
+  static const int _pageSize = 10;
+  int _visibleCount = 10;
+  bool _isLoadingMore = false;
+  bool isLoading = false;
+  Object? error;
+  List<Map<String, dynamic>> components = [];
 
   @override
-  void dispose() {
-    searchController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    scrollController.addListener(_onScroll);
+    loadComponents();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final filtered = allComponents.where((c) {
+  void _onScroll() {
+    if (scrollController.hasClients &&
+        scrollController.position.pixels >=
+            scrollController.position.maxScrollExtent - 150) {
+      _loadMore();
+    }
+  }
+
+  void _loadMore() {
+    if (_isLoadingMore) return;
+    final total = _getFilteredItems().length;
+    if (_visibleCount < total) {
+      setState(() => _isLoadingMore = true);
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) {
+          setState(() {
+            _visibleCount = math.min(_visibleCount + _pageSize, total);
+            _isLoadingMore = false;
+          });
+        }
+      });
+    }
+  }
+
+  List<Map<String, dynamic>> _getFilteredItems() {
+    return components.where((c) {
       final matchesCat =
           activeCategory == 'Semua' || c['kind'] == activeCategory;
       final query = searchController.text.trim().toLowerCase();
@@ -92,6 +73,71 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
           (c['description'] as String).toLowerCase().contains(query);
       return matchesCat && matchesSearch;
     }).toList();
+  }
+
+  Future<void> loadComponents() async {
+    setState(() {
+      isLoading = true;
+      error = null;
+    });
+    try {
+      final rows = await widget.gateway.fetchComponents();
+      if (!mounted) return;
+      setState(() {
+        components = rows.map((r) {
+          final cond = (r['kondisi'] ?? r['condition'] ?? 'OK').toString();
+          final isOk = cond == 'OK';
+          final isService = cond == 'Service';
+          final isRusakBerat = cond == 'Rusak Berat';
+          final color = isOk
+              ? const Color(0xFF10B981)
+              : (isService || isRusakBerat
+                  ? const Color(0xFFEF4444)
+                  : const Color(0xFFF59E0B));
+          final condLabel = isOk
+              ? 'Layak Pakai'
+              : (isService
+                  ? 'Perlu Servis'
+                  : (isRusakBerat ? 'Gangguan Fungsi' : cond));
+          final updated = (r['updated_at'] ?? '').toString();
+          final dateStr = updated.length >= 10
+              ? updated.substring(0, 10)
+              : 'Tersedia';
+
+          return {
+            'id': (r['id'] ?? '').toString(),
+            'code': (r['nomor_stiker'] ?? r['code'] ?? '').toString(),
+            'kind': (r['jenis_komponen'] ?? r['kind'] ?? 'Kepala').toString(),
+            'condition': condLabel,
+            'conditionColor': color,
+            'description': (r['keterangan'] ??
+                    r['note'] ??
+                    'Komponen operasional terdata di sistem MGRS.')
+                .toString(),
+            'inspector': dateStr,
+          };
+        }).toList();
+        _visibleCount = _pageSize;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => error = e);
+      }
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    scrollController.dispose();
+    searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = _getFilteredItems();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -100,14 +146,20 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
         child: Column(
           children: [
             Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 10),
+              child: RefreshIndicator(
+                onRefresh: loadComponents,
+                color: const Color(0xFF2563EB),
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 10),
                       _buildHeader(context),
                       const SizedBox(height: 14),
                       _buildSearchBar(context),
@@ -121,10 +173,15 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-      bottomNavigationBar: _buildPaperBottomNav(context),
+    ),
+      bottomNavigationBar: AppBottomNavBar(
+        currentIndex: 1,
+        onNavigateToTab: widget.onNavigateToTab,
+        onOpenScanner: widget.onOpenScanner,
+      ),
     );
   }
 
@@ -133,24 +190,24 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Column(
+        Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Komponen MGRS',
               style: TextStyle(
-                fontFamily: 'Inter',
+                fontFamily: 'Plus Jakarta Sans',
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
                 color: Color(0xFF0F172A),
                 letterSpacing: -0.4,
               ),
             ),
-            SizedBox(height: 2),
+            const SizedBox(height: 2),
             Text(
-              '148 item terdaftar • Kepala, Batang, Tabung',
-              style: TextStyle(
-                fontFamily: 'Inter',
+              '${components.length} item terdaftar • Kepala, Batang, Tabung',
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
                 color: Color(0xFF64748B),
@@ -158,18 +215,22 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
             ),
           ],
         ),
-        Container(
-          width: 38,
-          height: 38,
-          decoration: const BoxDecoration(
-            color: Color(0xFFF1F5F9),
-            shape: BoxShape.circle,
-          ),
-          child: const Center(
-            child: Icon(
-              Icons.filter_list_rounded,
-              color: Color(0xFF334155),
-              size: 18,
+        PressableScale(
+          onTap: () {},
+          child: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.filter_list_rounded,
+                color: Color(0xFF334155),
+                size: 18,
+              ),
             ),
           ),
         ),
@@ -194,7 +255,7 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
           Expanded(
             child: TextField(
               controller: searchController,
-              onChanged: (_) => setState(() {}),
+              onChanged: (_) => setState(() => _visibleCount = _pageSize),
               style: const TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 13,
@@ -231,13 +292,19 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
           final isSelected = activeCategory == cat;
           return Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              onTap: () => setState(() => activeCategory = cat),
+            child: PressableScale(
+              onTap: () => setState(() {
+                activeCategory = cat;
+                _visibleCount = _pageSize;
+              }),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
                 decoration: BoxDecoration(
                   color: isSelected ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0),
+                  ),
                 ),
                 child: Text(
                   cat,
@@ -258,290 +325,310 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
 
   // List of Component Cards
   Widget _buildComponentList(BuildContext context, List<Map<String, dynamic>> items) {
-    if (items.isEmpty) {
+    if (isLoading && components.isEmpty) {
       return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 40),
+        padding: EdgeInsets.symmetric(vertical: 48),
         child: Center(
-          child: Text(
-            'Tidak ada komponen ditemukan',
-            style: TextStyle(
-              fontFamily: 'Inter',
-              color: Color(0xFF64748B),
-              fontSize: 13,
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: Color(0xFF147CC1)),
+              SizedBox(height: 14),
+              Text(
+                'Memuat katalog aset...',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 13,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+            ],
           ),
         ),
       );
     }
 
-    return Column(
-      children: items.map((item) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: InkWell(
-            onTap: () {
-              Navigator.of(context).push<void>(
-                MaterialPageRoute(
-                  builder: (_) => ComponentDetailScreen(
-                    gateway: widget.gateway,
-                    id: item['id'] as String,
-                  ),
-                ),
-              );
-            },
-            borderRadius: BorderRadius.circular(18),
-            child: Container(
-              padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x08000000),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ],
+    if (error != null && components.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+        child: Column(
+          children: [
+            const Icon(Icons.error_outline_rounded, size: 40, color: Color(0xFFDC2626)),
+            const SizedBox(height: 12),
+            Text(
+              failureMessage(error),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF991B1B),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        item['code'] as String,
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
-                          letterSpacing: -0.2,
+            ),
+            const SizedBox(height: 14),
+            ElevatedButton.icon(
+              onPressed: loadComponents,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Coba Lagi'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF147CC1),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (items.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 48),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.inventory_2_outlined, size: 44, color: Color(0xFF94A3B8)),
+              SizedBox(height: 12),
+              Text(
+                'Tidak ada komponen ditemukan',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Coba ubah kata kunci pencarian atau kategori filter.',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 12,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final visibleItems = items.take(_visibleCount).toList();
+
+    return Column(
+      children: [
+        ...visibleItems.map((item) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: PressableScale(
+              onTap: () {
+                Navigator.of(context).push<void>(
+                  MaterialPageRoute(
+                    builder: (_) => ComponentDetailScreen(
+                      gateway: widget.gateway,
+                      id: item['id'] as String,
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x08000000),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          item['code'] as String,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF0F172A),
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: item['conditionColor'] as Color,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 5,
+                                height: 5,
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                item['condition'] as String,
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      item['description'] as String,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF334155),
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.only(top: 8),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          top: BorderSide(color: Color(0xFFF1F5F9)),
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: item['conditionColor'] as Color,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 5,
-                              height: 5,
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.access_time_rounded,
+                                size: 13,
+                                color: Color(0xFF64748B),
                               ),
-                            ),
-                            const SizedBox(width: 5),
-                            Text(
-                              item['condition'] as String,
-                              style: const TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                              const SizedBox(width: 5),
+                              Text(
+                                item['inspector'] as String,
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF64748B),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            size: 16,
+                            color: Color(0xFF94A3B8),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+        if (_isLoadingMore)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Color(0xFF2563EB),
+                  ),
+                ),
+                SizedBox(width: 10),
+                Text(
+                  'Memuat komponen selanjutnya...',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else if (_visibleCount < items.length)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Center(
+              child: PressableScale(
+                onTap: _loadMore,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.keyboard_arrow_down_rounded,
+                          size: 18, color: Color(0xFF2563EB)),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Muat Lebih Banyak (${items.length - _visibleCount} tersisa)',
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF2563EB),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    item['description'] as String,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF334155),
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.only(top: 8),
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        top: BorderSide(color: Color(0xFFF1F5F9)),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.access_time_rounded,
-                              size: 13,
-                              color: Color(0xFF64748B),
-                            ),
-                            const SizedBox(width: 5),
-                            Text(
-                              item['inspector'] as String,
-                              style: const TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Icon(
-                          Icons.chevron_right_rounded,
-                          size: 16,
-                          color: Color(0xFF94A3B8),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  // Paper Bottom Navigation (Aset Active)
-  Widget _buildPaperBottomNav(BuildContext context) {
-    return Container(
-      color: Colors.transparent,
-      padding: const EdgeInsets.fromLTRB(20, 6, 20, 22),
-      child: Row(
-        children: [
-          // Glassmorphic Capsule Nav Bar
-          Expanded(
-            child: Container(
-              height: 58,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xCEE7E7E7),
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: const Color(0xC7FFFFFF), width: 1.5),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0D000000),
-                    blurRadius: 16,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  // Tab Beranda
-                  Expanded(
-                    child: InkWell(
-                      onTap: () => widget.onNavigateToTab(0),
-                      borderRadius: BorderRadius.circular(24),
-                      child: const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.home_outlined, size: 20, color: Color(0xFF64748B)),
-                          SizedBox(height: 2),
-                          Text(
-                            'Beranda',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Tab Aset (Active Pill)
-                  Expanded(
-                    child: Container(
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: const Color(0x9EA6A6A6),
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.view_in_ar, size: 22, color: Colors.black),
-                          SizedBox(height: 2),
-                          Text(
-                            'Aset',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Tab Servis
-                  Expanded(
-                    child: InkWell(
-                      onTap: () => widget.onNavigateToTab(2),
-                      borderRadius: BorderRadius.circular(24),
-                      child: const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.build_rounded, size: 20, color: Color(0xFF64748B)),
-                          SizedBox(height: 2),
-                          Text(
-                            'Servis',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          // Floating QR Button
-          GestureDetector(
-            onTap: widget.onOpenScanner,
-            child: Container(
-              width: 58,
-              height: 58,
-              decoration: BoxDecoration(
-                color: const Color(0xC7E7E7E7),
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xC7FFFFFF), width: 1.5),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x0D000000),
-                    blurRadius: 16,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.qr_code_scanner_rounded,
-                  color: Colors.black,
-                  size: 26,
+          )
+        else if (items.length > _pageSize)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Center(
+              child: Text(
+                'Menampilkan seluruh ${items.length} komponen',
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF94A3B8),
                 ),
               ),
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 }

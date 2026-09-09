@@ -1,28 +1,36 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import '../../app/app_theme.dart';
 import '../../app/gateway.dart';
+import '../../shared/pressable.dart';
 import '../components/component.dart';
 import '../components/component_detail_screen.dart';
+import '../maintenance/checking_screen.dart';
 
 class ScanScreen extends StatefulWidget {
-  const ScanScreen({super.key, required this.gateway});
+  const ScanScreen({super.key, required this.gateway, this.initialComponent});
   final MaintenanceGateway gateway;
+  final Component? initialComponent;
 
   @override
   State<ScanScreen> createState() => _ScanScreenState();
 }
 
 class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
-  final camera = MobileScannerController(autoStart: true);
-  bool scanning = true, busy = false;
-  String? error;
+  late final MobileScannerController camera;
+  late bool scanning;
+  bool busy = false;
+  Object? error;
   Component? scannedComponent;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    scannedComponent = widget.initialComponent;
+    scanning = widget.initialComponent == null;
+    camera = MobileScannerController(autoStart: widget.initialComponent == null);
   }
 
   @override
@@ -34,9 +42,17 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed && scanning) {
-      unawaited(camera.stop());
-      setState(() => scanning = false);
+    if (state == AppLifecycleState.resumed) {
+      if (!scanning && scannedComponent == null) {
+        unawaited(camera.start());
+        setState(() => scanning = true);
+      }
+    } else if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      if (scanning) {
+        unawaited(camera.stop());
+        setState(() => scanning = false);
+      }
     }
   }
 
@@ -52,41 +68,37 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
         'p_code': value,
       });
       if (!mounted) return;
-      if (res is List && res.isNotEmpty) {
-        final c = Component(res.first as Map<String, Object?>);
-        setState(() => scannedComponent = c);
-      } else {
-        // Fallback demo component matching Paper layout if not found in database
-        setState(() {
-          scannedComponent = Component({
-            'id': 'c-1',
-            'code': value.isNotEmpty ? value : 'KPL-2026-084',
-            'kind': 'Kepala',
-            'condition': 'OK',
-            'usable': 'Ya',
-            'impairedFunction': 'Tidak Ada',
-            'note':
-                'Katup & konektor bersih, segel utuh tanpa kebocoran, siap dipasang ke unit panggung.',
-            'version': '1',
-            'lastCheckingAt': '2026-08-24T00:00:00Z',
+      if (res is List) {
+        if (res.isEmpty) {
+          setState(() {
+            error = const AppFailure('not_found');
+            scannedComponent = null;
           });
+        } else if (res.length > 1) {
+          setState(() {
+            error = const AppFailure('ambiguous');
+            scannedComponent = null;
+          });
+        } else {
+          final c = Component(res.first as Map<String, Object?>);
+          unawaited(camera.stop());
+          setState(() {
+            scannedComponent = c;
+            scanning = false;
+            error = null;
+          });
+        }
+      } else {
+        setState(() {
+          error = const AppFailure('not_found');
+          scannedComponent = null;
         });
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         setState(() {
-          scannedComponent = Component({
-            'id': 'c-1',
-            'code': value.isNotEmpty ? value : 'KPL-2026-084',
-            'kind': 'Kepala',
-            'condition': 'OK',
-            'usable': 'Ya',
-            'impairedFunction': 'Tidak Ada',
-            'note':
-                'Katup & konektor bersih, segel utuh tanpa kebocoran, siap dipasang ke unit panggung.',
-            'version': '1',
-            'lastCheckingAt': '2026-08-24T00:00:00Z',
-          });
+          error = e;
+          scannedComponent = null;
         });
       }
     } finally {
@@ -107,14 +119,17 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  GestureDetector(
+                  PressableScale(
                     onTap: () => Navigator.pop(context),
                     child: Container(
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
+                        color: Colors.white.withValues(alpha: 0.14),
                         shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.15),
+                        ),
                       ),
                       child: const Center(
                         child: Icon(Icons.close_rounded,
@@ -124,19 +139,19 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 6),
+                        horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.4),
+                      color: Colors.black.withValues(alpha: 0.45),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.15)),
+                          color: Colors.white.withValues(alpha: 0.18)),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         CircleAvatar(
                             radius: 3.5, backgroundColor: Color(0xFF10B981)),
-                        SizedBox(width: 6),
+                        SizedBox(width: 7),
                         Text(
                           'Scanner Cepat Lapangan',
                           style: TextStyle(
@@ -144,19 +159,23 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
+                            letterSpacing: -0.2,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  GestureDetector(
+                  PressableScale(
                     onTap: () => camera.toggleTorch(),
                     child: Container(
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
+                        color: Colors.white.withValues(alpha: 0.14),
                         shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.15),
+                        ),
                       ),
                       child: const Center(
                         child: Icon(Icons.flash_on_rounded,
@@ -186,15 +205,8 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
                           }
                         }
                       },
-                      errorBuilder: (context, error) => Center(
-                        child: Container(
-                          padding: const EdgeInsets.all(20),
-                          child: const Text(
-                            'Kamera siap memindai stiker barcode.',
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                        ),
-                      ),
+                      errorBuilder: (context, error) =>
+                          _buildCameraErrorView(context, error),
                     ),
                   ),
 
@@ -213,9 +225,9 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
                             decoration: const BoxDecoration(
                               border: Border(
                                 top: BorderSide(
-                                    color: Color(0xFF3B82F6), width: 3.5),
+                                    color: AppTokens.primary, width: 3.5),
                                 left: BorderSide(
-                                    color: Color(0xFF3B82F6), width: 3.5),
+                                    color: AppTokens.primary, width: 3.5),
                               ),
                             ),
                           ),
@@ -229,9 +241,9 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
                             decoration: const BoxDecoration(
                               border: Border(
                                 top: BorderSide(
-                                    color: Color(0xFF3B82F6), width: 3.5),
+                                    color: AppTokens.primary, width: 3.5),
                                 right: BorderSide(
-                                    color: Color(0xFF3B82F6), width: 3.5),
+                                    color: AppTokens.primary, width: 3.5),
                               ),
                             ),
                           ),
@@ -245,9 +257,9 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
                             decoration: const BoxDecoration(
                               border: Border(
                                 bottom: BorderSide(
-                                    color: Color(0xFF3B82F6), width: 3.5),
+                                    color: AppTokens.primary, width: 3.5),
                                 left: BorderSide(
-                                    color: Color(0xFF3B82F6), width: 3.5),
+                                    color: AppTokens.primary, width: 3.5),
                               ),
                             ),
                           ),
@@ -261,9 +273,9 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
                             decoration: const BoxDecoration(
                               border: Border(
                                 bottom: BorderSide(
-                                    color: Color(0xFF3B82F6), width: 3.5),
+                                    color: AppTokens.primary, width: 3.5),
                                 right: BorderSide(
-                                    color: Color(0xFF3B82F6), width: 3.5),
+                                    color: AppTokens.primary, width: 3.5),
                               ),
                             ),
                           ),
@@ -315,19 +327,164 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildScannedResultSheet(BuildContext context) {
-    final comp = scannedComponent ??
-        Component({
-          'id': 'c-1',
-          'code': 'KPL-2026-084',
-          'kind': 'Kepala',
-          'condition': 'OK',
-          'usable': 'Ya',
-          'impairedFunction': 'Tidak Ada',
-          'note':
-              'Katup & konektor bersih, segel utuh tanpa kebocoran, siap dipasang ke unit panggung.',
-          'version': '1',
-          'lastCheckingAt': '2026-08-24T00:00:00Z',
-        });
+    if (scannedComponent == null) {
+      return Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (busy) ...[
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 12),
+                  Text(
+                    'Mencari data komponen...',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF334155),
+                    ),
+                  ),
+                ],
+              ),
+            ] else if (error != null) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFFECACA)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.error_outline_rounded,
+                      color: Color(0xFFDC2626),
+                      size: 22,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        failureMessage(error),
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF991B1B),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      error = null;
+                      scanning = true;
+                    });
+                    unawaited(camera.start());
+                  },
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text(
+                    'Pindai Ulang',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF147CC1),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ] else ...[
+              const Icon(
+                Icons.qr_code_scanner_rounded,
+                size: 32,
+                color: Color(0xFF147CC1),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Arahkan Kamera ke Barcode Komponen',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Sistem akan memverifikasi nomor stiker resmi pada database MGRS.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 12,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
+    final comp = scannedComponent!;
+    final isOk = comp.condition == 'OK';
+    final isService = comp.condition == 'Service';
+    final isRusakBerat = comp.condition == 'Rusak Berat';
+    final badgeColor = isOk
+        ? const Color(0xFF10B981)
+        : (isService || isRusakBerat
+            ? const Color(0xFFEF4444)
+            : const Color(0xFFF59E0B));
+    final badgeText = isOk
+        ? 'LAYAK PAKAI'
+        : (isService
+            ? 'PERLU SERVIS'
+            : (isRusakBerat ? 'RUSAK BERAT' : comp.condition.toUpperCase()));
+    final lastCheckText = comp.lastCheckingAt != null &&
+            comp.lastCheckingAt!.length >= 10
+        ? 'Pemeriksaan Terakhir: ${comp.lastCheckingAt!.substring(0, 10)}'
+        : 'Pemeriksaan Terakhir: Belum pernah diperiksa';
+    final noteText = comp.note != null && comp.note!.trim().isNotEmpty
+        ? comp.note!.trim()
+        : 'Tidak ada catatan kendala fisik.';
 
     return Container(
       width: double.infinity,
@@ -395,16 +552,20 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981),
+                  color: badgeColor,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.check, size: 12, color: Colors.white),
-                    SizedBox(width: 4),
+                    Icon(
+                      isOk ? Icons.check : Icons.warning_amber_rounded,
+                      size: 12,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 4),
                     Text(
-                      'LAYAK PAKAI',
-                      style: TextStyle(
+                      badgeText,
+                      style: const TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
@@ -418,9 +579,9 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
             ],
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Pemeriksaan Terakhir: 24 Ags 2026',
-            style: TextStyle(
+          Text(
+            lastCheckText,
+            style: const TextStyle(
               fontFamily: 'Plus Jakarta Sans',
               fontSize: 12,
               color: Color(0xFF64748B),
@@ -452,20 +613,11 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
                         letterSpacing: 0.5,
                       ),
                     ),
-                    Text(
-                      'Oleh: Salman A.',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 10,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  comp.note ??
-                      'Katup & konektor bersih, segel utuh tanpa kebocoran, siap dipasang ke unit panggung.',
+                  noteText,
                   style: const TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
                     fontSize: 12,
@@ -479,71 +631,232 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
           const SizedBox(height: 16),
 
           // Action Buttons
+          PressableScale(
+            onTap: () async {
+              final isService = comp.condition != 'OK';
+              final res = await Navigator.of(context).push<bool>(
+                MaterialPageRoute(
+                  builder: (_) => CheckingScreen(
+                    gateway: widget.gateway,
+                    component: comp,
+                    service: isService,
+                  ),
+                ),
+              );
+              if (res == true && mounted) {
+                lookup(comp.code);
+              }
+            },
+            child: Container(
+              height: 46,
+              decoration: BoxDecoration(
+                color: comp.condition != 'OK'
+                    ? const Color(0xFFDC2626)
+                    : const Color(0xFF147CC1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    comp.condition != 'OK'
+                        ? Icons.build_rounded
+                        : Icons.fact_check_outlined,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    comp.condition != 'OK'
+                        ? 'Catat Servis Unit Ini'
+                        : 'Update Kondisi Unit Ini',
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
-                child: SizedBox(
-                  height: 46,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push<void>(
-                        MaterialPageRoute(
-                          builder: (_) => ComponentDetailScreen(
-                            gateway: widget.gateway,
-                            id: comp.id,
+                child: PressableScale(
+                  child: SizedBox(
+                    height: 44,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push<void>(
+                          MaterialPageRoute(
+                            builder: (_) => ComponentDetailScreen(
+                              gateway: widget.gateway,
+                              id: comp.id,
+                            ),
                           ),
+                        );
+                      },
+                      icon: const Icon(Icons.visibility_outlined, size: 16),
+                      label: const Text(
+                        'Buka Detail',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
                         ),
-                      );
-                    },
-                    icon: const Icon(Icons.visibility_outlined, size: 18),
-                    label: const Text(
-                      'Buka Detail',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
                       ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF0F172A),
-                      side: const BorderSide(color: Color(0xFFE2E8F0)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF0F172A),
+                        side: const BorderSide(color: Color(0xFFE2E8F0)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
-                child: SizedBox(
-                  height: 46,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      setState(() => scannedComponent = null);
-                    },
-                    icon: const Icon(Icons.crop_free_rounded,
-                        color: Colors.white, size: 18),
-                    label: const Text(
-                      'Scan Unit Lanjut',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                child: PressableScale(
+                  child: SizedBox(
+                    height: 44,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          scannedComponent = null;
+                          scanning = true;
+                        });
+                        unawaited(camera.start());
+                      },
+                      icon: const Icon(Icons.crop_free_rounded,
+                          color: Colors.white, size: 16),
+                      label: const Text(
+                        'Scan Lanjut',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2563EB),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF334155),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCameraErrorView(
+    BuildContext context,
+    MobileScannerException error,
+  ) {
+    final isPermissionDenied =
+        error.errorCode == MobileScannerErrorCode.permissionDenied;
+
+    return Container(
+      color: const Color(0xFF0F172A),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 68,
+            height: 68,
+            decoration: BoxDecoration(
+              color: isPermissionDenied
+                  ? const Color(0xFFFEF2F2)
+                  : Colors.white.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isPermissionDenied
+                    ? const Color(0xFFFECACA)
+                    : Colors.white.withValues(alpha: 0.15),
+              ),
+            ),
+            child: Center(
+              child: Icon(
+                isPermissionDenied
+                    ? Icons.no_photography_outlined
+                    : Icons.videocam_off_outlined,
+                color: isPermissionDenied
+                    ? const Color(0xFFDC2626)
+                    : Colors.white70,
+                size: 32,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            isPermissionDenied
+                ? 'Izin Akses Kamera Diperlukan'
+                : 'Kamera Tidak Tersedia',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isPermissionDenied
+                ? 'Aplikasi membutuhkan akses kamera untuk memindai barcode unit di lapangan. Silakan izinkan akses kamera pada perangkat Anda.'
+                : 'Kamera perangkat sedang digunakan oleh aplikasi lain atau tidak didukung.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.white.withValues(alpha: 0.7),
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 22),
+          ElevatedButton.icon(
+            onPressed: () {
+              unawaited(camera.start());
+              setState(() {});
+            },
+            icon: const Icon(Icons.refresh_rounded,
+                size: 18, color: Colors.white),
+            label: Text(
+              isPermissionDenied
+                  ? 'Beri Izin / Coba Lagi'
+                  : 'Hubungkan Ulang Kamera',
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF147CC1),
+              elevation: 0,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
           ),
         ],
       ),

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../../app/gateway.dart';
-import '../../shared/async_state_view.dart';
+import '../../shared/pressable.dart';
 import '../components/component.dart';
 import 'submission_controller.dart';
 
@@ -137,10 +137,28 @@ class _CheckingScreenState extends State<CheckingScreen> {
       return;
     }
 
+    if (condition != 'OK' && !widget.service && note.text.trim().isEmpty && impaired.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Harap tuliskan catatan kendala untuk unit yang bermasalah.'),
+        ),
+      );
+      return;
+    }
+
+    if (widget.service && (problem.text.trim().isEmpty || action.text.trim().isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Harap isi deskripsi kendala dan tindakan servis.'),
+        ),
+      );
+      return;
+    }
+
     final command = <String, Object?>{
       'requestId': const Uuid().v4(),
       'componentId': component.id,
-      'baseVersion': component.version,
+      'expectedVersion': component.version,
       'activity': widget.service
           ? 'service'
           : widget.taskId != null
@@ -173,18 +191,16 @@ class _CheckingScreenState extends State<CheckingScreen> {
     if (!mounted) return;
     if (submission.state == SubmissionState.succeeded) {
       setState(() => leaving = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            widget.service
-                ? 'Laporan servis berhasil disimpan.'
-                : 'Pemeriksaan kondisi berhasil diperbarui.',
-          ),
-        ),
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        barrierColor: Colors.black54,
+        builder: (sheetContext) => _buildSuccessBottomSheet(sheetContext),
       );
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) Navigator.pop(context);
-      });
+      if (mounted) {
+        Navigator.pop(context, true);
+      }
     } else {
       setState(() {});
     }
@@ -225,22 +241,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                         ],
                         if (submission.error != null) ...[
                           const SizedBox(height: 16),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFEF2F2),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFFECACA)),
-                            ),
-                            child: Text(
-                              failureMessage(submission.error),
-                              style: const TextStyle(
-                                fontFamily: 'Plus Jakarta Sans',
-                                color: Color(0xFFB91C1C),
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
+                          _buildSubmissionErrorBanner(context),
                         ],
                         const SizedBox(height: 24),
                       ],
@@ -263,14 +264,15 @@ class _CheckingScreenState extends State<CheckingScreen> {
       children: [
         Row(
           children: [
-            GestureDetector(
+            PressableScale(
               onTap: blocked ? null : leave,
               child: Container(
                 width: 40,
                 height: 40,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 child: const Center(
                   child: Icon(
@@ -404,13 +406,14 @@ class _CheckingScreenState extends State<CheckingScreen> {
             ],
           ),
           if (!widget.service)
-            GestureDetector(
+            PressableScale(
               onTap: blocked ? null : () => Navigator.pop(context),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 child: const Text(
                   'Ganti',
@@ -540,7 +543,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
     required Color dotColor,
     required VoidCallback onSelect,
   }) {
-    return GestureDetector(
+    return PressableScale(
       onTap: blocked ? null : onSelect,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
@@ -869,6 +872,8 @@ class _CheckingScreenState extends State<CheckingScreen> {
 
   // Bottom Fixed Submit Button
   Widget _buildBottomSubmitBar(BuildContext context) {
+    final isSubmitting = submission.state == SubmissionState.submitting;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
       decoration: const BoxDecoration(
@@ -878,41 +883,394 @@ class _CheckingScreenState extends State<CheckingScreen> {
       child: SizedBox(
         width: double.infinity,
         height: 50,
-        child: ElevatedButton(
-          onPressed: blocked ? null : save,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF2563EB),
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
+        child: PressableScale(
+          onTap: blocked ? null : save,
+          child: Container(
+            decoration: BoxDecoration(
+              color: blocked
+                  ? const Color(0xFF94A3B8)
+                  : const Color(0xFF147CC1),
               borderRadius: BorderRadius.circular(14),
+              boxShadow: blocked
+                  ? null
+                  : const [
+                      BoxShadow(
+                        color: Color(0x25147CC1),
+                        blurRadius: 10,
+                        offset: Offset(0, 3),
+                      ),
+                    ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (isSubmitting)
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                else
+                  Icon(
+                    widget.service ? Icons.build_rounded : Icons.check_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                const SizedBox(width: 8),
+                Text(
+                  isSubmitting
+                      ? 'Menyimpan…'
+                      : widget.service
+                          ? 'Simpan & Selesaikan Servis'
+                          : 'Simpan & Selesaikan Tugas',
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubmissionErrorBanner(BuildContext context) {
+    final err = submission.error;
+    final isConflict = submission.state == SubmissionState.conflict;
+    final isUncertain = submission.state == SubmissionState.uncertain;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF2F2),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFFECACA)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Icon(
-                widget.service ? Icons.build_rounded : Icons.check_rounded,
-                color: Colors.white,
-                size: 18,
+              const Icon(
+                Icons.error_outline_rounded,
+                color: Color(0xFFB91C1C),
+                size: 20,
               ),
               const SizedBox(width: 8),
-              Text(
-                submission.state == SubmissionState.submitting
-                    ? 'Menyimpan…'
-                    : widget.service
-                        ? 'Simpan & Selesaikan Servis'
-                        : 'Simpan & Selesaikan Tugas',
-                style: const TextStyle(
+              Expanded(
+                child: Text(
+                  isConflict
+                      ? 'Konflik Data Pembaruan'
+                      : isUncertain
+                          ? 'Koneksi Terputus / Tidak Stabil'
+                          : 'Gagal Menyimpan Data',
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    color: Color(0xFFB91C1C),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            failureMessage(err),
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              color: Color(0xFF7F1D1D),
+              fontSize: 12,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (isConflict)
+                OutlinedButton.icon(
+                  onPressed: refreshing ? null : refresh,
+                  icon: const Icon(Icons.refresh_rounded, size: 16),
+                  label: const Text(
+                    'Perbarui Data Unit',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFB91C1C),
+                    side: const BorderSide(color: Color(0xFFFECACA)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                )
+              else
+                ElevatedButton.icon(
+                  onPressed: blocked
+                      ? null
+                      : (isUncertain ? submission.recover : save),
+                  icon: const Icon(Icons.replay_rounded,
+                      size: 16, color: Colors.white),
+                  label: const Text(
+                    'Coba Kirim Ulang',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFB91C1C),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuccessBottomSheet(BuildContext ctx) {
+    final isService = widget.service;
+    final isOk = condition == 'OK';
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        24,
+        16,
+        24,
+        MediaQuery.of(ctx).padding.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE2E8F0),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: const Color(0xFFDCFCE7),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.check_circle_rounded,
+                color: Color(0xFF10B981),
+                size: 36,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            isService
+                ? 'Laporan Servis Berhasil!'
+                : 'Pemeriksaan Berhasil!',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF0F172A),
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            isService
+                ? 'Catatan perbaikan telah disimpan dan status unit berhasil diperbarui.'
+                : 'Pemeriksaan rutin telah tercatat dan tersinkronisasi ke sistem.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF64748B),
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Unit Komponen',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                    Text(
+                      '${component.code} (${component.kind})',
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                  ],
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Status Kelayakan',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isOk
+                            ? const Color(0xFFDCFCE7)
+                            : (condition == 'Rusak Ringan'
+                                ? const Color(0xFFFEF3C7)
+                                : const Color(0xFFFEE2E2)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        isOk
+                            ? 'Layak Pakai (OK)'
+                            : (condition == 'Rusak Ringan'
+                                ? 'Perlu Servis'
+                                : (condition ?? 'Perlu Tindakan')),
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: isOk
+                              ? const Color(0xFF15803D)
+                              : (condition == 'Rusak Ringan'
+                                  ? const Color(0xFFB45309)
+                                  : const Color(0xFFB91C1C)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (isService && action.text.trim().isNotEmpty) ...[
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+                  ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Tindakan',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          action.text.trim(),
+                          textAlign: TextAlign.end,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF334155),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF147CC1),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: const Text(
+                'Selesai & Kembali',
+                style: TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

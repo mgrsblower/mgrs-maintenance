@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../app/app_theme.dart';
 import '../../app/gateway.dart';
+import '../../shared/pressable.dart';
 import '../history/history_screen.dart';
+import '../maintenance/checking_screen.dart';
 import 'component.dart';
 
 class ComponentDetailScreen extends StatefulWidget {
@@ -22,52 +25,124 @@ class ComponentDetailScreen extends StatefulWidget {
 
 class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
   late Future<Component> future;
+  late Future<List<Map<String, Object?>>> futureHistory;
 
   @override
   void initState() {
     super.initState();
     future = Component.load(widget.gateway, widget.id);
+    futureHistory = widget.gateway.fetchComponentHistory(widget.id);
   }
 
   void reload() => setState(() {
         future = Component.load(widget.gateway, widget.id);
+        futureHistory = widget.gateway.fetchComponentHistory(widget.id);
       });
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: FutureBuilder<Component>(
-          future: future,
-          builder: (context, snapshot) {
-            final c = snapshot.data;
-            final code = c?.code ?? 'KPL-2026-084';
-            final kind = c?.kind ?? 'Kepala';
-            final condition = c?.condition ?? 'Layak Pakai';
-            final note = c?.note ??
-                'Kondisi katup & konektor bersih, segel utuh tanpa indikasi keausan mekanis.';
+    return FutureBuilder<Component>(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            backgroundColor: AppTokens.canvas,
+            body: SafeArea(
+              child: Column(
+                children: [
+                  _buildTopAppBar(context, 'Memuat...'),
+                  const Expanded(
+                    child: Center(
+                      child: CircularProgressIndicator(color: Color(0xFF147CC1)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
 
-            return SingleChildScrollView(
+        if (snapshot.hasError || !snapshot.hasData) {
+          return Scaffold(
+            backgroundColor: AppTokens.canvas,
+            body: SafeArea(
+              child: Column(
+                children: [
+                  _buildTopAppBar(context, 'Detail Komponen'),
+                  Expanded(
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.error_outline_rounded,
+                              size: 44,
+                              color: Color(0xFFDC2626),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              failureMessage(snapshot.error),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF991B1B),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              onPressed: reload,
+                              icon: const Icon(Icons.refresh_rounded, size: 18),
+                              label: const Text('Coba Lagi'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF147CC1),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final comp = snapshot.data!;
+
+        return Scaffold(
+          backgroundColor: AppTokens.canvas,
+          body: SafeArea(
+            bottom: false,
+            child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildTopAppBar(context, kind),
+                  _buildTopAppBar(context, comp.kind),
                   const SizedBox(height: 16),
-                  _buildIdentityCard(context, code, kind, condition),
+                  _buildIdentityCard(context, comp.code, comp.kind, comp.condition),
                   const SizedBox(height: 16),
-                  _buildCurrentConditionCard(context, note),
+                  _buildCurrentConditionCard(context, comp),
                   const SizedBox(height: 16),
                   _buildHistoryCard(context),
                   const SizedBox(height: 24),
                 ],
               ),
-            );
-          },
-        ),
-      ),
+            ),
+          ),
+          bottomNavigationBar: _buildBottomActionBar(context, comp),
+        );
+      },
     );
   }
 
@@ -78,14 +153,15 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
       children: [
         Row(
           children: [
-            GestureDetector(
+            PressableScale(
               onTap: () => Navigator.of(context).pop(),
               child: Container(
                 width: 40,
                 height: 40,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF1F5F9),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
                   shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 child: const Center(
                   child: Icon(
@@ -123,18 +199,22 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
             ),
           ],
         ),
-        Container(
-          width: 40,
-          height: 40,
-          decoration: const BoxDecoration(
-            color: Color(0xFFF1F5F9),
-            shape: BoxShape.circle,
-          ),
-          child: const Center(
-            child: Icon(
-              Icons.more_horiz_rounded,
-              color: Color(0xFF0F172A),
-              size: 20,
+        PressableScale(
+          onTap: () {},
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.more_horiz_rounded,
+                color: Color(0xFF0F172A),
+                size: 20,
+              ),
             ),
           ),
         ),
@@ -306,7 +386,14 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
   }
 
   // Card 2: Catatan Kondisi Terkini
-  Widget _buildCurrentConditionCard(BuildContext context, String note) {
+  Widget _buildCurrentConditionCard(BuildContext context, Component comp) {
+    final note = comp.note != null && comp.note!.trim().isNotEmpty
+        ? comp.note!.trim()
+        : 'Tidak ada catatan kondisi khusus untuk komponen ini.';
+    final dateStr = comp.lastCheckingAt != null && comp.lastCheckingAt!.length >= 10
+        ? comp.lastCheckingAt!.substring(0, 10)
+        : 'Belum tercatat';
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -324,22 +411,22 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'Catatan Kondisi Terkini',
                 style: TextStyle(
-                  fontFamily: 'Inter',
+                  fontFamily: 'Plus Jakarta Sans',
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF0F172A),
                 ),
               ),
               Text(
-                '24 Ags 2026',
-                style: TextStyle(
-                  fontFamily: 'Inter',
+                dateStr,
+                style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
                   color: Color(0xFF64748B),
@@ -351,7 +438,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
           Text(
             note,
             style: const TextStyle(
-              fontFamily: 'Inter',
+              fontFamily: 'Plus Jakarta Sans',
               fontSize: 13,
               fontWeight: FontWeight.w500,
               color: Color(0xFF334155),
@@ -376,22 +463,20 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     shape: BoxShape.circle,
                   ),
                   child: const Center(
-                    child: Text(
-                      'SA',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF4338CA),
-                      ),
+                    child: Icon(
+                      Icons.verified_outlined,
+                      size: 14,
+                      color: Color(0xFF4338CA),
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Text(
-                  'Diperiksa oleh Salman Alfarras',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
+                Text(
+                  comp.lastCheckingAt != null
+                      ? 'Pemeriksaan terakhir: $dateStr'
+                      : 'Belum pernah dilakukan pemeriksaan',
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: Color(0xFF64748B),
@@ -436,7 +521,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                   color: Color(0xFF0F172A),
                 ),
               ),
-              GestureDetector(
+              PressableScale(
                 onTap: () {
                   Navigator.of(context).push<void>(
                     MaterialPageRoute(
@@ -455,132 +540,264 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF2563EB),
+                    fontWeight: FontWeight.w700,
+                    color: AppTokens.primary,
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          // Timeline Item 1
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Column(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF10B981),
-                      shape: BoxShape.circle,
-                    ),
+          FutureBuilder<List<Map<String, Object?>>>(
+            future: futureHistory,
+            builder: (context, histSnap) {
+              final items = histSnap.data;
+              if (items != null && items.isNotEmpty) {
+                return Column(
+                  children: items.take(3).map((item) {
+                    final activity =
+                        item['activity'] as String? ?? 'manual_check';
+                    final title = activity == 'service'
+                        ? 'Tindakan Servis'
+                        : (activity == 'periodic_check'
+                            ? 'Pemeriksaan Berkala'
+                            : 'Pemeriksaan Manual');
+                    final recordedAt = item['recordedAt']?.toString() ?? '';
+                    final dateText = recordedAt.length >= 10
+                        ? recordedAt.substring(0, 10)
+                        : 'Baru saja';
+                    final after =
+                        item['after'] is Map ? item['after'] as Map : null;
+                    final cond = after?['condition']?.toString() ?? 'OK';
+                    final actor = item['actor']?.toString() ?? 'Petugas';
+                    final dotColor = cond == 'OK'
+                        ? const Color(0xFF10B981)
+                        : (cond == 'Service' || cond == 'Rusak Berat'
+                            ? const Color(0xFFEF4444)
+                            : const Color(0xFFF59E0B));
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Column(
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: dotColor,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              Container(
+                                width: 1.5,
+                                height: 38,
+                                color: const Color(0xFFE2E8F0),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: const TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF0F172A),
+                                      ),
+                                    ),
+                                    Text(
+                                      dateText,
+                                      style: const TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '$cond • $actor',
+                                  style: const TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                );
+              }
+
+              if (histSnap.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: CircularProgressIndicator(color: Color(0xFF147CC1)),
                   ),
-                  Container(
-                    width: 1.5,
-                    height: 38,
-                    color: const Color(0xFFE2E8F0),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                );
+              }
+
+              return Container(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                alignment: Alignment.center,
+                child: const Column(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Pemeriksaan Berkala',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                        Text(
-                          '24 Ags 2026',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF64748B),
-                          ),
-                        ),
-                      ],
+                    Icon(
+                      Icons.history_rounded,
+                      size: 32,
+                      color: Color(0xFF94A3B8),
                     ),
-                    SizedBox(height: 2),
+                    SizedBox(height: 8),
                     Text(
-                      'Layak Pakai • Salman A.',
+                      'Belum ada riwayat pemeriksaan atau servis',
                       style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
                         color: Color(0xFF64748B),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
+              );
+            },
           ),
-          // Timeline Item 2
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF59E0B),
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Servis O-Ring & Pelumasan',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                        Text(
-                          '26 Jul 2026',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF64748B),
-                          ),
-                        ),
-                      ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomActionBar(BuildContext context, Component comp) {
+    final isDamaged = comp.condition != 'OK';
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        12,
+        20,
+        MediaQuery.of(context).padding.bottom + 12,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: PressableScale(
+              onTap: () async {
+                final res = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    builder: (_) => CheckingScreen(
+                      gateway: widget.gateway,
+                      component: comp,
+                      service: false,
                     ),
-                    SizedBox(height: 2),
+                  ),
+                );
+                if (res == true && mounted) {
+                  reload();
+                }
+              },
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  color: isDamaged
+                      ? const Color(0xFFF1F5F9)
+                      : const Color(0xFF147CC1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.fact_check_outlined,
+                      size: 18,
+                      color: isDamaged ? const Color(0xFF334155) : Colors.white,
+                    ),
+                    const SizedBox(width: 8),
                     Text(
-                      'Penggantian seal karet • Rian P.',
+                      'Update Kondisi',
                       style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF64748B),
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color:
+                            isDamaged ? const Color(0xFF334155) : Colors.white,
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: PressableScale(
+              onTap: () async {
+                final res = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    builder: (_) => CheckingScreen(
+                      gateway: widget.gateway,
+                      component: comp,
+                      service: true,
+                    ),
+                  ),
+                );
+                if (res == true && mounted) {
+                  reload();
+                }
+              },
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  color: isDamaged
+                      ? const Color(0xFFDC2626)
+                      : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.build_rounded,
+                      size: 18,
+                      color: isDamaged ? Colors.white : const Color(0xFF334155),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Catat Servis',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color:
+                            isDamaged ? Colors.white : const Color(0xFF334155),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ),
