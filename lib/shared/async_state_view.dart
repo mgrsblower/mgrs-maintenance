@@ -58,6 +58,60 @@ String stamp(Object? value) {
   return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year} · ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')} WIB';
 }
 
+String conditionDisplayLabel(String? condition) {
+  if (condition == null || condition.trim().isEmpty) return 'Belum Diperiksa';
+  final normalized = condition.trim();
+  switch (normalized) {
+    case 'OK':
+    case 'Layak Pakai':
+      return 'Layak Pakai';
+    case 'Service':
+    case 'Perlu Servis':
+    case 'needs_service':
+    case 'under_maintenance':
+      return 'Perlu Servis';
+    case 'Rusak Ringan':
+      return 'Rusak Ringan';
+    case 'Rusak Berat':
+    case 'Gangguan Fungsi':
+      return 'Gangguan Fungsi';
+    case 'Hilang':
+      return 'Unit Hilang';
+    default:
+      return normalized;
+  }
+}
+
+String usableDisplayLabel(Object? value) {
+  if (value == null) return 'Belum tercatat';
+  if (value == true || value == 'true' || value == 'Ya' || value == 'ya') {
+    return 'Layak Digunakan';
+  }
+  if (value == false || value == 'false' || value == 'Tidak' || value == 'tidak') {
+    return 'Tidak Boleh Digunakan';
+  }
+  return value.toString();
+}
+
+String periodDisplayLabel(String? periodId) {
+  if (periodId == null || periodId.isEmpty || periodId == 'current') {
+    return 'Bulan Berjalan';
+  }
+  final parts = periodId.split('-');
+  if (parts.length == 2) {
+    final year = parts[0];
+    final monthNum = int.tryParse(parts[1]);
+    if (monthNum != null && monthNum >= 1 && monthNum <= 12) {
+      const months = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      ];
+      return '${months[monthNum - 1]} $year';
+    }
+  }
+  return periodId;
+}
+
 class InfoLine extends StatelessWidget {
   const InfoLine(this.label, this.value, {super.key});
   final String label;

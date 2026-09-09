@@ -47,10 +47,10 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
           isLoading = false;
         });
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() {
-          error = 'Gagal memuat daftar orderan: $e';
+          error = 'Daftar orderan belum dapat dimuat. Periksa koneksi internet lalu coba lagi.';
           isLoading = false;
         });
       }
@@ -468,7 +468,7 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 40),
                 child: Text(
-                  'Orderan sewa aktif akan otomatis tersinkronisasi dari sistem web MGRS.',
+                  'Daftar orderan sewa akan otomatis muncul saat jadwal pemasangan dibuat.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'Plus Jakarta Sans',

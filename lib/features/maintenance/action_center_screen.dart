@@ -391,7 +391,7 @@ class _ActionCenterScreenState extends State<ActionCenterScreen> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Update Kondisi',
+                      'Perbarui Kondisi',
                       style: TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 13,
@@ -551,7 +551,7 @@ class _ActionCenterScreenState extends State<ActionCenterScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Pemeriksaan Periode Agustus: $completedTasks/$totalTasks Selesai',
+                    'Pemeriksaan Periode Berjalan: $completedTasks/$totalTasks Selesai',
                     style: const TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 12,
@@ -857,7 +857,7 @@ class _ActionCenterScreenState extends State<ActionCenterScreen> {
                                   size: 14, color: Colors.white),
                               SizedBox(width: 4),
                               Text(
-                                'Update Kondisi',
+                                'Perbarui Kondisi',
                                 style: TextStyle(
                                   fontFamily: 'Plus Jakarta Sans',
                                   fontSize: 12,

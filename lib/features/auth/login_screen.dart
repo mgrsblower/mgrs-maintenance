@@ -215,7 +215,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: Color(0xFF0F172A),
                             ),
                             decoration: InputDecoration(
-                              hintText: 'Enter your email or username..',
+                              hintText: 'Masukkan email atau username...',
                               hintStyle: const TextStyle(
                                 fontFamily: 'Plus Jakarta Sans',
                                 fontSize: 13,
@@ -251,7 +251,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           // Label: Password
                           const Text(
-                            'Password',
+                            'Kata Sandi',
                             style: TextStyle(
                               fontFamily: 'Plus Jakarta Sans',
                               fontSize: 12,
@@ -274,7 +274,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: Color(0xFF0F172A),
                             ),
                             decoration: InputDecoration(
-                              hintText: 'Enter your password..',
+                              hintText: 'Masukkan kata sandi...',
                               hintStyle: const TextStyle(
                                 fontFamily: 'Plus Jakarta Sans',
                                 fontSize: 13,

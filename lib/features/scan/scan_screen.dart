@@ -526,7 +526,7 @@ class _ScanScreenState extends State<ScanScreen>
               ),
               const SizedBox(height: 4),
               const Text(
-                'Sistem akan memverifikasi nomor stiker resmi pada database MGRS.',
+                'Sistem akan memeriksa nomor stiker resmi unit blower MGRS.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
@@ -553,7 +553,7 @@ class _ScanScreenState extends State<ScanScreen>
         ? 'LAYAK PAKAI'
         : (isService
             ? 'PERLU SERVIS'
-            : (isRusakBerat ? 'RUSAK BERAT' : comp.condition.toUpperCase()));
+            : (isRusakBerat ? 'GANGGUAN FUNGSI' : 'PERLU TINDAKAN'));
     final lastCheckText = comp.lastCheckingAt != null &&
             comp.lastCheckingAt!.length >= 10
         ? 'Pemeriksaan Terakhir: ${comp.lastCheckingAt!.substring(0, 10)}'
@@ -745,7 +745,7 @@ class _ScanScreenState extends State<ScanScreen>
                   Text(
                     comp.condition != 'OK'
                         ? 'Catat Servis Unit Ini'
-                        : 'Update Kondisi Unit Ini',
+                        : 'Perbarui Kondisi Unit',
                     style: const TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 14,
@@ -811,7 +811,7 @@ class _ScanScreenState extends State<ScanScreen>
                       icon: const Icon(Icons.crop_free_rounded,
                           color: Colors.white, size: 16),
                       label: const Text(
-                        'Scan Lanjut',
+                        'Pindai Berikutnya',
                         style: TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
                           fontSize: 13,

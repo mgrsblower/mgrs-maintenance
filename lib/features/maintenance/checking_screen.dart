@@ -288,7 +288,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.service ? 'Catat Servis' : 'Update Kondisi',
+                  widget.service ? 'Catat Servis' : 'Perbarui Kondisi',
                   style: const TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
                     fontSize: 18,
@@ -328,7 +328,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
               ),
               const SizedBox(width: 5),
               Text(
-                widget.service ? 'Perbaikan' : 'Ags 2026',
+                widget.service ? 'Perbaikan' : 'Rutin',
                 style: TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
                   fontSize: 11,
@@ -1115,7 +1115,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
           Text(
             isService
                 ? 'Catatan perbaikan telah disimpan dan status unit berhasil diperbarui.'
-                : 'Pemeriksaan rutin telah tercatat dan tersinkronisasi ke sistem.',
+                : 'Pemeriksaan rutin telah berhasil disimpan ke sistem MGRS.',
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontFamily: 'Plus Jakarta Sans',

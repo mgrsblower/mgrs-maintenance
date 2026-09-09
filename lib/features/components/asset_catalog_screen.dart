@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../app/gateway.dart';
+import '../../shared/async_state_view.dart';
 import '../../shared/bottom_nav_bar.dart';
 import '../../shared/pressable.dart';
 import '../components/component_detail_screen.dart';
@@ -88,19 +89,14 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
       setState(() {
         components = rows.map((r) {
           final cond = (r['kondisi'] ?? r['condition'] ?? 'OK').toString();
-          final isOk = cond == 'OK';
-          final isService = cond == 'Service';
-          final isRusakBerat = cond == 'Rusak Berat';
+          final isOk = cond == 'OK' || cond == 'Layak Pakai';
+          final isService = cond == 'Service' || cond == 'Rusak Berat' || cond == 'Gangguan Fungsi';
           final color = isOk
               ? const Color(0xFF10B981)
-              : (isService || isRusakBerat
+              : (isService
                   ? const Color(0xFFEF4444)
                   : const Color(0xFFF59E0B));
-          final condLabel = isOk
-              ? 'Layak Pakai'
-              : (isService
-                  ? 'Perlu Servis'
-                  : (isRusakBerat ? 'Gangguan Fungsi' : cond));
+          final condLabel = conditionDisplayLabel(cond);
           final updated = (r['updated_at'] ?? '').toString();
           final dateStr = updated.length >= 10
               ? updated.substring(0, 10)

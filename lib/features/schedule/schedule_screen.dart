@@ -145,7 +145,9 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             ),
             Expanded(
               child: Text(
-                month == 'current' ? 'Memuat bulan berjalan…' : month,
+                month == 'current'
+                    ? 'Memuat bulan berjalan…'
+                    : periodDisplayLabel(month),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleLarge,
               ),

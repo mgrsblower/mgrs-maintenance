@@ -79,11 +79,11 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
             else ...[
               InfoLine(
                 'Kondisi',
-                value['condition']?.toString() ?? 'Tidak tercatat',
+                conditionDisplayLabel(value['condition']?.toString()),
               ),
               InfoLine(
-                'Boleh digunakan',
-                value['usable']?.toString() ?? 'Tidak tercatat',
+                'Kelayakan pakai',
+                usableDisplayLabel(value['usable']),
               ),
               InfoLine(
                 'Gangguan fungsi',
@@ -127,7 +127,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
           InfoLine('Petugas', data['actor']?.toString() ?? 'Tidak tercatat'),
           InfoLine('Waktu pencatatan', stamp(data['recordedAt'])),
           if (data['periodId'] != null)
-            InfoLine('Periode', data['periodId'].toString()),
+            InfoLine('Periode', periodDisplayLabel(data['periodId']?.toString())),
           if (data['legacy'] == true)
             const Padding(
               padding: EdgeInsets.only(bottom: 16),
@@ -150,9 +150,9 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
             ),
             InfoLine(
               'Biaya',
-              data['costRecorded'] == true
+              data['costRecorded'] == true && data['cost'] != null
                   ? 'Rp ${data['cost']}'
-                  : 'Belum diketahui',
+                  : 'Belum dicatat',
             ),
             if (data['legacy'] == true && data['cost'] != null)
               InfoLine(

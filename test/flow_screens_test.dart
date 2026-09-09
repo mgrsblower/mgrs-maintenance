@@ -118,7 +118,7 @@ void main() {
 
     expect(find.text('ORD-2026-088'), findsOneWidget);
     expect(find.text('Detail Orderan'), findsOneWidget);
-    expect(find.text('Besok, 26 Jul 2029'), findsOneWidget);
+    expect(find.text('Jadwal belum ditentukan'), findsOneWidget);
     expect(find.text('4 Unit'), findsOneWidget);
     expect(find.text('PT Pertamina (Persero)'), findsWidgets);
     expect(find.text('Hubungi Pemesan'), findsOneWidget);
@@ -142,7 +142,7 @@ void main() {
 
     // Verify Tab 1: Update Kondisi
     expect(find.text('Pusat Tindakan'), findsOneWidget);
-    expect(find.text('Pemeriksaan Periode Agustus: 142/148 Selesai'), findsOneWidget);
+    expect(find.text('Pemeriksaan Periode Berjalan: 142/148 Selesai'), findsOneWidget);
     expect(find.text('KPL-2026-084'), findsOneWidget);
 
     // Switch to Tab 2: Servis via icon
@@ -178,7 +178,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Update Kondisi'), findsOneWidget);
+    expect(find.text('Perbarui Kondisi'), findsOneWidget);
     expect(find.text('KPL-2026-084'), findsOneWidget);
     expect(find.text('Status Kondisi Hasil Cek *'), findsOneWidget);
     expect(find.text('Layak Pakai'), findsOneWidget);
@@ -263,7 +263,7 @@ void main() {
 
     expect(find.text('Riwayat Pemeriksaan & Servis'), findsOneWidget);
     expect(find.text('Tindakan Servis'), findsOneWidget);
-    expect(find.text('OK • Teknisi Hendra'), findsOneWidget);
+    expect(find.text('Layak Pakai • Teknisi Hendra'), findsOneWidget);
   });
 
   testWidgets(
@@ -361,7 +361,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Update Kondisi'), findsOneWidget);
+    expect(find.text('Perbarui Kondisi'), findsOneWidget);
     expect(find.text('Catat Servis'), findsOneWidget);
   });
 
@@ -387,8 +387,8 @@ void main() {
 
     expect(find.text('Scanner Cepat Lapangan'), findsOneWidget);
     expect(find.text('Buka Detail'), findsOneWidget);
-    expect(find.text('Scan Lanjut'), findsOneWidget);
-    expect(find.text('Update Kondisi Unit Ini'), findsOneWidget);
+    expect(find.text('Pindai Berikutnya'), findsOneWidget);
+    expect(find.text('Perbarui Kondisi Unit'), findsOneWidget);
   });
 
   testWidgets(

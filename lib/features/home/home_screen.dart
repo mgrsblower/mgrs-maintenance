@@ -663,7 +663,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   CircleAvatar(radius: 3, backgroundColor: Color(0xFF10B981)),
                   SizedBox(width: 5),
                   Text(
-                    'Live Data',
+                    'Data Terkini',
                     style: TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 10,
@@ -939,7 +939,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  'Jadwal pemasangan akan tersinkronisasi otomatis dari sistem web.',
+                  'Jadwal pemasangan diperbarui otomatis saat ada orderan baru.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'Plus Jakarta Sans',

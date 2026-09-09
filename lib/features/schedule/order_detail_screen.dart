@@ -59,10 +59,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           _isLoading = false;
         });
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() {
-          _error = 'Gagal memuat detail orderan: $e';
+          _error = 'Detail orderan belum dapat dimuat. Silakan periksa koneksi lalu coba lagi.';
           _isLoading = false;
         });
       }
@@ -247,7 +247,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       Text(
                         order?.tanggalPemasangan != null
                             ? order!.formattedDate
-                            : 'Besok, 26 Jul 2029',
+                            : 'Jadwal belum ditentukan',
                         style: const TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
                           fontSize: 13,
@@ -360,7 +360,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     if (!ok && context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Tidak dapat membuka link Google Maps.'),
+                          content: Text('Peta lokasi acara tidak dapat dibuka.'),
                         ),
                       );
                     }
@@ -416,7 +416,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      order?.alamat ?? 'JCC Senayan, Hall B – Jakarta',
+                      order?.alamat ?? 'Lokasi acara belum dicatat',
                       style: const TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 13,
@@ -441,7 +441,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   if (!ok && context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Tidak dapat membuka link Google Maps.'),
+                        content: Text('Peta lokasi acara tidak dapat dibuka.'),
                       ),
                     );
                   }

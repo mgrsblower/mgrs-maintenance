@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../app/app_theme.dart';
 import '../../app/gateway.dart';
+import '../../shared/async_state_view.dart';
 import '../../shared/pressable.dart';
 import '../history/history_screen.dart';
 import '../maintenance/checking_screen.dart';
@@ -130,7 +131,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                 children: [
                   _buildTopAppBar(context, comp.kind),
                   const SizedBox(height: 16),
-                  _buildIdentityCard(context, comp.code, comp.kind, comp.condition),
+                  _buildIdentityCard(context, comp),
                   const SizedBox(height: 16),
                   _buildCurrentConditionCard(context, comp),
                   const SizedBox(height: 16),
@@ -222,15 +223,23 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
     );
   }
 
-  // Card 1: Identity Card (KPL-2026-084, Layak Pakai, Pemeriksaan Terakhir 24 Ags 2026, Total 8 Kali)
+  // Card 1: Identity Card
   Widget _buildIdentityCard(
     BuildContext context,
-    String code,
-    String kind,
-    String condition,
+    Component comp,
   ) {
-    final isGood = condition == 'Layak Pakai' || condition == 'OK';
-    final badgeColor = isGood ? const Color(0xFF10B981) : const Color(0xFFF59E0B);
+    final label = conditionDisplayLabel(comp.condition);
+    final isGood = comp.condition == 'Layak Pakai' || comp.condition == 'OK';
+    final isService = comp.condition == 'Service' || comp.condition == 'Rusak Berat';
+    final badgeColor = isGood
+        ? const Color(0xFF10B981)
+        : (isService ? const Color(0xFFEF4444) : const Color(0xFFF59E0B));
+    final lastCheckStr = comp.lastCheckingAt != null && comp.lastCheckingAt!.length >= 10
+        ? comp.lastCheckingAt!.substring(0, 10)
+        : 'Belum tercatat';
+    final serviceStr = comp.lastServiceAt != null && comp.lastServiceAt!.length >= 10
+        ? 'Servis: ${comp.lastServiceAt!.substring(0, 10)}'
+        : 'Tercatat di MGRS';
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -256,7 +265,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    code,
+                    comp.code,
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 22,
@@ -267,7 +276,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    'Komponen $kind Utama',
+                    'Komponen ${comp.kind} Utama',
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 13,
@@ -296,7 +305,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     ),
                     const SizedBox(width: 5),
                     Text(
-                      condition,
+                      label,
                       style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 11,
@@ -323,7 +332,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'Pemeriksaan Terakhir',
                         style: TextStyle(
                           fontFamily: 'Inter',
@@ -332,12 +341,12 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                           color: Color(0xFF64748B),
                         ),
                       ),
-                      SizedBox(height: 3),
+                      const SizedBox(height: 3),
                       Text(
-                        '24 Ags 2026',
-                        style: TextStyle(
+                        lastCheckStr,
+                        style: const TextStyle(
                           fontFamily: 'Inter',
-                          fontSize: 14,
+                          fontSize: 13,
                           fontWeight: FontWeight.w800,
                           color: Color(0xFF0F172A),
                         ),
@@ -348,15 +357,15 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                 Container(
                   width: 1,
                   height: 32,
-                  color: Color(0xFFE2E8F0),
+                  color: const Color(0xFFE2E8F0),
                 ),
-                SizedBox(width: 16),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Total Pemeriksaan',
+                      const Text(
+                        'Status Layanan',
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 11,
@@ -364,12 +373,12 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                           color: Color(0xFF64748B),
                         ),
                       ),
-                      SizedBox(height: 3),
+                      const SizedBox(height: 3),
                       Text(
-                        '8 Kali (1 Servis)',
-                        style: TextStyle(
+                        serviceStr,
+                        style: const TextStyle(
                           fontFamily: 'Inter',
-                          fontSize: 14,
+                          fontSize: 13,
                           fontWeight: FontWeight.w800,
                           color: Color(0xFF0F172A),
                         ),
@@ -629,7 +638,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '$cond • $actor',
+                                  '${conditionDisplayLabel(cond)} • $actor',
                                   style: const TextStyle(
                                     fontFamily: 'Inter',
                                     fontSize: 11,
@@ -736,7 +745,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Update Kondisi',
+                      'Perbarui Kondisi',
                       style: TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 14,
