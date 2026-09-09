@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -115,15 +116,18 @@ class _ScanScreenState extends State<ScanScreen>
     }
   }
 
-  void _onTapFocus(TapDownDetails details, BoxConstraints constraints) {
-    final dx = details.localPosition.dx;
-    final dy = details.localPosition.dy;
-    final nx = (dx / constraints.maxWidth).clamp(0.0, 1.0);
-    final ny = (dy / constraints.maxHeight).clamp(0.0, 1.0);
+  void _onTapFocus(TapDownDetails details, Size screenSize) {
+    final dx = details.globalPosition.dx;
+    final dy = details.globalPosition.dy;
+    final nx = (dx / screenSize.width).clamp(0.0, 1.0);
+    final ny = (dy / screenSize.height).clamp(0.0, 1.0);
 
     HapticFeedback.lightImpact();
     try {
-      camera.setFocusPoint(Offset(nx, ny));
+      final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
+      // In iOS portrait back camera, sensor X is portrait Y, sensor Y is 1.0 - portrait X
+      final targetPoint = isIOS ? Offset(ny, 1.0 - nx) : Offset(nx, ny);
+      camera.setFocusPoint(targetPoint);
     } catch (_) {}
 
     _focusTimer?.cancel();
@@ -231,376 +235,436 @@ class _ScanScreenState extends State<ScanScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // 1. Top Bar: Close (X) button + "Scanner Cepat Lapangan" badge + Flash toggle
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  PressableScale(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.14),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.15),
-                        ),
-                      ),
-                      child: const Center(
-                        child: Icon(Icons.close_rounded,
-                            color: Colors.white, size: 22),
-                      ),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.45),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.18)),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircleAvatar(
-                            radius: 3.5, backgroundColor: Color(0xFF10B981)),
-                        SizedBox(width: 7),
-                        Text(
-                          'Scanner Cepat Lapangan',
-                          style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  ValueListenableBuilder<MobileScannerState>(
-                    valueListenable: camera,
-                    builder: (context, state, child) {
-                      final torchState = state.torchState;
-                      final isOn = torchState == TorchState.on;
-                      final isUnavailable = torchState == TorchState.unavailable;
+    final screenSize = MediaQuery.sizeOf(context);
 
-                      return PressableScale(
-                        onTap: isUnavailable ? null : () => camera.toggleTorch(),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: isOn
-                                ? const Color(0xFFFBBF24).withValues(alpha: 0.25)
-                                : Colors.white.withValues(alpha: 0.14),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isOn
-                                  ? const Color(0xFFFBBF24)
-                                  : Colors.white.withValues(alpha: 0.15),
-                              width: isOn ? 1.5 : 1.0,
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 1. Full-Screen Immersive Camera Preview (Edge-to-Edge)
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTapDown: (details) => _onTapFocus(details, screenSize),
+              child: MobileScanner(
+                controller: camera,
+                fit: BoxFit.cover,
+                onDetect: (capture) {
+                  for (final b in capture.barcodes) {
+                    final v = b.rawValue;
+                    if (v != null && v.isNotEmpty) {
+                      unawaited(lookup(v));
+                      break;
+                    }
+                  }
+                },
+                errorBuilder: (context, error) =>
+                    _buildCameraErrorView(context, error),
+              ),
+            ),
+          ),
+
+          // 2. Subtle Dark Gradient Vignette for Top Bar Readability
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 160,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.75),
+                      Colors.black.withValues(alpha: 0.30),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // 3. Center Viewfinder Frame (food-scanner-camera wireframe style with animated laser)
+          // Centered slightly higher than middle so it balances perfectly above the bottom sheet
+          Align(
+            alignment: const Alignment(0, -0.22),
+            child: IgnorePointer(
+              child: SizedBox(
+                width: 280,
+                height: 280,
+                child: Stack(
+                  children: [
+                    // Top-Left Corner
+                    Align(
+                      alignment: Alignment.topLeft,
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: const BoxDecoration(
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(26),
+                          ),
+                          border: Border(
+                            top: BorderSide(color: Colors.white, width: 3.5),
+                            left: BorderSide(color: Colors.white, width: 3.5),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Top-Right Corner
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: const BoxDecoration(
+                          borderRadius: BorderRadius.only(
+                            topRight: Radius.circular(26),
+                          ),
+                          border: Border(
+                            top: BorderSide(color: Colors.white, width: 3.5),
+                            right: BorderSide(color: Colors.white, width: 3.5),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Bottom-Left Corner
+                    Align(
+                      alignment: Alignment.bottomLeft,
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: const BoxDecoration(
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(26),
+                          ),
+                          border: Border(
+                            bottom: BorderSide(color: Colors.white, width: 3.5),
+                            left: BorderSide(color: Colors.white, width: 3.5),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Bottom-Right Corner
+                    Align(
+                      alignment: Alignment.bottomRight,
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: const BoxDecoration(
+                          borderRadius: BorderRadius.only(
+                            bottomRight: Radius.circular(26),
+                          ),
+                          border: Border(
+                            bottom: BorderSide(color: Colors.white, width: 3.5),
+                            right: BorderSide(color: Colors.white, width: 3.5),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Animated Scanning Laser Beam from food-scanner-camera wireframe
+                    AnimatedBuilder(
+                      animation: _laserAnimation,
+                      builder: (context, child) {
+                        final t = _laserAnimation.value;
+                        // Moves between 10% and 90% (28px to 252px)
+                        final posY = 28.0 + t * (280.0 - 56.0);
+                        final opacity = (t < 0.1
+                                ? (t / 0.1)
+                                : (t > 0.9 ? ((1.0 - t) / 0.1) : 1.0))
+                            .clamp(0.0, 1.0);
+
+                        return Positioned(
+                          top: posY,
+                          left: 6,
+                          right: 6,
+                          child: Opacity(
+                            opacity: opacity,
+                            child: Container(
+                              height: 2.5,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(2),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.white
+                                        .withValues(alpha: 0.95),
+                                    blurRadius: 10,
+                                    spreadRadius: 1,
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.white
+                                        .withValues(alpha: 0.6),
+                                    blurRadius: 20,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                          child: Center(
-                            child: Icon(
-                              isOn
-                                  ? Icons.flash_on_rounded
-                                  : Icons.flash_off_rounded,
-                              color: isOn
-                                  ? const Color(0xFFFBBF24)
-                                  : (isUnavailable
-                                      ? Colors.white38
-                                      : Colors.white),
-                              size: 20,
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // 4. Touch-to-Focus Animated Ring (Apple Camera Yellow Target)
+          if (_focusPoint != null && _showFocusRing)
+            Positioned(
+              left: (_focusPoint!.dx - 32).clamp(
+                0.0,
+                screenSize.width - 64,
+              ),
+              top: (_focusPoint!.dy - 32).clamp(
+                0.0,
+                screenSize.height - 64,
+              ),
+              child: IgnorePointer(
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 1.3, end: 1.0),
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutBack,
+                  builder: (context, scale, child) {
+                    return Transform.scale(
+                      scale: scale,
+                      child: Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: const Color(0xFFFBBF24),
+                            width: 1.8,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Center(
+                          child: SizedBox(
+                            width: 6,
+                            height: 6,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: Color(0xFFFBBF24),
+                                shape: BoxShape.circle,
+                              ),
                             ),
                           ),
                         ),
-                      );
-                    },
-                  ),
-                ],
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
 
-            // 2. Viewfinder Area
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Camera Preview with Tap-to-Focus
-                      Positioned.fill(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.translucent,
-                            onTapDown: (details) =>
-                                _onTapFocus(details, constraints),
-                            child: MobileScanner(
-                              controller: camera,
-                              onDetect: (capture) {
-                                for (final b in capture.barcodes) {
-                                  final v = b.rawValue;
-                                  if (v != null && v.isNotEmpty) {
-                                    unawaited(lookup(v));
-                                    break;
-                                  }
-                                }
-                              },
-                              errorBuilder: (context, error) =>
-                                  _buildCameraErrorView(context, error),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Touch-to-Focus Animated Ring (Apple Camera Yellow Target)
-                      if (_focusPoint != null && _showFocusRing)
-                        Positioned(
-                          left: (_focusPoint!.dx - 32).clamp(
-                            0.0,
-                            constraints.maxWidth - 64,
-                          ),
-                          top: (_focusPoint!.dy - 32).clamp(
-                            0.0,
-                            constraints.maxHeight - 64,
-                          ),
-                          child: IgnorePointer(
-                            child: TweenAnimationBuilder<double>(
-                              tween: Tween(begin: 1.3, end: 1.0),
-                              duration: const Duration(milliseconds: 220),
-                              curve: Curves.easeOutBack,
-                              builder: (context, scale, child) {
-                                return Transform.scale(
-                                  scale: scale,
-                                  child: Container(
-                                    width: 64,
-                                    height: 64,
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: const Color(0xFFFBBF24),
-                                        width: 1.8,
-                                      ),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Center(
-                                      child: SizedBox(
-                                        width: 6,
-                                        height: 6,
-                                        child: DecoratedBox(
-                                          decoration: BoxDecoration(
-                                            color: Color(0xFFFBBF24),
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-
-                      // Viewfinder Frame (food-scanner-camera wireframe style with animated laser)
-                      SizedBox(
-                        width: 280,
-                        height: 280,
-                        child: Stack(
-                          children: [
-                            // Top-Left Corner
-                            Align(
-                              alignment: Alignment.topLeft,
-                              child: Container(
-                                width: 44,
-                                height: 44,
-                                decoration: const BoxDecoration(
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: Radius.circular(26),
-                                  ),
-                                  border: Border(
-                                    top: BorderSide(color: Colors.white, width: 3.5),
-                                    left: BorderSide(color: Colors.white, width: 3.5),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // Top-Right Corner
-                            Align(
-                              alignment: Alignment.topRight,
-                              child: Container(
-                                width: 44,
-                                height: 44,
-                                decoration: const BoxDecoration(
-                                  borderRadius: BorderRadius.only(
-                                    topRight: Radius.circular(26),
-                                  ),
-                                  border: Border(
-                                    top: BorderSide(color: Colors.white, width: 3.5),
-                                    right: BorderSide(color: Colors.white, width: 3.5),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // Bottom-Left Corner
-                            Align(
-                              alignment: Alignment.bottomLeft,
-                              child: Container(
-                                width: 44,
-                                height: 44,
-                                decoration: const BoxDecoration(
-                                  borderRadius: BorderRadius.only(
-                                    bottomLeft: Radius.circular(26),
-                                  ),
-                                  border: Border(
-                                    bottom: BorderSide(color: Colors.white, width: 3.5),
-                                    left: BorderSide(color: Colors.white, width: 3.5),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // Bottom-Right Corner
-                            Align(
-                              alignment: Alignment.bottomRight,
-                              child: Container(
-                                width: 44,
-                                height: 44,
-                                decoration: const BoxDecoration(
-                                  borderRadius: BorderRadius.only(
-                                    bottomRight: Radius.circular(26),
-                                  ),
-                                  border: Border(
-                                    bottom: BorderSide(color: Colors.white, width: 3.5),
-                                    right: BorderSide(color: Colors.white, width: 3.5),
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            // Animated Scanning Laser Beam from food-scanner-camera wireframe
-                            AnimatedBuilder(
-                              animation: _laserAnimation,
-                              builder: (context, child) {
-                                final t = _laserAnimation.value;
-                                // Moves between 10% and 90% (28px to 252px)
-                                final posY = 28.0 + t * (280.0 - 56.0);
-                                final opacity = (t < 0.1
-                                        ? (t / 0.1)
-                                        : (t > 0.9 ? ((1.0 - t) / 0.1) : 1.0))
-                                    .clamp(0.0, 1.0);
-
-                                return Positioned(
-                                  top: posY,
-                                  left: 6,
-                                  right: 6,
-                                  child: Opacity(
-                                    opacity: opacity,
-                                    child: Container(
-                                      height: 2.5,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(2),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.white
-                                                .withValues(alpha: 0.95),
-                                            blurRadius: 10,
-                                            spreadRadius: 1,
-                                          ),
-                                          BoxShadow(
-                                            color: Colors.white
-                                                .withValues(alpha: 0.6),
-                                            blurRadius: 20,
-                                            spreadRadius: 2,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Lens & Zoom Switcher Pill (0.5x | 1x | 2x)
-                      Positioned(
-                        bottom: 48,
-                        child: Container(
-                          padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.65),
-                            borderRadius: BorderRadius.circular(22),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.18),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _buildLensOption('0.5x'),
-                              const SizedBox(width: 4),
-                              _buildLensOption('1x'),
-                              const SizedBox(width: 4),
-                              _buildLensOption('2x'),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      // Bottom Guide text
-                      Positioned(
-                        bottom: 16,
-                        child: Text(
-                          'Ketuk layar untuk fokus • Arahkan barcode ke kotak',
-                          style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            color: Colors.white.withValues(alpha: 0.75),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+          // 5. Lens & Zoom Switcher Pill + Tap-to-Focus Guide
+          Align(
+            alignment: const Alignment(0, 0.30),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.65),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.20),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.35),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
                       ),
                     ],
-                  );
-                },
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildLensOption('0.5x'),
+                      const SizedBox(width: 4),
+                      _buildLensOption('1x'),
+                      const SizedBox(width: 4),
+                      _buildLensOption('2x'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                IgnorePointer(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.45),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Ketuk layar untuk fokus • Arahkan barcode ke kotak',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // 6. Floating Top Bar
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    PressableScale(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.45),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: const Center(
+                          child: Icon(Icons.close_rounded,
+                              color: Colors.white, size: 22),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.55),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircleAvatar(
+                              radius: 3.5, backgroundColor: Color(0xFF10B981)),
+                          SizedBox(width: 7),
+                          Text(
+                            'Scanner Cepat Lapangan',
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ValueListenableBuilder<MobileScannerState>(
+                      valueListenable: camera,
+                      builder: (context, state, child) {
+                        final torchState = state.torchState;
+                        final isOn = torchState == TorchState.on;
+                        final isUnavailable =
+                            torchState == TorchState.unavailable;
+
+                        return PressableScale(
+                          onTap: isUnavailable
+                              ? null
+                              : () => camera.toggleTorch(),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: isOn
+                                  ? const Color(0xFFFBBF24)
+                                      .withValues(alpha: 0.3)
+                                  : Colors.black.withValues(alpha: 0.45),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isOn
+                                    ? const Color(0xFFFBBF24)
+                                    : Colors.white.withValues(alpha: 0.2),
+                                width: isOn ? 1.5 : 1.0,
+                              ),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                isOn
+                                    ? Icons.flash_on_rounded
+                                    : Icons.flash_off_rounded,
+                                color: isOn
+                                    ? const Color(0xFFFBBF24)
+                                    : (isUnavailable
+                                        ? Colors.white38
+                                        : Colors.white),
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
+          ),
 
-            // 3. Bottom Scanned Result Card (White Sheet)
-            _buildScannedResultSheet(context),
-          ],
-        ),
+          // 7. Docked Bottom Sheet
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _buildScannedResultSheet(context),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildScannedResultSheet(BuildContext context) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+
     if (scannedComponent == null) {
       return Container(
         width: double.infinity,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(28),
+            topRight: Radius.circular(28),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.25),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            ),
+          ],
         ),
-        padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+        padding: EdgeInsets.fromLTRB(20, 14, 20, 16 + bottomInset),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -751,14 +815,21 @@ class _ScanScreenState extends State<ScanScreen>
 
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(28),
+          topRight: Radius.circular(28),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
       ),
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+      padding: EdgeInsets.fromLTRB(20, 14, 20, 16 + bottomInset),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
