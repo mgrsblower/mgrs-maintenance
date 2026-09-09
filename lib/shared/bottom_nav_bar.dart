@@ -208,13 +208,13 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                                       : const Duration(milliseconds: 260),
                                   curve: Curves.easeOutBack,
                                   left: currentLeft,
-                                  top: _isEngaged ? -5 : 0,
-                                  bottom: _isEngaged ? -5 : 0,
+                                  top: _isEngaged ? -6 : 0,
+                                  bottom: _isEngaged ? -6 : 0,
                                   width: tabWidth,
                                   child: AnimatedScale(
                                     duration: const Duration(milliseconds: 180),
                                     curve: Curves.easeOutBack,
-                                    scale: _isEngaged ? 1.06 : 1.0,
+                                    scale: _isEngaged ? 1.08 : 1.0,
                                     child: _buildLiquidGlassBubble(),
                                   ),
                                 ),
@@ -292,11 +292,11 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       margin: EdgeInsets.symmetric(
-        horizontal: _isEngaged ? 1.0 : 2.5,
+        horizontal: _isEngaged ? 4.0 : 5.0,
         vertical: _isEngaged ? 0.0 : 1.5,
       ),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(_isEngaged ? 26 : 24),
+        borderRadius: BorderRadius.circular(36), // True stadium capsule (100% smooth curves)
         // Prismatic chromatic dispersion halo on glass rim (Vivid rainbow when pressed/dragging!)
         gradient: _isEngaged
             ? const SweepGradient(
@@ -359,7 +359,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
       child: Container(
         margin: EdgeInsets.all(_isEngaged ? 2.2 : 1.5), // Glass rim thickness
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(_isEngaged ? 24 : 22),
+          borderRadius: BorderRadius.circular(34),
           // Refractive liquid core
           gradient: LinearGradient(
             begin: Alignment.topCenter,
