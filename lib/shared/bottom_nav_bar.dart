@@ -46,6 +46,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.currentIndex != widget.currentIndex && !_isDragging) {
       _lastHapticTab = widget.currentIndex;
+      _pressedIndex = null;
     }
   }
 
@@ -136,7 +137,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                               final index = (x / tabWidth).floor().clamp(0, 2);
                               setState(() {
                                 _isPressed = false;
-                                _pressedIndex = null;
+                                _pressedIndex = index;
                               });
                               HapticFeedback.lightImpact();
                               if (index != widget.currentIndex) {
@@ -182,7 +183,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                                 _isPressed = false;
                                 _dragX = null;
                                 _hoveredIndex = null;
-                                _pressedIndex = null;
+                                _pressedIndex = finalTab;
                               });
                               HapticFeedback.lightImpact();
                               if (finalTab != widget.currentIndex) {

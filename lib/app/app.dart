@@ -167,11 +167,7 @@ class _MaintenanceHomeState extends State<MaintenanceHome> {
   void _onNavigateToTab(int index) {
     if (tab == index) return;
     setState(() => tab = index);
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 320),
-      curve: Curves.easeInOutCubic,
-    );
+    _pageController.jumpToPage(index);
   }
 
   void openScannerModal() {
