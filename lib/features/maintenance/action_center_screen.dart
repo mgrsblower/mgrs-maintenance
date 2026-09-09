@@ -273,7 +273,7 @@ class _ActionCenterScreenState extends State<ActionCenterScreen> {
                           const SizedBox(height: 14),
                           _buildServisList(context),
                         ],
-                        const SizedBox(height: 90), // Spacing for bottom nav
+                        const SizedBox(height: 110), // Spacing for bottom nav
                       ],
                     ),
                   ),

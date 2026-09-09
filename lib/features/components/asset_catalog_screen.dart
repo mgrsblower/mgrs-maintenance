@@ -165,7 +165,7 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
                       _buildCategoryChips(context),
                       const SizedBox(height: 16),
                       _buildComponentList(context, filtered),
-                      const SizedBox(height: 90), // Spacing for floating navbar
+                      const SizedBox(height: 110), // Spacing for floating navbar
                     ],
                   ),
                 ),

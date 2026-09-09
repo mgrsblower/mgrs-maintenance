@@ -128,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         _buildUnitStatusSection(context),
                         const SizedBox(height: 20),
                         _buildUpcomingOrdersSection(context),
-                        const SizedBox(height: 90), // Spacing for floating navbar
+                        const SizedBox(height: 110), // Spacing for floating navbar
                       ],
                     ),
                   ),

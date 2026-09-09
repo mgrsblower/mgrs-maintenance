@@ -51,9 +51,10 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
     return Container(
       color: Colors.transparent,
-      padding: const EdgeInsets.fromLTRB(20, 6, 20, 22),
+      padding: EdgeInsets.fromLTRB(20, 6, 20, bottomInset > 0 ? bottomInset + 4 : 22),
       child: Row(
         children: [
           // Elevated Frosted Glass Capsule Nav Bar
@@ -70,9 +71,14 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                         borderRadius: BorderRadius.circular(30),
                         boxShadow: const [
                           BoxShadow(
-                            color: Color(0x140F172A),
-                            blurRadius: 18,
-                            offset: Offset(0, 4),
+                            color: Color(0x1A0F172A),
+                            blurRadius: 20,
+                            offset: Offset(0, 6),
+                          ),
+                          BoxShadow(
+                            color: Color(0x0A0F172A),
+                            blurRadius: 6,
+                            offset: Offset(0, 2),
                           ),
                         ],
                       ),
@@ -85,7 +91,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                               color: Colors.white.withValues(alpha: 0.88),
                               borderRadius: BorderRadius.circular(30),
                               border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.6),
+                                color: const Color(0xFFE2E8F0),
                                 width: 1.2,
                               ),
                             ),
@@ -271,6 +277,11 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                     color: Color(0x33147CC1),
                     blurRadius: 14,
                     offset: Offset(0, 4),
+                  ),
+                  BoxShadow(
+                    color: Color(0x140F172A),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
                   ),
                 ],
               ),
