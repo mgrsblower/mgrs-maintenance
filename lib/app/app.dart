@@ -179,39 +179,71 @@ class _MaintenanceHomeState extends State<MaintenanceHome> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    extendBody: true,
-    backgroundColor: const Color(0xFFFBFBFB),
-    body: PageView(
-      controller: _pageController,
-      onPageChanged: (index) => setState(() => tab = index),
-      physics: const BouncingScrollPhysics(),
-      children: [
-        HomeScreen(
-          gateway: widget.gateway,
-          user: widget.user,
-          showBottomNav: false,
-          onNavigateToTab: _onNavigateToTab,
-          onOpenScanner: openScannerModal,
-        ),
-        AssetCatalogScreen(
-          gateway: widget.gateway,
-          showBottomNav: false,
-          onNavigateToTab: _onNavigateToTab,
-          onOpenScanner: openScannerModal,
-        ),
-        ActionCenterScreen(
-          gateway: widget.gateway,
-          showBottomNav: false,
-          onNavigateToTab: _onNavigateToTab,
-          onOpenScanner: openScannerModal,
-        ),
-      ],
-    ),
-    bottomNavigationBar: AppBottomNavBar(
-      currentIndex: tab,
-      onNavigateToTab: _onNavigateToTab,
-      onOpenScanner: openScannerModal,
-    ),
-  );
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final scrimHeight = 98.0 + bottomInset;
+
+    return Scaffold(
+      extendBody: true,
+      backgroundColor: const Color(0xFFFBFBFB),
+      body: Stack(
+        children: [
+          PageView(
+            controller: _pageController,
+            onPageChanged: (index) => setState(() => tab = index),
+            physics: const BouncingScrollPhysics(),
+            children: [
+              HomeScreen(
+                gateway: widget.gateway,
+                user: widget.user,
+                showBottomNav: false,
+                onNavigateToTab: _onNavigateToTab,
+                onOpenScanner: openScannerModal,
+              ),
+              AssetCatalogScreen(
+                gateway: widget.gateway,
+                showBottomNav: false,
+                onNavigateToTab: _onNavigateToTab,
+                onOpenScanner: openScannerModal,
+              ),
+              ActionCenterScreen(
+                gateway: widget.gateway,
+                showBottomNav: false,
+                onNavigateToTab: _onNavigateToTab,
+                onOpenScanner: openScannerModal,
+              ),
+            ],
+          ),
+          // Native iOS style bottom gradient scrim (fades content softly beneath floating navbar)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: scrimHeight,
+            child: IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      const Color(0xFFFBFBFB).withValues(alpha: 0.96),
+                      const Color(0xFFFBFBFB).withValues(alpha: 0.65),
+                      const Color(0xFFFBFBFB).withValues(alpha: 0.0),
+                    ],
+                    stops: const [0.0, 0.50, 1.0],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: AppBottomNavBar(
+        currentIndex: tab,
+        onNavigateToTab: _onNavigateToTab,
+        onOpenScanner: openScannerModal,
+      ),
+    );
+  }
 }

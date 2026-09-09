@@ -80,7 +80,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(30),
                         child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                          filter: ImageFilter.blur(sigmaX: 2, sigmaY: 3),
                           child: Container(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
