@@ -51,10 +51,9 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
     return Container(
       color: Colors.transparent,
-      padding: EdgeInsets.fromLTRB(20, 6, 20, bottomInset > 0 ? bottomInset + 4 : 22),
+      padding: const EdgeInsets.fromLTRB(20, 6, 20, 22),
       child: Row(
         children: [
           // Elevated Frosted Glass Capsule Nav Bar
@@ -71,14 +70,9 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                         borderRadius: BorderRadius.circular(30),
                         boxShadow: const [
                           BoxShadow(
-                            color: Color(0x1A0F172A),
-                            blurRadius: 20,
-                            offset: Offset(0, 6),
-                          ),
-                          BoxShadow(
-                            color: Color(0x0A0F172A),
-                            blurRadius: 6,
-                            offset: Offset(0, 2),
+                            color: Color(0x140F172A),
+                            blurRadius: 18,
+                            offset: Offset(0, 4),
                           ),
                         ],
                       ),
@@ -88,10 +82,10 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.65),
+                              color: Colors.white.withValues(alpha: 0.88),
                               borderRadius: BorderRadius.circular(30),
                               border: Border.all(
-                                color: const Color(0xFFE2E8F0),
+                                color: Colors.white.withValues(alpha: 0.6),
                                 width: 1.2,
                               ),
                             ),
@@ -278,11 +272,6 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                     blurRadius: 14,
                     offset: Offset(0, 4),
                   ),
-                  BoxShadow(
-                    color: Color(0x140F172A),
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
                 ],
               ),
               child: const Center(
@@ -307,94 +296,126 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
         vertical: _isEngaged ? 0.0 : 1.5,
       ),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(36), // True stadium capsule
-        // Pure crystal liquid glass (Clean, clear glass without rainbow)
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.white.withValues(alpha: _isEngaged ? 0.95 : 0.88),
-            const Color(0xFFE0F2FE).withValues(alpha: _isEngaged ? 0.82 : 0.65),
-          ],
-        ),
-        border: Border.all(
-          color: _isEngaged
-              ? const Color(0xFF147CC1).withValues(alpha: 0.40)
-              : Colors.white.withValues(alpha: 0.90),
-          width: 1.5,
-        ),
+        borderRadius: BorderRadius.circular(36), // True stadium capsule (100% smooth curves)
+        // Prismatic chromatic dispersion halo on glass rim (Vivid rainbow when pressed/dragging!)
+        gradient: _isEngaged
+            ? const SweepGradient(
+                colors: [
+                  Color(0xFFFFFFFF), // Specular White
+                  Color(0xFF22D3EE), // Vivid Cyan
+                  Color(0xFF4ADE80), // Vivid Emerald/Lime
+                  Color(0xFFFACC15), // Electric Gold/Yellow
+                  Color(0xFFFB923C), // Prismatic Orange
+                  Color(0xFFF43F5E), // Prismatic Pink/Red
+                  Color(0xFFA855F7), // Prismatic Purple
+                  Color(0xFF38BDF8), // Prismatic Light Blue
+                  Color(0xFFFFFFFF),
+                ],
+              )
+            : const SweepGradient(
+                colors: [
+                  Color(0xB3FFFFFF),
+                  Color(0x7767E8F9),
+                  Color(0x77F472B6),
+                  Color(0x77FDE047),
+                  Color(0xB3FFFFFF),
+                ],
+              ),
         boxShadow: [
           if (_isEngaged) ...[
             // 3D floating elevation shadow when lens lifts off navbar
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.12),
-              blurRadius: 14,
-              offset: const Offset(0, 5),
+              color: Colors.black.withValues(alpha: 0.20),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
             ),
             // Cobalt refraction glow
             BoxShadow(
-              color: const Color(0xFF147CC1).withValues(alpha: 0.25),
-              blurRadius: 12,
-              offset: const Offset(0, 2),
+              color: const Color(0xFF147CC1).withValues(alpha: 0.35),
+              blurRadius: 16,
+              spreadRadius: 1,
+              offset: const Offset(0, 3),
+            ),
+            // Top specular rim bounce
+            BoxShadow(
+              color: Colors.white.withValues(alpha: 0.85),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
             ),
           ] else ...[
             BoxShadow(
-              color: const Color(0xFF147CC1).withValues(alpha: 0.12),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: const Color(0xFF147CC1).withValues(alpha: 0.16),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
             BoxShadow(
-              color: Colors.white.withValues(alpha: 0.8),
-              blurRadius: 4,
+              color: Colors.white.withValues(alpha: 0.6),
+              blurRadius: 6,
               offset: const Offset(0, -1),
             ),
           ],
         ],
       ),
-      child: Stack(
-        children: [
-          // Top specular curved reflection
-          Positioned(
-            top: 2,
-            left: 10,
-            right: 10,
-            height: _isEngaged ? 12 : 9,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.white.withValues(alpha: _isEngaged ? 0.95 : 0.85),
-                    Colors.white.withValues(alpha: 0.0),
-                  ],
-                ),
-              ),
-            ),
+      child: Container(
+        margin: EdgeInsets.all(_isEngaged ? 2.2 : 1.5), // Glass rim thickness
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(34),
+          // Refractive liquid core
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white.withValues(alpha: _isEngaged ? 0.98 : 0.94),
+              const Color(0xFFE0F2FE)
+                  .withValues(alpha: _isEngaged ? 0.85 : 0.70),
+            ],
           ),
-          // Bottom subtle reflection arc
-          if (_isEngaged)
+        ),
+        child: Stack(
+          children: [
+            // Top specular curved reflection
             Positioned(
-              bottom: 2,
-              left: 14,
-              right: 14,
-              height: 6,
+              top: 2,
+              left: 10,
+              right: 10,
+              height: _isEngaged ? 12 : 9,
               child: Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(8),
                   gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
                     colors: [
-                      Colors.white.withValues(alpha: 0.45),
+                      Colors.white.withValues(alpha: _isEngaged ? 0.95 : 0.85),
                       Colors.white.withValues(alpha: 0.0),
                     ],
                   ),
                 ),
               ),
             ),
-        ],
+            // Bottom subtle reflection arc
+            if (_isEngaged)
+              Positioned(
+                bottom: 2,
+                left: 14,
+                right: 14,
+                height: 6,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(6),
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.white.withValues(alpha: 0.45),
+                        Colors.white.withValues(alpha: 0.0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
