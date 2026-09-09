@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../app/gateway.dart';
 import '../../shared/pressable.dart';
@@ -26,6 +27,12 @@ class _ScanScreenState extends State<ScanScreen>
   Object? error;
   Component? scannedComponent;
 
+  // Lens & Touch to Focus state
+  String _activeLensMode = '1x';
+  Offset? _focusPoint;
+  Timer? _focusTimer;
+  bool _showFocusRing = false;
+
   static bool get _isTestEnvironment {
     return WidgetsBinding.instance.runtimeType
         .toString()
@@ -38,7 +45,12 @@ class _ScanScreenState extends State<ScanScreen>
     WidgetsBinding.instance.addObserver(this);
     scannedComponent = widget.initialComponent;
     scanning = widget.initialComponent == null;
-    camera = MobileScannerController(autoStart: widget.initialComponent == null);
+    camera = MobileScannerController(
+      autoStart: widget.initialComponent == null,
+      lensType: CameraLensType.normal, // Default ke Lensa Utama 1x (Bukan Ultra Wide 0.5x)
+      facing: CameraFacing.back,
+      detectionSpeed: DetectionSpeed.noDuplicates,
+    );
 
     _laserController = AnimationController(
       vsync: this,
@@ -55,10 +67,100 @@ class _ScanScreenState extends State<ScanScreen>
 
   @override
   void dispose() {
+    _focusTimer?.cancel();
     _laserController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     unawaited(camera.dispose());
     super.dispose();
+  }
+
+  Future<void> _switchLensMode(String mode) async {
+    if (_activeLensMode == mode) return;
+    HapticFeedback.lightImpact();
+    setState(() => _activeLensMode = mode);
+    try {
+      if (mode == '0.5x') {
+        await camera.switchCamera(
+          const SelectCamera(lensType: CameraLensType.wide),
+        );
+      } else if (mode == '1x') {
+        await camera.switchCamera(
+          const SelectCamera(lensType: CameraLensType.normal),
+        );
+        await camera.resetZoomScale();
+      } else if (mode == '2x') {
+        final supported =
+            await camera.getSupportedLenses(facing: CameraFacing.back);
+        if (supported.contains(CameraLensType.zoom)) {
+          await camera.switchCamera(
+            const SelectCamera(lensType: CameraLensType.zoom),
+          );
+        } else {
+          await camera.switchCamera(
+            const SelectCamera(lensType: CameraLensType.normal),
+          );
+          await camera.setZoomScale(0.35);
+        }
+      }
+    } catch (_) {
+      if (mode == '2x') {
+        try {
+          await camera.setZoomScale(0.35);
+        } catch (_) {}
+      } else {
+        try {
+          await camera.resetZoomScale();
+        } catch (_) {}
+      }
+    }
+  }
+
+  void _onTapFocus(TapDownDetails details, BoxConstraints constraints) {
+    final dx = details.localPosition.dx;
+    final dy = details.localPosition.dy;
+    final nx = (dx / constraints.maxWidth).clamp(0.0, 1.0);
+    final ny = (dy / constraints.maxHeight).clamp(0.0, 1.0);
+
+    HapticFeedback.lightImpact();
+    try {
+      camera.setFocusPoint(Offset(nx, ny));
+    } catch (_) {}
+
+    _focusTimer?.cancel();
+    setState(() {
+      _focusPoint = Offset(dx, dy);
+      _showFocusRing = true;
+    });
+    _focusTimer = Timer(const Duration(milliseconds: 1400), () {
+      if (mounted) setState(() => _showFocusRing = false);
+    });
+  }
+
+  Widget _buildLensOption(String label) {
+    final isSelected = _activeLensMode == label;
+    return PressableScale(
+      onTap: () => _switchLensMode(label),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 44,
+        height: 32,
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFBBF24) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: isSelected ? const Color(0xFF0F172A) : Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -234,163 +336,248 @@ class _ScanScreenState extends State<ScanScreen>
 
             // 2. Viewfinder Area
             Expanded(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: MobileScanner(
-                      controller: camera,
-                      onDetect: (capture) {
-                        for (final b in capture.barcodes) {
-                          final v = b.rawValue;
-                          if (v != null && v.isNotEmpty) {
-                            unawaited(lookup(v));
-                            break;
-                          }
-                        }
-                      },
-                      errorBuilder: (context, error) =>
-                          _buildCameraErrorView(context, error),
-                    ),
-                  ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Camera Preview with Tap-to-Focus
+                      Positioned.fill(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.translucent,
+                            onTapDown: (details) =>
+                                _onTapFocus(details, constraints),
+                            child: MobileScanner(
+                              controller: camera,
+                              onDetect: (capture) {
+                                for (final b in capture.barcodes) {
+                                  final v = b.rawValue;
+                                  if (v != null && v.isNotEmpty) {
+                                    unawaited(lookup(v));
+                                    break;
+                                  }
+                                }
+                              },
+                              errorBuilder: (context, error) =>
+                                  _buildCameraErrorView(context, error),
+                            ),
+                          ),
+                        ),
+                      ),
 
-                  // Viewfinder Frame (food-scanner-camera wireframe style with animated laser)
-                  SizedBox(
-                    width: 280,
-                    height: 280,
-                    child: Stack(
-                      children: [
-                        // Top-Left Corner
-                        Align(
-                          alignment: Alignment.topLeft,
-                          child: Container(
-                            width: 44,
-                            height: 44,
-                            decoration: const BoxDecoration(
-                              borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(26),
-                              ),
-                              border: Border(
-                                top: BorderSide(color: Colors.white, width: 3.5),
-                                left: BorderSide(color: Colors.white, width: 3.5),
-                              ),
-                            ),
+                      // Touch-to-Focus Animated Ring (Apple Camera Yellow Target)
+                      if (_focusPoint != null && _showFocusRing)
+                        Positioned(
+                          left: (_focusPoint!.dx - 32).clamp(
+                            0.0,
+                            constraints.maxWidth - 64,
                           ),
-                        ),
-                        // Top-Right Corner
-                        Align(
-                          alignment: Alignment.topRight,
-                          child: Container(
-                            width: 44,
-                            height: 44,
-                            decoration: const BoxDecoration(
-                              borderRadius: BorderRadius.only(
-                                topRight: Radius.circular(26),
-                              ),
-                              border: Border(
-                                top: BorderSide(color: Colors.white, width: 3.5),
-                                right: BorderSide(color: Colors.white, width: 3.5),
-                              ),
-                            ),
+                          top: (_focusPoint!.dy - 32).clamp(
+                            0.0,
+                            constraints.maxHeight - 64,
                           ),
-                        ),
-                        // Bottom-Left Corner
-                        Align(
-                          alignment: Alignment.bottomLeft,
-                          child: Container(
-                            width: 44,
-                            height: 44,
-                            decoration: const BoxDecoration(
-                              borderRadius: BorderRadius.only(
-                                bottomLeft: Radius.circular(26),
-                              ),
-                              border: Border(
-                                bottom: BorderSide(color: Colors.white, width: 3.5),
-                                left: BorderSide(color: Colors.white, width: 3.5),
-                              ),
-                            ),
-                          ),
-                        ),
-                        // Bottom-Right Corner
-                        Align(
-                          alignment: Alignment.bottomRight,
-                          child: Container(
-                            width: 44,
-                            height: 44,
-                            decoration: const BoxDecoration(
-                              borderRadius: BorderRadius.only(
-                                bottomRight: Radius.circular(26),
-                              ),
-                              border: Border(
-                                bottom: BorderSide(color: Colors.white, width: 3.5),
-                                right: BorderSide(color: Colors.white, width: 3.5),
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // Animated Scanning Laser Beam from food-scanner-camera wireframe
-                        AnimatedBuilder(
-                          animation: _laserAnimation,
-                          builder: (context, child) {
-                            final t = _laserAnimation.value;
-                            // Moves between 10% and 90% (28px to 252px)
-                            final posY = 28.0 + t * (280.0 - 56.0);
-                            final opacity = (t < 0.1
-                                    ? (t / 0.1)
-                                    : (t > 0.9 ? ((1.0 - t) / 0.1) : 1.0))
-                                .clamp(0.0, 1.0);
-
-                            return Positioned(
-                              top: posY,
-                              left: 6,
-                              right: 6,
-                              child: Opacity(
-                                opacity: opacity,
-                                child: Container(
-                                  height: 2.5,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(2),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.white
-                                            .withValues(alpha: 0.95),
-                                        blurRadius: 10,
-                                        spreadRadius: 1,
+                          child: IgnorePointer(
+                            child: TweenAnimationBuilder<double>(
+                              tween: Tween(begin: 1.3, end: 1.0),
+                              duration: const Duration(milliseconds: 220),
+                              curve: Curves.easeOutBack,
+                              builder: (context, scale, child) {
+                                return Transform.scale(
+                                  scale: scale,
+                                  child: Container(
+                                    width: 64,
+                                    height: 64,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: const Color(0xFFFBBF24),
+                                        width: 1.8,
                                       ),
-                                      BoxShadow(
-                                        color: Colors.white
-                                            .withValues(alpha: 0.6),
-                                        blurRadius: 20,
-                                        spreadRadius: 2,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Center(
+                                      child: SizedBox(
+                                        width: 6,
+                                        height: 6,
+                                        child: DecoratedBox(
+                                          decoration: BoxDecoration(
+                                            color: Color(0xFFFBBF24),
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
                                       ),
-                                    ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+
+                      // Viewfinder Frame (food-scanner-camera wireframe style with animated laser)
+                      SizedBox(
+                        width: 280,
+                        height: 280,
+                        child: Stack(
+                          children: [
+                            // Top-Left Corner
+                            Align(
+                              alignment: Alignment.topLeft,
+                              child: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: const BoxDecoration(
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(26),
+                                  ),
+                                  border: Border(
+                                    top: BorderSide(color: Colors.white, width: 3.5),
+                                    left: BorderSide(color: Colors.white, width: 3.5),
                                   ),
                                 ),
                               ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
+                            ),
+                            // Top-Right Corner
+                            Align(
+                              alignment: Alignment.topRight,
+                              child: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: const BoxDecoration(
+                                  borderRadius: BorderRadius.only(
+                                    topRight: Radius.circular(26),
+                                  ),
+                                  border: Border(
+                                    top: BorderSide(color: Colors.white, width: 3.5),
+                                    right: BorderSide(color: Colors.white, width: 3.5),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Bottom-Left Corner
+                            Align(
+                              alignment: Alignment.bottomLeft,
+                              child: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: const BoxDecoration(
+                                  borderRadius: BorderRadius.only(
+                                    bottomLeft: Radius.circular(26),
+                                  ),
+                                  border: Border(
+                                    bottom: BorderSide(color: Colors.white, width: 3.5),
+                                    left: BorderSide(color: Colors.white, width: 3.5),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Bottom-Right Corner
+                            Align(
+                              alignment: Alignment.bottomRight,
+                              child: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: const BoxDecoration(
+                                  borderRadius: BorderRadius.only(
+                                    bottomRight: Radius.circular(26),
+                                  ),
+                                  border: Border(
+                                    bottom: BorderSide(color: Colors.white, width: 3.5),
+                                    right: BorderSide(color: Colors.white, width: 3.5),
+                                  ),
+                                ),
+                              ),
+                            ),
 
-                  // Bottom Guide text
-                  const Positioned(
-                    bottom: 24,
-                    child: Text(
-                      'Arahkan ke barcode Kepala, Batang, atau Tabung',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        color: Colors.white70,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
+                            // Animated Scanning Laser Beam from food-scanner-camera wireframe
+                            AnimatedBuilder(
+                              animation: _laserAnimation,
+                              builder: (context, child) {
+                                final t = _laserAnimation.value;
+                                // Moves between 10% and 90% (28px to 252px)
+                                final posY = 28.0 + t * (280.0 - 56.0);
+                                final opacity = (t < 0.1
+                                        ? (t / 0.1)
+                                        : (t > 0.9 ? ((1.0 - t) / 0.1) : 1.0))
+                                    .clamp(0.0, 1.0);
+
+                                return Positioned(
+                                  top: posY,
+                                  left: 6,
+                                  right: 6,
+                                  child: Opacity(
+                                    opacity: opacity,
+                                    child: Container(
+                                      height: 2.5,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(2),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.95),
+                                            blurRadius: 10,
+                                            spreadRadius: 1,
+                                          ),
+                                          BoxShadow(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.6),
+                                            blurRadius: 20,
+                                            spreadRadius: 2,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ),
-                ],
+
+                      // Lens & Zoom Switcher Pill (0.5x | 1x | 2x)
+                      Positioned(
+                        bottom: 48,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.65),
+                            borderRadius: BorderRadius.circular(22),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.18),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildLensOption('0.5x'),
+                              const SizedBox(width: 4),
+                              _buildLensOption('1x'),
+                              const SizedBox(width: 4),
+                              _buildLensOption('2x'),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Bottom Guide text
+                      Positioned(
+                        bottom: 16,
+                        child: Text(
+                          'Ketuk layar untuk fokus • Arahkan barcode ke kotak',
+                          style: TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            color: Colors.white.withValues(alpha: 0.75),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
 
