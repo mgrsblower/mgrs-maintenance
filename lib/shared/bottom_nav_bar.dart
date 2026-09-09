@@ -54,147 +54,164 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
         children: [
           // Elevated Frosted Glass Capsule Nav Bar
           Expanded(
-            child: Container(
+            child: SizedBox(
               height: 58,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x140F172A),
-                    blurRadius: 18,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(30),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.88),
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        width: 1.2,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // 1. Frosted Glass Capsule Background (Clipped strictly to 30px pill)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x140F172A),
+                            blurRadius: 18,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(30),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.88),
+                              borderRadius: BorderRadius.circular(30),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.6),
+                                width: 1.2,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final totalWidth = constraints.maxWidth;
-                        final tabWidth = totalWidth / 3;
+                  ),
 
-                        // Target position based on active or dragged tab
-                        final targetLeft =
-                            widget.currentIndex.clamp(0, 2) * tabWidth;
-                        final currentLeft = _isDragging && _dragX != null
-                            ? (_dragX! - tabWidth / 2)
-                                .clamp(0.0, totalWidth - tabWidth)
-                            : targetLeft;
+                  // 2. Interactive Layer (Unclipped: allows liquid lens to break out above & below navbar)
+                  Positioned.fill(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final totalWidth = constraints.maxWidth;
+                          final tabWidth = totalWidth / 3;
 
-                        final activeTab = _isDragging
-                            ? (_hoveredIndex ?? widget.currentIndex)
-                            : widget.currentIndex;
+                          // Target position based on active or dragged tab
+                          final targetLeft =
+                              widget.currentIndex.clamp(0, 2) * tabWidth;
+                          final currentLeft = _isDragging && _dragX != null
+                              ? (_dragX! - tabWidth / 2)
+                                  .clamp(0.0, totalWidth - tabWidth)
+                              : targetLeft;
 
-                        return GestureDetector(
-                          behavior: HitTestBehavior.translucent,
-                          onHorizontalDragStart: (details) {
-                            final x = details.localPosition.dx;
-                            final hover = (x / tabWidth).floor().clamp(0, 2);
-                            setState(() {
-                              _isDragging = true;
-                              _dragX = x;
-                              _hoveredIndex = hover;
-                              _lastHapticTab = hover;
-                            });
-                            HapticFeedback.selectionClick();
-                          },
-                          onHorizontalDragUpdate: (details) {
-                            final x = details.localPosition.dx;
-                            final hover = (x / tabWidth).floor().clamp(0, 2);
-                            if (hover != _lastHapticTab) {
+                          final activeTab = _isDragging
+                              ? (_hoveredIndex ?? widget.currentIndex)
+                              : widget.currentIndex;
+
+                          return GestureDetector(
+                            behavior: HitTestBehavior.translucent,
+                            onHorizontalDragStart: (details) {
+                              final x = details.localPosition.dx;
+                              final hover = (x / tabWidth).floor().clamp(0, 2);
+                              setState(() {
+                                _isDragging = true;
+                                _dragX = x;
+                                _hoveredIndex = hover;
+                                _lastHapticTab = hover;
+                              });
                               HapticFeedback.selectionClick();
-                              _lastHapticTab = hover;
-                            }
-                            setState(() {
-                              _dragX = x;
-                              _hoveredIndex = hover;
-                            });
-                          },
-                          onHorizontalDragEnd: (details) {
-                            final finalTab = _dragX != null
-                                ? (_dragX! / tabWidth).floor().clamp(0, 2)
-                                : widget.currentIndex;
-                            setState(() {
-                              _isDragging = false;
-                              _dragX = null;
-                              _hoveredIndex = null;
-                            });
-                            HapticFeedback.lightImpact();
-                            if (finalTab != widget.currentIndex) {
-                              widget.onNavigateToTab(finalTab);
-                            }
-                          },
-                          onHorizontalDragCancel: () {
-                            setState(() {
-                              _isDragging = false;
-                              _dragX = null;
-                              _hoveredIndex = null;
-                            });
-                          },
-                          child: Stack(
-                            children: [
-                              // Liquid Glass Lens / Iridescent Bubble Indicator
-                              AnimatedPositioned(
-                                duration: _isDragging
-                                    ? Duration.zero
-                                    : const Duration(milliseconds: 320),
-                                curve: Curves.easeOutBack,
-                                left: currentLeft,
-                                top: 0,
-                                bottom: 0,
-                                width: tabWidth,
-                                child: AnimatedScale(
-                                  duration: const Duration(milliseconds: 150),
-                                  scale: _isDragging ? 1.05 : 1.0,
-                                  child: _buildLiquidGlassBubble(),
+                            },
+                            onHorizontalDragUpdate: (details) {
+                              final x = details.localPosition.dx;
+                              final hover = (x / tabWidth).floor().clamp(0, 2);
+                              if (hover != _lastHapticTab) {
+                                HapticFeedback.selectionClick();
+                                _lastHapticTab = hover;
+                              }
+                              setState(() {
+                                _dragX = x;
+                                _hoveredIndex = hover;
+                              });
+                            },
+                            onHorizontalDragEnd: (details) {
+                              final finalTab = _dragX != null
+                                  ? (_dragX! / tabWidth).floor().clamp(0, 2)
+                                  : widget.currentIndex;
+                              setState(() {
+                                _isDragging = false;
+                                _dragX = null;
+                                _hoveredIndex = null;
+                              });
+                              HapticFeedback.lightImpact();
+                              if (finalTab != widget.currentIndex) {
+                                widget.onNavigateToTab(finalTab);
+                              }
+                            },
+                            onHorizontalDragCancel: () {
+                              setState(() {
+                                _isDragging = false;
+                                _dragX = null;
+                                _hoveredIndex = null;
+                              });
+                            },
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                // Liquid Glass Lens / Iridescent Bubble Indicator (Protrudes outside bar when dragging!)
+                                AnimatedPositioned(
+                                  duration: _isDragging
+                                      ? Duration.zero
+                                      : const Duration(milliseconds: 320),
+                                  curve: Curves.easeOutBack,
+                                  left: currentLeft,
+                                  top: _isDragging ? -5 : 0,
+                                  bottom: _isDragging ? -5 : 0,
+                                  width: tabWidth,
+                                  child: AnimatedScale(
+                                    duration: const Duration(milliseconds: 150),
+                                    scale: _isDragging ? 1.06 : 1.0,
+                                    child: _buildLiquidGlassBubble(),
+                                  ),
                                 ),
-                              ),
 
-                              // Tab items row
-                              Row(
-                                children: [
-                                  _buildTab(
-                                    index: 0,
-                                    label: 'Beranda',
-                                    activeIcon: Icons.home_rounded,
-                                    inactiveIcon: Icons.home_outlined,
-                                    currentActiveTab: activeTab,
-                                  ),
-                                  _buildTab(
-                                    index: 1,
-                                    label: 'Aset',
-                                    activeIcon: Icons.inventory_2_rounded,
-                                    inactiveIcon: Icons.inventory_2_outlined,
-                                    currentActiveTab: activeTab,
-                                  ),
-                                  _buildTab(
-                                    index: 2,
-                                    label: 'Servis',
-                                    activeIcon: Icons.build_rounded,
-                                    inactiveIcon: Icons.build_outlined,
-                                    currentActiveTab: activeTab,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+                                // Tab items row
+                                Row(
+                                  children: [
+                                    _buildTab(
+                                      index: 0,
+                                      label: 'Beranda',
+                                      activeIcon: Icons.home_rounded,
+                                      inactiveIcon: Icons.home_outlined,
+                                      currentActiveTab: activeTab,
+                                    ),
+                                    _buildTab(
+                                      index: 1,
+                                      label: 'Aset',
+                                      activeIcon: Icons.inventory_2_rounded,
+                                      inactiveIcon: Icons.inventory_2_outlined,
+                                      currentActiveTab: activeTab,
+                                    ),
+                                    _buildTab(
+                                      index: 2,
+                                      label: 'Servis',
+                                      activeIcon: Icons.build_rounded,
+                                      inactiveIcon: Icons.build_outlined,
+                                      currentActiveTab: activeTab,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
             ),
           ),
@@ -231,45 +248,85 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
   }
 
   Widget _buildLiquidGlassBubble() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 2.5, vertical: 1.5),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      margin: EdgeInsets.symmetric(
+        horizontal: _isDragging ? 1.0 : 2.5,
+        vertical: _isDragging ? 0.0 : 1.5,
+      ),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        // Iridescent chromatic dispersion halo on glass rim
-        gradient: const SweepGradient(
-          colors: [
-            Color(0xB3FFFFFF), // Specular White
-            Color(0x9967E8F9), // Iridescent Cyan
-            Color(0x99F472B6), // Iridescent Pink
-            Color(0x99FDE047), // Iridescent Gold
-            Color(0xB3FFFFFF),
-          ],
-        ),
+        borderRadius: BorderRadius.circular(_isDragging ? 26 : 24),
+        // Prismatic chromatic dispersion halo on glass rim (Vivid rainbow when dragging/held!)
+        gradient: _isDragging
+            ? const SweepGradient(
+                colors: [
+                  Color(0xFFFFFFFF), // Specular White
+                  Color(0xFF22D3EE), // Vivid Cyan
+                  Color(0xFF4ADE80), // Vivid Emerald/Lime
+                  Color(0xFFFACC15), // Electric Gold/Yellow
+                  Color(0xFFFB923C), // Prismatic Orange
+                  Color(0xFFF43F5E), // Prismatic Pink/Red
+                  Color(0xFFA855F7), // Prismatic Purple
+                  Color(0xFF38BDF8), // Prismatic Light Blue
+                  Color(0xFFFFFFFF),
+                ],
+              )
+            : const SweepGradient(
+                colors: [
+                  Color(0xB3FFFFFF),
+                  Color(0x7767E8F9),
+                  Color(0x77F472B6),
+                  Color(0x77FDE047),
+                  Color(0xB3FFFFFF),
+                ],
+              ),
         boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF147CC1)
-                .withValues(alpha: _isDragging ? 0.32 : 0.18),
-            blurRadius: _isDragging ? 16 : 10,
-            offset: const Offset(0, 3),
-          ),
-          BoxShadow(
-            color: Colors.white.withValues(alpha: 0.6),
-            blurRadius: 6,
-            offset: const Offset(0, -1),
-          ),
+          if (_isDragging) ...[
+            // 3D floating elevation shadow when lens lifts off navbar
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.20),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+            // Cobalt refraction glow
+            BoxShadow(
+              color: const Color(0xFF147CC1).withValues(alpha: 0.35),
+              blurRadius: 16,
+              spreadRadius: 1,
+              offset: const Offset(0, 3),
+            ),
+            // Top specular rim bounce
+            BoxShadow(
+              color: Colors.white.withValues(alpha: 0.85),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ] else ...[
+            BoxShadow(
+              color: const Color(0xFF147CC1).withValues(alpha: 0.16),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+            BoxShadow(
+              color: Colors.white.withValues(alpha: 0.6),
+              blurRadius: 6,
+              offset: const Offset(0, -1),
+            ),
+          ],
         ],
       ),
       child: Container(
-        margin: const EdgeInsets.all(1.5), // Glass rim thickness
+        margin: EdgeInsets.all(_isDragging ? 2.2 : 1.5), // Glass rim thickness
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(_isDragging ? 24 : 22),
           // Refractive liquid core
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.white.withValues(alpha: 0.95),
-              const Color(0xFFE0F2FE).withValues(alpha: 0.75),
+              Colors.white.withValues(alpha: _isDragging ? 0.98 : 0.94),
+              const Color(0xFFE0F2FE)
+                  .withValues(alpha: _isDragging ? 0.85 : 0.70),
             ],
           ),
         ),
@@ -278,9 +335,9 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
             // Top specular curved reflection
             Positioned(
               top: 2,
-              left: 12,
-              right: 12,
-              height: 10,
+              left: 10,
+              right: 10,
+              height: _isDragging ? 12 : 9,
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
@@ -288,13 +345,34 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.white.withValues(alpha: 0.9),
+                      Colors.white.withValues(alpha: _isDragging ? 0.95 : 0.85),
                       Colors.white.withValues(alpha: 0.0),
                     ],
                   ),
                 ),
               ),
             ),
+            // Bottom subtle reflection arc
+            if (_isDragging)
+              Positioned(
+                bottom: 2,
+                left: 14,
+                right: 14,
+                height: 6,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(6),
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.white.withValues(alpha: 0.45),
+                        Colors.white.withValues(alpha: 0.0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -313,41 +391,45 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
     return Expanded(
       child: PressableScale(
         onTap: () => widget.onNavigateToTab(index),
-        child: Container(
-          color: Colors.transparent,
-          alignment: Alignment.center,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                transitionBuilder: (child, animation) => ScaleTransition(
-                  scale: animation,
-                  child: child,
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 160),
+          scale: (isActive && _isDragging) ? 1.15 : 1.0, // Optical lens magnification!
+          child: Container(
+            color: Colors.transparent,
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, animation) => ScaleTransition(
+                    scale: animation,
+                    child: child,
+                  ),
+                  child: Icon(
+                    isActive ? activeIcon : inactiveIcon,
+                    key: ValueKey<bool>(isActive),
+                    size: 20,
+                    color: isActive
+                        ? const Color(0xFF147CC1)
+                        : const Color(0xFF64748B),
+                  ),
                 ),
-                child: Icon(
-                  isActive ? activeIcon : inactiveIcon,
-                  key: ValueKey<bool>(isActive),
-                  size: 20,
-                  color: isActive
-                      ? const Color(0xFF147CC1)
-                      : const Color(0xFF64748B),
+                const SizedBox(height: 2),
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 200),
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 11,
+                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                    color: isActive
+                        ? const Color(0xFF147CC1)
+                        : const Color(0xFF64748B),
+                  ),
+                  child: Text(label),
                 ),
-              ),
-              const SizedBox(height: 2),
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 11,
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
-                  color: isActive
-                      ? const Color(0xFF147CC1)
-                      : const Color(0xFF64748B),
-                ),
-                child: Text(label),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
