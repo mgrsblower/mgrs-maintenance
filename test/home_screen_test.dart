@@ -4,6 +4,7 @@ import 'package:mgrs_maintenance/app/app.dart';
 import 'package:mgrs_maintenance/app/gateway.dart';
 import 'package:mgrs_maintenance/features/home/home_screen.dart';
 import 'package:mgrs_maintenance/features/schedule/order_model.dart';
+import 'package:mgrs_maintenance/shared/bottom_nav_bar.dart';
 
 class SignedInGateway extends MaintenanceGateway {
   @override
@@ -129,9 +130,18 @@ void main() {
     expect(find.text('Komponen MGRS'), findsOneWidget);
 
     // Tapping 'Servis' animates to page 2
-    await tester.tap(find.text('Servis'));
+    final servisTab = find.descendant(
+      of: find.byType(AppBottomNavBar),
+      matching: find.text('Servis'),
+    );
+    await tester.tap(servisTab);
     await tester.pumpAndSettle();
     expect(find.text('Pusat Tindakan'), findsOneWidget);
+
+    // Dragging / scrubbing navbar back to Beranda
+    await tester.drag(servisTab, const Offset(-200, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('Beranda'), findsOneWidget);
   });
 
   testWidgets('HomeScreen displays dynamic user profile fullName and initials', (
