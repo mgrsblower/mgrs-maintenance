@@ -530,10 +530,10 @@ class _ActionCenterScreenState extends State<ActionCenterScreen> {
     );
   }
 
-  // Banner: "Pemeriksaan Periode Agustus: 142/148 Selesai" + 96%
+  // Banner: "Pemeriksaan Periode: X/Y Selesai" + Z%
   Widget _buildPeriodSummaryBanner(BuildContext context) {
     final pct =
-        totalTasks > 0 ? ((completedTasks / totalTasks) * 100).round() : 96;
+        totalTasks > 0 ? ((completedTasks / totalTasks) * 100).round() : 0;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(

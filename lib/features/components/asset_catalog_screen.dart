@@ -185,7 +185,7 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
     );
   }
 
-  // Header: "Komponen MGRS" + "148 item terdaftar • Kepala, Batang, Tabung" + Filter Icon button
+  // Header: "Komponen MGRS" + "{count} item terdaftar • Kepala, Batang, Tabung" + Filter Icon button
   Widget _buildHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
