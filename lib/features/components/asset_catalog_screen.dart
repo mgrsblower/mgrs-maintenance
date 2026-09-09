@@ -138,7 +138,7 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
     final filtered = _getFilteredItems();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFFBFBFB),
       body: SafeArea(
         bottom: false,
         child: Column(

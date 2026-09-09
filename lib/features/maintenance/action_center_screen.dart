@@ -238,7 +238,7 @@ class _ActionCenterScreenState extends State<ActionCenterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFFFBFBFB),
       body: SafeArea(
         bottom: false,
         child: Column(
