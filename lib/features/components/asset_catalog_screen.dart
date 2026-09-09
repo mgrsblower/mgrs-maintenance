@@ -11,11 +11,13 @@ class AssetCatalogScreen extends StatefulWidget {
     required this.gateway,
     required this.onNavigateToTab,
     required this.onOpenScanner,
+    this.showBottomNav = true,
   });
 
   final MaintenanceGateway gateway;
   final void Function(int tabIndex) onNavigateToTab;
   final VoidCallback onOpenScanner;
+  final bool showBottomNav;
 
   @override
   State<AssetCatalogScreen> createState() => _AssetCatalogScreenState();
@@ -177,11 +179,13 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
         ],
       ),
     ),
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: 1,
-        onNavigateToTab: widget.onNavigateToTab,
-        onOpenScanner: widget.onOpenScanner,
-      ),
+      bottomNavigationBar: widget.showBottomNav
+          ? AppBottomNavBar(
+              currentIndex: 1,
+              onNavigateToTab: widget.onNavigateToTab,
+              onOpenScanner: widget.onOpenScanner,
+            )
+          : null,
     );
   }
 

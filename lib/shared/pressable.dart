@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// A tactile press feedback wrapper inspired by Emil Kowalski and Apple design principles.
-/// Scales down subtly (default 0.975) on touch down and springs back smoothly on release.
+/// Scales down subtly (default 0.975) on touch down, triggers gentle haptic feedback,
+/// and springs back smoothly on release.
 class PressableScale extends StatefulWidget {
   const PressableScale({
     super.key,
@@ -12,6 +14,7 @@ class PressableScale extends StatefulWidget {
     this.duration = const Duration(milliseconds: 120),
     this.curve = Curves.easeOutCubic,
     this.enabled = true,
+    this.enableHaptic = true,
   });
 
   final Widget child;
@@ -21,6 +24,7 @@ class PressableScale extends StatefulWidget {
   final Duration duration;
   final Curve curve;
   final bool enabled;
+  final bool enableHaptic;
 
   @override
   State<PressableScale> createState() => _PressableScaleState();
@@ -57,7 +61,12 @@ class _PressableScaleState extends State<PressableScale>
   }
 
   void _handleTapDown(TapDownDetails _) {
-    if (!widget.enabled || widget.onTap == null) return;
+    if (!widget.enabled || (widget.onTap == null && widget.onLongPress == null)) {
+      return;
+    }
+    if (widget.enableHaptic) {
+      HapticFeedback.lightImpact();
+    }
     _controller.forward();
   }
 

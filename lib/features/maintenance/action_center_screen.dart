@@ -12,11 +12,13 @@ class ActionCenterScreen extends StatefulWidget {
     required this.gateway,
     required this.onNavigateToTab,
     required this.onOpenScanner,
+    this.showBottomNav = true,
   });
 
   final MaintenanceGateway gateway;
   final void Function(int tabIndex) onNavigateToTab;
   final VoidCallback onOpenScanner;
+  final bool showBottomNav;
 
   @override
   State<ActionCenterScreen> createState() => _ActionCenterScreenState();
@@ -281,11 +283,13 @@ class _ActionCenterScreenState extends State<ActionCenterScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: 2,
-        onNavigateToTab: widget.onNavigateToTab,
-        onOpenScanner: widget.onOpenScanner,
-      ),
+      bottomNavigationBar: widget.showBottomNav
+          ? AppBottomNavBar(
+              currentIndex: 2,
+              onNavigateToTab: widget.onNavigateToTab,
+              onOpenScanner: widget.onOpenScanner,
+            )
+          : null,
     );
   }
 

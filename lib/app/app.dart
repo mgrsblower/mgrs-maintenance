@@ -8,6 +8,7 @@ import '../features/maintenance/action_center_screen.dart';
 import '../features/scan/scan_screen.dart';
 import '../features/splash/splash_screen.dart';
 import '../shared/async_state_view.dart';
+import '../shared/bottom_nav_bar.dart';
 import 'app_theme.dart';
 import 'gateway.dart';
 
@@ -149,6 +150,29 @@ class MaintenanceHome extends StatefulWidget {
 
 class _MaintenanceHomeState extends State<MaintenanceHome> {
   int tab = 0;
+  late final PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: tab);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onNavigateToTab(int index) {
+    if (tab == index) return;
+    setState(() => tab = index);
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeInOutCubic,
+    );
+  }
 
   void openScannerModal() {
     Navigator.of(context).push<void>(
@@ -160,23 +184,36 @@ class _MaintenanceHomeState extends State<MaintenanceHome> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    body: switch (tab) {
-      0 => HomeScreen(
+    body: PageView(
+      controller: _pageController,
+      onPageChanged: (index) => setState(() => tab = index),
+      physics: const BouncingScrollPhysics(),
+      children: [
+        HomeScreen(
           gateway: widget.gateway,
           user: widget.user,
-          onNavigateToTab: (index) => setState(() => tab = index),
+          showBottomNav: false,
+          onNavigateToTab: _onNavigateToTab,
           onOpenScanner: openScannerModal,
         ),
-      1 => AssetCatalogScreen(
+        AssetCatalogScreen(
           gateway: widget.gateway,
-          onNavigateToTab: (index) => setState(() => tab = index),
+          showBottomNav: false,
+          onNavigateToTab: _onNavigateToTab,
           onOpenScanner: openScannerModal,
         ),
-      _ => ActionCenterScreen(
+        ActionCenterScreen(
           gateway: widget.gateway,
-          onNavigateToTab: (index) => setState(() => tab = index),
+          showBottomNav: false,
+          onNavigateToTab: _onNavigateToTab,
           onOpenScanner: openScannerModal,
         ),
-    },
+      ],
+    ),
+    bottomNavigationBar: AppBottomNavBar(
+      currentIndex: tab,
+      onNavigateToTab: _onNavigateToTab,
+      onOpenScanner: openScannerModal,
+    ),
   );
 }

@@ -14,12 +14,14 @@ class HomeScreen extends StatefulWidget {
     required this.user,
     required this.onNavigateToTab,
     required this.onOpenScanner,
+    this.showBottomNav = true,
   });
 
   final MaintenanceGateway gateway;
   final UserProfile user;
   final void Function(int tabIndex) onNavigateToTab;
   final VoidCallback onOpenScanner;
+  final bool showBottomNav;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -136,11 +138,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: 0,
-        onNavigateToTab: widget.onNavigateToTab,
-        onOpenScanner: widget.onOpenScanner,
-      ),
+      bottomNavigationBar: widget.showBottomNav
+          ? AppBottomNavBar(
+              currentIndex: 0,
+              onNavigateToTab: widget.onNavigateToTab,
+              onOpenScanner: widget.onOpenScanner,
+            )
+          : null,
     );
   }
 

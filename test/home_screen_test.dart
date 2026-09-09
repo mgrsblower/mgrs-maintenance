@@ -122,6 +122,16 @@ void main() {
     expect(find.text('Beranda'), findsOneWidget);
     expect(find.text('Aset'), findsOneWidget);
     expect(find.text('Servis'), findsOneWidget);
+
+    // Tapping 'Aset' animates to page 1
+    await tester.tap(find.text('Aset'));
+    await tester.pumpAndSettle();
+    expect(find.text('Komponen MGRS'), findsOneWidget);
+
+    // Tapping 'Servis' animates to page 2
+    await tester.tap(find.text('Servis'));
+    await tester.pumpAndSettle();
+    expect(find.text('Pusat Tindakan'), findsOneWidget);
   });
 
   testWidgets('HomeScreen displays dynamic user profile fullName and initials', (

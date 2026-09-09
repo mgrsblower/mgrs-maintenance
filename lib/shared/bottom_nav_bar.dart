@@ -39,27 +39,57 @@ class AppBottomNavBar extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Row(
-                children: [
-                  _buildTab(
-                    index: 0,
-                    label: 'Beranda',
-                    activeIcon: Icons.home_rounded,
-                    inactiveIcon: Icons.home_outlined,
-                  ),
-                  _buildTab(
-                    index: 1,
-                    label: 'Aset',
-                    activeIcon: Icons.inventory_2_rounded,
-                    inactiveIcon: Icons.inventory_2_outlined,
-                  ),
-                  _buildTab(
-                    index: 2,
-                    label: 'Servis',
-                    activeIcon: Icons.build_rounded,
-                    inactiveIcon: Icons.build_outlined,
-                  ),
-                ],
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final totalWidth = constraints.maxWidth;
+                  final tabWidth = totalWidth / 3;
+                  return Stack(
+                    children: [
+                      // Smooth sliding pill background
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 280),
+                        curve: Curves.easeInOutCubic,
+                        left: currentIndex.clamp(0, 2) * tabWidth,
+                        top: 0,
+                        bottom: 0,
+                        width: tabWidth,
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 2,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEBF5FB),
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                        ),
+                      ),
+                      // Tab items row
+                      Row(
+                        children: [
+                          _buildTab(
+                            index: 0,
+                            label: 'Beranda',
+                            activeIcon: Icons.home_rounded,
+                            inactiveIcon: Icons.home_outlined,
+                          ),
+                          _buildTab(
+                            index: 1,
+                            label: 'Aset',
+                            activeIcon: Icons.inventory_2_rounded,
+                            inactiveIcon: Icons.inventory_2_outlined,
+                          ),
+                          _buildTab(
+                            index: 2,
+                            label: 'Servis',
+                            activeIcon: Icons.build_rounded,
+                            inactiveIcon: Icons.build_outlined,
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -103,52 +133,45 @@ class AppBottomNavBar extends StatelessWidget {
   }) {
     final isActive = currentIndex == index;
 
-    if (isActive) {
-      return Expanded(
-        child: Container(
-          height: 48,
-          decoration: BoxDecoration(
-            color: const Color(0xFFEBF5FB),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(activeIcon, size: 20, color: const Color(0xFF147CC1)),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF147CC1),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return Expanded(
       child: PressableScale(
         onTap: () => onNavigateToTab(index),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(inactiveIcon, size: 20, color: const Color(0xFF64748B)),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF64748B),
+        child: Container(
+          color: Colors.transparent,
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                transitionBuilder: (child, animation) => ScaleTransition(
+                  scale: animation,
+                  child: child,
+                ),
+                child: Icon(
+                  isActive ? activeIcon : inactiveIcon,
+                  key: ValueKey<bool>(isActive),
+                  size: 20,
+                  color: isActive
+                      ? const Color(0xFF147CC1)
+                      : const Color(0xFF64748B),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 2),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 11,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                  color: isActive
+                      ? const Color(0xFF147CC1)
+                      : const Color(0xFF64748B),
+                ),
+                child: Text(label),
+              ),
+            ],
+          ),
         ),
       ),
     );
