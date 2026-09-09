@@ -27,9 +27,13 @@ class AppBottomNavBar extends StatefulWidget {
 
 class _AppBottomNavBarState extends State<AppBottomNavBar> {
   bool _isDragging = false;
+  bool _isPressed = false;
+  int? _pressedIndex;
   double? _dragX;
   int? _hoveredIndex;
   int _lastHapticTab = 0;
+
+  bool get _isEngaged => _isPressed || _isDragging;
 
   @override
   void initState() {
@@ -106,19 +110,51 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                           final currentLeft = _isDragging && _dragX != null
                               ? (_dragX! - tabWidth / 2)
                                   .clamp(0.0, totalWidth - tabWidth)
-                              : targetLeft;
+                              : (_isPressed && _pressedIndex != null
+                                  ? _pressedIndex! * tabWidth
+                                  : targetLeft);
 
                           final activeTab = _isDragging
                               ? (_hoveredIndex ?? widget.currentIndex)
-                              : widget.currentIndex;
+                              : (_isPressed && _pressedIndex != null
+                                  ? _pressedIndex!
+                                  : widget.currentIndex);
 
                           return GestureDetector(
                             behavior: HitTestBehavior.translucent,
+                            onTapDown: (details) {
+                              final x = details.localPosition.dx;
+                              final index = (x / tabWidth).floor().clamp(0, 2);
+                              setState(() {
+                                _isPressed = true;
+                                _pressedIndex = index;
+                              });
+                              HapticFeedback.selectionClick();
+                            },
+                            onTapUp: (details) {
+                              final x = details.localPosition.dx;
+                              final index = (x / tabWidth).floor().clamp(0, 2);
+                              setState(() {
+                                _isPressed = false;
+                                _pressedIndex = null;
+                              });
+                              HapticFeedback.lightImpact();
+                              if (index != widget.currentIndex) {
+                                widget.onNavigateToTab(index);
+                              }
+                            },
+                            onTapCancel: () {
+                              setState(() {
+                                _isPressed = false;
+                                _pressedIndex = null;
+                              });
+                            },
                             onHorizontalDragStart: (details) {
                               final x = details.localPosition.dx;
                               final hover = (x / tabWidth).floor().clamp(0, 2);
                               setState(() {
                                 _isDragging = true;
+                                _isPressed = false;
                                 _dragX = x;
                                 _hoveredIndex = hover;
                                 _lastHapticTab = hover;
@@ -140,11 +176,13 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                             onHorizontalDragEnd: (details) {
                               final finalTab = _dragX != null
                                   ? (_dragX! / tabWidth).floor().clamp(0, 2)
-                                  : widget.currentIndex;
+                                  : (_pressedIndex ?? widget.currentIndex);
                               setState(() {
                                 _isDragging = false;
+                                _isPressed = false;
                                 _dragX = null;
                                 _hoveredIndex = null;
+                                _pressedIndex = null;
                               });
                               HapticFeedback.lightImpact();
                               if (finalTab != widget.currentIndex) {
@@ -154,26 +192,29 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                             onHorizontalDragCancel: () {
                               setState(() {
                                 _isDragging = false;
+                                _isPressed = false;
                                 _dragX = null;
                                 _hoveredIndex = null;
+                                _pressedIndex = null;
                               });
                             },
                             child: Stack(
                               clipBehavior: Clip.none,
                               children: [
-                                // Liquid Glass Lens / Iridescent Bubble Indicator (Protrudes outside bar when dragging!)
+                                // Liquid Glass Lens / Iridescent Bubble Indicator (Protrudes outside bar when pressed/dragging!)
                                 AnimatedPositioned(
                                   duration: _isDragging
                                       ? Duration.zero
-                                      : const Duration(milliseconds: 320),
+                                      : const Duration(milliseconds: 260),
                                   curve: Curves.easeOutBack,
                                   left: currentLeft,
-                                  top: _isDragging ? -5 : 0,
-                                  bottom: _isDragging ? -5 : 0,
+                                  top: _isEngaged ? -5 : 0,
+                                  bottom: _isEngaged ? -5 : 0,
                                   width: tabWidth,
                                   child: AnimatedScale(
-                                    duration: const Duration(milliseconds: 150),
-                                    scale: _isDragging ? 1.06 : 1.0,
+                                    duration: const Duration(milliseconds: 180),
+                                    curve: Curves.easeOutBack,
+                                    scale: _isEngaged ? 1.06 : 1.0,
                                     child: _buildLiquidGlassBubble(),
                                   ),
                                 ),
@@ -251,13 +292,13 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       margin: EdgeInsets.symmetric(
-        horizontal: _isDragging ? 1.0 : 2.5,
-        vertical: _isDragging ? 0.0 : 1.5,
+        horizontal: _isEngaged ? 1.0 : 2.5,
+        vertical: _isEngaged ? 0.0 : 1.5,
       ),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(_isDragging ? 26 : 24),
-        // Prismatic chromatic dispersion halo on glass rim (Vivid rainbow when dragging/held!)
-        gradient: _isDragging
+        borderRadius: BorderRadius.circular(_isEngaged ? 26 : 24),
+        // Prismatic chromatic dispersion halo on glass rim (Vivid rainbow when pressed/dragging!)
+        gradient: _isEngaged
             ? const SweepGradient(
                 colors: [
                   Color(0xFFFFFFFF), // Specular White
@@ -281,7 +322,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                 ],
               ),
         boxShadow: [
-          if (_isDragging) ...[
+          if (_isEngaged) ...[
             // 3D floating elevation shadow when lens lifts off navbar
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.20),
@@ -316,17 +357,17 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
         ],
       ),
       child: Container(
-        margin: EdgeInsets.all(_isDragging ? 2.2 : 1.5), // Glass rim thickness
+        margin: EdgeInsets.all(_isEngaged ? 2.2 : 1.5), // Glass rim thickness
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(_isDragging ? 24 : 22),
+          borderRadius: BorderRadius.circular(_isEngaged ? 24 : 22),
           // Refractive liquid core
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.white.withValues(alpha: _isDragging ? 0.98 : 0.94),
+              Colors.white.withValues(alpha: _isEngaged ? 0.98 : 0.94),
               const Color(0xFFE0F2FE)
-                  .withValues(alpha: _isDragging ? 0.85 : 0.70),
+                  .withValues(alpha: _isEngaged ? 0.85 : 0.70),
             ],
           ),
         ),
@@ -337,7 +378,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
               top: 2,
               left: 10,
               right: 10,
-              height: _isDragging ? 12 : 9,
+              height: _isEngaged ? 12 : 9,
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
@@ -345,7 +386,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.white.withValues(alpha: _isDragging ? 0.95 : 0.85),
+                      Colors.white.withValues(alpha: _isEngaged ? 0.95 : 0.85),
                       Colors.white.withValues(alpha: 0.0),
                     ],
                   ),
@@ -353,7 +394,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
               ),
             ),
             // Bottom subtle reflection arc
-            if (_isDragging)
+            if (_isEngaged)
               Positioned(
                 bottom: 2,
                 left: 14,
@@ -389,47 +430,44 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
     final isActive = currentActiveTab == index;
 
     return Expanded(
-      child: PressableScale(
-        onTap: () => widget.onNavigateToTab(index),
-        child: AnimatedScale(
-          duration: const Duration(milliseconds: 160),
-          scale: (isActive && _isDragging) ? 1.15 : 1.0, // Optical lens magnification!
-          child: Container(
-            color: Colors.transparent,
-            alignment: Alignment.center,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  transitionBuilder: (child, animation) => ScaleTransition(
-                    scale: animation,
-                    child: child,
-                  ),
-                  child: Icon(
-                    isActive ? activeIcon : inactiveIcon,
-                    key: ValueKey<bool>(isActive),
-                    size: 20,
-                    color: isActive
-                        ? const Color(0xFF147CC1)
-                        : const Color(0xFF64748B),
-                  ),
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 160),
+        scale: (isActive && _isEngaged) ? 1.15 : 1.0, // Optical lens magnification!
+        child: Container(
+          color: Colors.transparent,
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                transitionBuilder: (child, animation) => ScaleTransition(
+                  scale: animation,
+                  child: child,
                 ),
-                const SizedBox(height: 2),
-                AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 200),
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 11,
-                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
-                    color: isActive
-                        ? const Color(0xFF147CC1)
-                        : const Color(0xFF64748B),
-                  ),
-                  child: Text(label),
+                child: Icon(
+                  isActive ? activeIcon : inactiveIcon,
+                  key: ValueKey<bool>(isActive),
+                  size: 20,
+                  color: isActive
+                      ? const Color(0xFF147CC1)
+                      : const Color(0xFF64748B),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 2),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 11,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                  color: isActive
+                      ? const Color(0xFF147CC1)
+                      : const Color(0xFF64748B),
+                ),
+                child: Text(label),
+              ),
+            ],
           ),
         ),
       ),
