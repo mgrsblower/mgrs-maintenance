@@ -13,11 +13,6 @@ workflows:
       - name: Install Flutter dependencies
         script: flutter pub get
 
-      - name: Install CocoaPods dependencies
-        script: |
-          cd ios
-          pod install --repo-update
-
       - name: Build iOS App
         script: >-
           flutter build ios
