@@ -206,7 +206,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                                 AnimatedPositioned(
                                   duration: _isDragging
                                       ? Duration.zero
-                                      : const Duration(milliseconds: 260),
+                                      : const Duration(milliseconds: 420),
                                   curve: Curves.easeOutBack,
                                   left: currentLeft,
                                   top: _isEngaged ? -6 : 0,
