@@ -262,7 +262,7 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
                 color: Color(0xFF0F172A),
               ),
               decoration: const InputDecoration(
-                hintText: 'Cari kode (K-xx, B-xx, T-xx)...',
+                hintText: 'Cari Kode...',
                 hintStyle: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 13,

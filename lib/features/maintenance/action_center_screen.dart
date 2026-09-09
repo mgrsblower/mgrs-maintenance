@@ -489,7 +489,7 @@ class _ActionCenterScreenState extends State<ActionCenterScreen> {
                       color: Color(0xFF0F172A),
                     ),
                     decoration: const InputDecoration(
-                      hintText: 'Ketik kode (K-xx, B-xx, T-xx)...',
+                      hintText: 'Ketik Kode...',
                       hintStyle: TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 13,
