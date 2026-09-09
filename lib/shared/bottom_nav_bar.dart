@@ -83,7 +83,14 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.5),
+                              gradient: LinearGradient(
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                                colors: [
+                                  Colors.white.withValues(alpha: 0.10),
+                                  Colors.white.withValues(alpha: 0.80),
+                                ],
+                              ),
                               borderRadius: BorderRadius.circular(30),
                               border: Border.all(
                                 color: Colors.white.withValues(alpha: 0.6),
