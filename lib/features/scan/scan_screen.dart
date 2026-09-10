@@ -10,9 +10,17 @@ import '../components/component_detail_screen.dart';
 import '../maintenance/checking_screen.dart';
 
 class ScanScreen extends StatefulWidget {
-  const ScanScreen({super.key, required this.gateway, this.initialComponent});
+  const ScanScreen({
+    super.key,
+    required this.gateway,
+    this.initialComponent,
+    this.user,
+    this.readOnly = false,
+  });
   final MaintenanceGateway gateway;
   final Component? initialComponent;
+  final UserProfile? user;
+  final bool readOnly;
 
   @override
   State<ScanScreen> createState() => _ScanScreenState();
@@ -20,6 +28,8 @@ class ScanScreen extends StatefulWidget {
 
 class _ScanScreenState extends State<ScanScreen>
     with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+  bool get _effectiveReadOnly =>
+      widget.readOnly || (widget.user?.isPic ?? false);
   late final MobileScannerController camera;
   late final AnimationController _laserController;
   late final Animation<double> _laserAnimation;
@@ -901,6 +911,33 @@ class _ScanScreenState extends State<ScanScreen>
               color: Color(0xFF64748B),
             ),
           ),
+          if (_effectiveReadOnly) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.remove_red_eye_outlined, size: 13, color: Color(0xFF64748B)),
+                  SizedBox(width: 6),
+                  Text(
+                    'Mode Pantau Status • Hanya Baca',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF475569),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
 
           // Note Card
@@ -945,57 +982,59 @@ class _ScanScreenState extends State<ScanScreen>
           const SizedBox(height: 16),
 
           // Action Buttons
-          PressableScale(
-            onTap: () async {
-              final isService = comp.condition != 'OK';
-              final res = await Navigator.of(context).push<bool>(
-                MaterialPageRoute(
-                  builder: (_) => CheckingScreen(
-                    gateway: widget.gateway,
-                    component: comp,
-                    service: isService,
-                  ),
-                ),
-              );
-              if (res == true && mounted) {
-                lookup(comp.code);
-              }
-            },
-            child: Container(
-              height: 46,
-              decoration: BoxDecoration(
-                color: comp.condition != 'OK'
-                    ? const Color(0xFFDC2626)
-                    : const Color(0xFF147CC1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    comp.condition != 'OK'
-                        ? Icons.build_rounded
-                        : Icons.fact_check_outlined,
-                    size: 18,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    comp.condition != 'OK'
-                        ? 'Catat Servis Unit Ini'
-                        : 'Perbarui Kondisi Unit',
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+          if (!_effectiveReadOnly) ...[
+            PressableScale(
+              onTap: () async {
+                final isService = comp.condition != 'OK';
+                final res = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    builder: (_) => CheckingScreen(
+                      gateway: widget.gateway,
+                      component: comp,
+                      service: isService,
                     ),
                   ),
-                ],
+                );
+                if (res == true && mounted) {
+                  lookup(comp.code);
+                }
+              },
+              child: Container(
+                height: 46,
+                decoration: BoxDecoration(
+                  color: comp.condition != 'OK'
+                      ? const Color(0xFFDC2626)
+                      : const Color(0xFF147CC1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      comp.condition != 'OK'
+                          ? Icons.build_rounded
+                          : Icons.fact_check_outlined,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      comp.condition != 'OK'
+                          ? 'Catat Servis Unit Ini'
+                          : 'Perbarui Kondisi Unit',
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 10),
+            const SizedBox(height: 10),
+          ],
           Row(
             children: [
               Expanded(
@@ -1009,6 +1048,8 @@ class _ScanScreenState extends State<ScanScreen>
                             builder: (_) => ComponentDetailScreen(
                               gateway: widget.gateway,
                               id: comp.id,
+                              user: widget.user,
+                              readOnly: _effectiveReadOnly,
                             ),
                           ),
                         );

@@ -14,17 +14,22 @@ class ComponentDetailScreen extends StatefulWidget {
     required this.id,
     this.taskId,
     this.periodId,
+    this.user,
+    this.readOnly = false,
   });
 
   final MaintenanceGateway gateway;
   final String id;
   final String? taskId, periodId;
+  final UserProfile? user;
+  final bool readOnly;
 
   @override
   State<ComponentDetailScreen> createState() => _ComponentDetailScreenState();
 }
 
 class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
+  bool get isReadOnly => widget.readOnly || (widget.user?.isPic ?? false);
   late Future<Component> future;
   late Future<List<Map<String, Object?>>> futureHistory;
 
@@ -141,7 +146,9 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
               ),
             ),
           ),
-          bottomNavigationBar: _buildBottomActionBar(context, comp),
+          bottomNavigationBar: isReadOnly
+              ? _buildReadOnlyBar(context, comp)
+              : _buildBottomActionBar(context, comp),
         );
       },
     );
@@ -809,6 +816,47 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildReadOnlyBar(BuildContext context, Component comp) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        12,
+        20,
+        MediaQuery.of(context).padding.bottom + 12,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+      ),
+      child: Container(
+        height: 48,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: const Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.remove_red_eye_outlined, size: 16, color: Color(0xFF64748B)),
+              SizedBox(width: 8),
+              Text(
+                'Mode Pantau Status • Hanya Baca',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -208,7 +208,11 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
   void openScannerModal() {
     Navigator.of(context).push<void>(
       MaterialPageRoute(
-        builder: (_) => ScanScreen(gateway: widget.gateway),
+        builder: (_) => ScanScreen(
+          gateway: widget.gateway,
+          user: widget.user,
+          readOnly: widget.user.isPic,
+        ),
       ),
     );
   }
@@ -301,7 +305,7 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
         currentIndex: tab,
         onNavigateToTab: _onNavigateToTab,
         items: isPic ? picNavItems : null,
-        onOpenScanner: isPic ? null : openScannerModal,
+        onOpenScanner: openScannerModal,
       ),
     );
   }

@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mgrs_maintenance/app/app.dart';
 import 'package:mgrs_maintenance/app/gateway.dart';
+import 'package:mgrs_maintenance/features/components/component.dart';
+import 'package:mgrs_maintenance/features/components/component_detail_screen.dart';
 import 'package:mgrs_maintenance/features/home/pic_home_screen.dart';
 import 'package:mgrs_maintenance/features/invoices/invoice_list_screen.dart';
 import 'package:mgrs_maintenance/features/invoices/invoice_model.dart';
+import 'package:mgrs_maintenance/features/scan/scan_screen.dart';
 import 'package:mgrs_maintenance/features/schedule/order_model.dart';
 import 'package:mgrs_maintenance/features/schedule/upcoming_orders_screen.dart';
 
@@ -83,7 +86,28 @@ class MockPicGateway extends MaintenanceGateway {
   @override
   Future<void> signOut() async {}
   @override
-  Future<Object?> rpc(String name, Map<String, Object?> params) async => null;
+  Future<Object?> rpc(String name, Map<String, Object?> params) async {
+    if (name == 'maintenance_get_component') {
+      return {
+        'id': 'c-1',
+        'nomor_stiker': 'KPL-001',
+        'jenis_komponen': 'Kepala',
+        'kondisi': 'OK',
+        'boleh_dipakai': 'Ya',
+        'fungsi_terganggu': 'Tidak Ada',
+        'keterangan': 'Kondisi prima siap event',
+      };
+    }
+    return null;
+  }
+
+  @override
+  Future<List<Map<String, Object?>>> fetchComponentHistory(
+    String componentId, {
+    int limit = 20,
+    bool forceRefresh = false,
+  }) async =>
+      [];
 
   @override
   Future<List<Map<String, Object?>>> fetchComponents({
@@ -278,8 +302,8 @@ void main() {
       expect(find.text('Orderan'), findsWidgets);
       expect(find.text('Invoice'), findsWidgets);
 
-      // Verify QR scanner button is NOT shown for PIC
-      expect(find.byIcon(Icons.qr_code_scanner_rounded), findsNothing);
+      // Verify QR scanner button IS shown for PIC
+      expect(find.byIcon(Icons.qr_code_scanner_rounded), findsOneWidget);
     });
 
     testWidgets('PicHomeScreen shows event summary and quick action button',
@@ -352,6 +376,64 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Orderan Baru'), findsOneWidget);
+    });
+
+    testWidgets('ScanScreen in read-only mode for PIC hides action buttons',
+        (tester) async {
+      final gateway = MockPicGateway();
+      const picUser = UserProfile('pic-1', 'PIC Pemasangan', fullName: 'Budi');
+      final comp = Component.fromMap({
+        'id': 'c-1',
+        'nomor_stiker': 'KPL-001',
+        'jenis_komponen': 'Kepala',
+        'kondisi': 'OK',
+        'boleh_dipakai': 'Ya',
+        'fungsi_terganggu': 'Tidak Ada',
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ScanScreen(
+            gateway: gateway,
+            user: picUser,
+            readOnly: true,
+            initialComponent: comp,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Read-only indicator should be present
+      expect(find.text('Mode Pantau Status • Hanya Baca'), findsOneWidget);
+      // Inspection / Servicing action buttons should NOT be present
+      expect(find.text('Perbarui Kondisi Unit'), findsNothing);
+      expect(find.text('Catat Servis Unit Ini'), findsNothing);
+      // "Buka Detail" should be available
+      expect(find.text('Buka Detail'), findsOneWidget);
+    });
+
+    testWidgets('ComponentDetailScreen in read-only mode hides edit buttons',
+        (tester) async {
+      final gateway = MockPicGateway();
+      const picUser = UserProfile('pic-1', 'PIC Pemasangan', fullName: 'Budi');
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ComponentDetailScreen(
+            gateway: gateway,
+            id: 'c-1',
+            user: picUser,
+            readOnly: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Read-only lock indicator should be present
+      expect(find.text('Mode Pantau Status • Hanya Baca'), findsOneWidget);
+      // Action buttons to modify condition/service should be absent
+      expect(find.text('Perbarui Kondisi'), findsNothing);
+      expect(find.text('Catat Servis'), findsNothing);
     });
   });
 }
