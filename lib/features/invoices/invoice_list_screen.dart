@@ -104,21 +104,6 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
     }).toList();
   }
 
-  List<InvoiceRecord> get _sourceInvoices {
-    return _allInvoices.where((inv) {
-      return _sourceFilter == InvoiceSourceFilter.automatic
-          ? inv.invoiceSource != 'manual_reimbursement'
-          : inv.invoiceSource == 'manual_reimbursement';
-    }).toList();
-  }
-
-  int get _unpaidCount =>
-      _sourceInvoices.where((i) => i.paymentStatus == InvoicePaymentStatus.unpaid).length;
-  int get _partialCount =>
-      _sourceInvoices.where((i) => i.paymentStatus == InvoicePaymentStatus.partial).length;
-  int get _paidCount =>
-      _sourceInvoices.where((i) => i.paymentStatus == InvoicePaymentStatus.paid).length;
-
   void _openCreateDialog() {
     showDialog<void>(
       context: context,
@@ -193,7 +178,7 @@ Terima kasih telah mempercayai layanan MGRS!''';
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Tidak dapat membuka WhatsApp.'),
-          backgroundColor: Color(0xFFDC2626),
+          backgroundColor: Color(0xFF9F2F2D),
         ),
       );
     }
@@ -202,35 +187,34 @@ Terima kasih telah mempercayai layanan MGRS!''';
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFBFBFB),
+      backgroundColor: const Color(0xFFFAFAFA),
       body: SafeArea(
         child: Column(
           children: [
+            // Header with integrated "+ Invoice" action
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
               child: _buildHeader(context),
             ),
+            // Slim Source Switcher (Order Sewa vs Reimbursement)
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: _buildCreateInvoiceButton(),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: _buildSourceSwitch(),
             ),
+            // Flat Hairline Search
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: _buildSourceTabs(),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: _buildSearchBar(),
             ),
+            // 100% Full-Width Segmented Status Filter (No Horizontal Scroll, No Count)
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: _buildFilterChips(),
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: _buildStatusFilterTabs(),
             ),
+            // Main List
             Expanded(
               child: RefreshIndicator(
+                color: const Color(0xFF18181B),
                 onRefresh: () => _loadInvoices(forceRefresh: true),
                 child: _buildContent(),
               ),
@@ -241,9 +225,11 @@ Terima kasih telah mempercayai layanan MGRS!''';
     );
   }
 
+  // Header: Clean title + compact "+ Invoice" button
   Widget _buildHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -256,99 +242,81 @@ Terima kasih telah mempercayai layanan MGRS!''';
                 fontFamily: 'Plus Jakarta Sans',
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF0F172A),
+                color: Color(0xFF18181B),
                 letterSpacing: -0.3,
               ),
             ),
             const SizedBox(height: 2),
             const Text(
-              'Status Pembayaran Sewa Blower',
+              'Kelola penagihan sewa blower',
               style: TextStyle(
                 fontFamily: 'Plus Jakarta Sans',
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF64748B),
+                color: Color(0xFF71717A),
               ),
             ),
           ],
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF1F5F9),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(radius: 3, backgroundColor: Color(0xFF10B981)),
-              SizedBox(width: 5),
-              Text(
-                'Keuangan',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF334155),
+        PressableScale(
+          onTap: _openCreateDialog,
+          child: Container(
+            key: const Key('invoice-create-action'),
+            height: 34,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF18181B),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.add_rounded, size: 16, color: Colors.white),
+                SizedBox(width: 4),
+                Text(
+                  'Invoice',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildCreateInvoiceButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 40,
-      child: FilledButton.icon(
-        key: const Key('invoice-create-action'),
-        onPressed: _openCreateDialog,
-        style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF0F172A),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        icon: const Icon(Icons.add_rounded, size: 18),
-        label: const Text(
-          'Buat invoice baru',
-          style: TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSourceTabs() {
+  // Slim Segmented Source Toggle (Order Sewa vs Reimbursement)
+  Widget _buildSourceSwitch() {
     return Container(
+      height: 34,
+      padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
-        color: const Color(0xFFE2E8F0),
-        borderRadius: BorderRadius.circular(12),
+        color: const Color(0xFFF4F4F5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE4E4E7)),
       ),
-      padding: const EdgeInsets.all(3),
       child: Row(
         children: [
           Expanded(
             child: PressableScale(
-              onTap: () => setState(() => _sourceFilter = InvoiceSourceFilter.automatic),
+              onTap: () =>
+                  setState(() => _sourceFilter = InvoiceSourceFilter.automatic),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 7),
                 decoration: BoxDecoration(
                   color: _sourceFilter == InvoiceSourceFilter.automatic
                       ? Colors.white
                       : Colors.transparent,
-                  borderRadius: BorderRadius.circular(9),
+                  borderRadius: BorderRadius.circular(6),
                   boxShadow: _sourceFilter == InvoiceSourceFilter.automatic
                       ? const [
                           BoxShadow(
-                            color: Color(0x0A0F172A),
-                            blurRadius: 4,
+                            color: Color(0x0A000000),
+                            blurRadius: 3,
                             offset: Offset(0, 1),
                           ),
                         ]
@@ -356,7 +324,7 @@ Terima kasih telah mempercayai layanan MGRS!''';
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  'Otomatis (Order Sewa)',
+                  'Order Sewa (Otomatis)',
                   style: TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
                     fontSize: 12,
@@ -364,8 +332,8 @@ Terima kasih telah mempercayai layanan MGRS!''';
                         ? FontWeight.w700
                         : FontWeight.w500,
                     color: _sourceFilter == InvoiceSourceFilter.automatic
-                        ? const Color(0xFF0F172A)
-                        : const Color(0xFF64748B),
+                        ? const Color(0xFF18181B)
+                        : const Color(0xFF71717A),
                   ),
                 ),
               ),
@@ -373,19 +341,19 @@ Terima kasih telah mempercayai layanan MGRS!''';
           ),
           Expanded(
             child: PressableScale(
-              onTap: () => setState(() => _sourceFilter = InvoiceSourceFilter.manual),
+              onTap: () =>
+                  setState(() => _sourceFilter = InvoiceSourceFilter.manual),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 7),
                 decoration: BoxDecoration(
                   color: _sourceFilter == InvoiceSourceFilter.manual
                       ? Colors.white
                       : Colors.transparent,
-                  borderRadius: BorderRadius.circular(9),
+                  borderRadius: BorderRadius.circular(6),
                   boxShadow: _sourceFilter == InvoiceSourceFilter.manual
                       ? const [
                           BoxShadow(
-                            color: Color(0x0A0F172A),
-                            blurRadius: 4,
+                            color: Color(0x0A000000),
+                            blurRadius: 3,
                             offset: Offset(0, 1),
                           ),
                         ]
@@ -393,7 +361,7 @@ Terima kasih telah mempercayai layanan MGRS!''';
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  'Manual Reimbursement',
+                  'Reimbursement Manual',
                   style: TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
                     fontSize: 12,
@@ -401,8 +369,8 @@ Terima kasih telah mempercayai layanan MGRS!''';
                         ? FontWeight.w700
                         : FontWeight.w500,
                     color: _sourceFilter == InvoiceSourceFilter.manual
-                        ? const Color(0xFF0F172A)
-                        : const Color(0xFF64748B),
+                        ? const Color(0xFF18181B)
+                        : const Color(0xFF71717A),
                   ),
                 ),
               ),
@@ -413,41 +381,41 @@ Terima kasih telah mempercayai layanan MGRS!''';
     );
   }
 
+  // Flat hairline search input
   Widget _buildSearchBar() {
     return Container(
+      height: 38,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x060F172A),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE4E4E7)),
       ),
       child: TextField(
         controller: _searchController,
         onChanged: (_) => setState(() {}),
         style: const TextStyle(
           fontFamily: 'Plus Jakarta Sans',
-          fontSize: 13,
-          color: Color(0xFF0F172A),
+          fontSize: 12.5,
+          color: Color(0xFF18181B),
         ),
         decoration: InputDecoration(
+          isDense: true,
           hintText: 'Cari no. invoice, order, atau klien...',
           hintStyle: const TextStyle(
             fontFamily: 'Plus Jakarta Sans',
-            fontSize: 13,
-            color: Color(0xFF94A3B8),
+            fontSize: 12.5,
+            color: Color(0xFFA1A1AA),
           ),
-          prefixIcon: const Icon(Icons.search_rounded,
-              size: 20, color: Color(0xFF64748B)),
+          prefixIcon: const Icon(
+            Icons.search_rounded,
+            size: 18,
+            color: Color(0xFF71717A),
+          ),
+          prefixIconConstraints: const BoxConstraints(minWidth: 36),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.clear_rounded,
-                      size: 18, color: Color(0xFF64748B)),
+                      size: 16, color: Color(0xFF71717A)),
                   onPressed: () {
                     _searchController.clear();
                     setState(() {});
@@ -455,96 +423,54 @@ Terima kasih telah mempercayai layanan MGRS!''';
                 )
               : null,
           border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          contentPadding: const EdgeInsets.symmetric(vertical: 10),
         ),
       ),
     );
   }
 
-  Widget _buildFilterChips() {
-    final filters = [
-      {'label': 'Semua', 'status': null, 'count': _sourceInvoices.length},
-      {
-        'label': 'Belum Bayar',
-        'status': InvoicePaymentStatus.unpaid,
-        'count': _unpaidCount,
-      },
-      {
-        'label': 'Sebagian',
-        'status': InvoicePaymentStatus.partial,
-        'count': _partialCount,
-      },
-      {
-        'label': 'Lunas',
-        'status': InvoicePaymentStatus.paid,
-        'count': _paidCount,
-      },
+  // 100% Fit Width Status Filter (No Count, No Scroll)
+  Widget _buildStatusFilterTabs() {
+    final tabs = [
+      {'label': 'Semua', 'status': null},
+      {'label': 'Belum Bayar', 'status': InvoicePaymentStatus.unpaid},
+      {'label': 'Sebagian', 'status': InvoicePaymentStatus.partial},
+      {'label': 'Lunas', 'status': InvoicePaymentStatus.paid},
     ];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
+    return Container(
+      height: 34,
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F4F5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE4E4E7)),
+      ),
       child: Row(
-        children: filters.map((f) {
-          final label = f['label'] as String;
-          final status = f['status'] as InvoicePaymentStatus?;
-          final count = f['count'] as int;
+        children: tabs.map((tab) {
+          final label = tab['label'] as String;
+          final status = tab['status'] as InvoicePaymentStatus?;
           final isSelected = _paymentFilter == status;
 
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
+          return Expanded(
             child: PressableScale(
               onTap: () => setState(() => _paymentFilter = status),
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF0F172A) : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isSelected
-                        ? const Color(0xFF0F172A)
-                        : const Color(0xFFE2E8F0),
-                  ),
+                  color: isSelected ? const Color(0xFF18181B) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 12,
-                        fontWeight:
-                            isSelected ? FontWeight.w700 : FontWeight.w600,
-                        color:
-                            isSelected ? Colors.white : const Color(0xFF475569),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 1.5),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFF334155)
-                            : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '$count',
-                        style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: isSelected
-                              ? Colors.white
-                              : const Color(0xFF64748B),
-                        ),
-                      ),
-                    ),
-                  ],
+                alignment: Alignment.center,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 11.5,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                    color: isSelected ? Colors.white : const Color(0xFF71717A),
+                  ),
                 ),
               ),
             ),
@@ -557,7 +483,10 @@ Terima kasih telah mempercayai layanan MGRS!''';
   Widget _buildContent() {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: Color(0xFF147CC1)),
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: Color(0xFF18181B),
+        ),
       );
     }
 
@@ -569,19 +498,25 @@ Terima kasih telah mempercayai layanan MGRS!''';
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.error_outline_rounded,
-                  size: 40, color: Color(0xFFDC2626)),
+                  size: 36, color: Color(0xFF9F2F2D)),
               const SizedBox(height: 10),
               Text(
                 _error!,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
-                  color: Color(0xFF64748B),
+                  fontSize: 13,
+                  color: Color(0xFF71717A),
                 ),
               ),
               const SizedBox(height: 14),
               FilledButton(
                 onPressed: () => _loadInvoices(forceRefresh: true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF18181B),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
                 child: const Text('Coba Lagi'),
               ),
             ],
@@ -600,15 +535,15 @@ Terima kasih telah mempercayai layanan MGRS!''';
             mainAxisSize: MainAxisSize.min,
             children: const [
               Icon(Icons.receipt_long_outlined,
-                  size: 48, color: Color(0xFF94A3B8)),
+                  size: 40, color: Color(0xFFA1A1AA)),
               SizedBox(height: 10),
               Text(
                 'Tidak ada invoice yang sesuai.',
                 style: TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 14,
+                  fontSize: 13.5,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF64748B),
+                  color: Color(0xFF71717A),
                 ),
               ),
             ],
@@ -619,55 +554,41 @@ Terima kasih telah mempercayai layanan MGRS!''';
 
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 110),
+      padding: const EdgeInsets.fromLTRB(16, 2, 16, 110),
       itemCount: invoices.length,
       itemBuilder: (context, index) {
         final item = invoices[index];
         return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.only(bottom: 10),
           child: _buildInvoiceCard(item),
         );
       },
     );
   }
 
+  // Bento-style crisp minimalist invoice card
   Widget _buildInvoiceCard(InvoiceRecord item) {
-    final statusColor = item.isPaid
-        ? const Color(0xFF059669)
-        : item.isDp
-            ? const Color(0xFFD97706)
-            : const Color(0xFFDC2626);
-
-    final statusBg = item.isPaid
-        ? const Color(0xFFECFDF5)
-        : item.isDp
-            ? const Color(0xFFFFFBEB)
-            : const Color(0xFFFEF2F2);
-
-    final dotColor = item.isPaid
-        ? const Color(0xFF10B981)
-        : item.isDp
-            ? const Color(0xFFF59E0B)
-            : const Color(0xFFEF4444);
+    // Pastel status badge colors matching minimalist-ui guidelines:
+    // Pale Red: #FDEBEC / Text: #9F2F2D
+    // Pale Yellow: #FBF3DB / Text: #956400
+    // Pale Green: #EDF3EC / Text: #346538
+    final (statusBg, statusText) = switch (item.paymentStatus) {
+      InvoicePaymentStatus.paid => (const Color(0xFFEDF3EC), const Color(0xFF346538)),
+      InvoicePaymentStatus.partial => (const Color(0xFFFBF3DB), const Color(0xFF956400)),
+      InvoicePaymentStatus.unpaid => (const Color(0xFFFDEBEC), const Color(0xFF9F2F2D)),
+    };
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A0F172A),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE4E4E7)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Card: Ref & Status
+          // Header: Reference & Pastel Status Badge
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -675,15 +596,6 @@ Terima kasih telah mempercayai layanan MGRS!''';
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: BoxDecoration(
-                        color: dotColor,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
                     Flexible(
                       child: Text(
                         item.invoiceReference,
@@ -691,20 +603,20 @@ Terima kasih telah mempercayai layanan MGRS!''';
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 13,
+                          fontSize: 12.5,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF0F172A),
+                          color: Color(0xFF18181B),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 6),
                     Text(
                       '• ${item.quantity} Unit',
                       style: const TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF64748B),
+                        color: Color(0xFF71717A),
                       ),
                     ),
                   ],
@@ -712,33 +624,33 @@ Terima kasih telah mempercayai layanan MGRS!''';
               ),
               const SizedBox(width: 8),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                 decoration: BoxDecoration(
                   color: statusBg,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   item.paymentStatusDisplay,
                   style: TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 11,
+                    fontSize: 10.5,
                     fontWeight: FontWeight.w700,
-                    color: statusColor,
+                    color: statusText,
+                    letterSpacing: 0.2,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
+          // Client name & Event
           Text(
             item.customerName.isNotEmpty ? item.customerName : 'Klien MGRS',
             style: const TextStyle(
               fontFamily: 'Plus Jakarta Sans',
-              fontSize: 14,
+              fontSize: 14.5,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF0F172A),
-              height: 1.4,
+              color: Color(0xFF18181B),
             ),
           ),
           const SizedBox(height: 2),
@@ -746,167 +658,154 @@ Terima kasih telah mempercayai layanan MGRS!''';
             item.productName,
             style: const TextStyle(
               fontFamily: 'Plus Jakarta Sans',
-              fontSize: 11,
+              fontSize: 11.5,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF64748B),
+              color: Color(0xFF71717A),
             ),
           ),
           const SizedBox(height: 10),
-          // Amount Box (Total & Sisa)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Total Tagihan',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 10,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      item.totalAmountFormatted,
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF0F172A),
-                      ),
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      item.remainingAmount > 0 ? 'Sisa Bayar' : 'Status Bayar',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 10,
-                        color: item.remainingAmount > 0
-                            ? const Color(0xFFDC2626)
-                            : const Color(0xFF059669),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      item.remainingAmount > 0
-                          ? item.remainingAmountFormatted
-                          : 'Lunas',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: item.remainingAmount > 0
-                            ? const Color(0xFFDC2626)
-                            : const Color(0xFF059669),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          // Date & Order ID info
+          // Hairline divider
+          const Divider(height: 1, color: Color(0xFFF4F4F5)),
+          const SizedBox(height: 8),
+          // Amount Row
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(
-                Icons.calendar_today_rounded,
-                size: 12,
-                color: Color(0xFF64748B),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                'Tgl: ${item.formattedInvoiceDate} (${item.rentalDays} Hari)',
-                style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 11,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-              if (item.orderanId != null && item.orderanId!.isNotEmpty) ...[
-                const SizedBox(width: 8),
-                Text(
-                  '• #${item.orderanId}',
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 11,
-                    color: Color(0xFF94A3B8),
+              Row(
+                children: [
+                  const Text(
+                    'Total: ',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11.5,
+                      color: Color(0xFF71717A),
+                    ),
                   ),
-                ),
-              ],
+                  Text(
+                    item.totalAmountFormatted,
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF18181B),
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  Text(
+                    item.remainingAmount > 0 ? 'Sisa: ' : 'Status: ',
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11.5,
+                      color: Color(0xFF71717A),
+                    ),
+                  ),
+                  Text(
+                    item.remainingAmount > 0
+                        ? item.remainingAmountFormatted
+                        : 'Lunas',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: item.remainingAmount > 0
+                          ? const Color(0xFF9F2F2D)
+                          : const Color(0xFF346538),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
-          const Divider(height: 18),
-          // Action Buttons: Atur Pembayaran & Buka Invoice & WA
+          const SizedBox(height: 6),
+          // Date & Order ID info
+          Text(
+            '${item.formattedInvoiceDate} (${item.rentalDays} Hari)${item.orderanId != null && item.orderanId!.isNotEmpty ? " • #${item.orderanId}" : ""}',
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 11,
+              color: Color(0xFFA1A1AA),
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Action Buttons: Atur Bayar & Buka Invoice & WA
           Row(
             children: [
               Expanded(
-                child: OutlinedButton.icon(
+                child: OutlinedButton(
                   key: Key('btn-quick-payment-${item.id}'),
                   onPressed: () => _openQuickPayment(item),
-                  icon: const Icon(Icons.payments_outlined, size: 14),
-                  label: const Text(
-                    'Atur Bayar',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                  ),
                   style: OutlinedButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    foregroundColor: const Color(0xFF18181B),
+                    side: const BorderSide(color: Color(0xFFE4E4E7)),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(6),
                     ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: FilledButton.icon(
-                  key: Key('btn-open-builder-${item.id}'),
-                  onPressed: () => _openInvoiceBuilder(item),
-                  icon: const Icon(Icons.receipt_long_rounded, size: 14),
-                  label: const Text(
-                    'Buka Invoice',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                  ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF0F172A),
+                    padding: const EdgeInsets.symmetric(vertical: 7),
                     visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    'Atur Bayar',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
               ),
               const SizedBox(width: 6),
-              IconButton(
-                onPressed: () => _shareToWhatsApp(item),
-                tooltip: 'Kirim WA',
-                icon: const Icon(Icons.share_rounded, size: 18, color: Color(0xFF059669)),
-                style: IconButton.styleFrom(
-                  backgroundColor: const Color(0xFFECFDF5),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+              Expanded(
+                child: FilledButton(
+                  key: Key('btn-open-builder-${item.id}'),
+                  onPressed: () => _openInvoiceBuilder(item),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF18181B),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 7),
+                    visualDensity: VisualDensity.compact,
                   ),
-                  padding: const EdgeInsets.all(8),
+                  child: const Text(
+                    'Buka Invoice',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              PressableScale(
+                onTap: () => _shareToWhatsApp(item),
+                child: Container(
+                  height: 30,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEDF3EC),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.share_rounded, size: 13, color: Color(0xFF346538)),
+                      SizedBox(width: 4),
+                      Text(
+                        'WA',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF346538),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
