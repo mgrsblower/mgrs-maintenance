@@ -91,6 +91,29 @@ class OrderanSewa {
     return null;
   }
 
+  /// Check if the order is completed or cancelled by status.
+  bool get isCompletedOrCancelled {
+    final s = (statusOrderan ?? '').trim().toLowerCase();
+    return s == 'selesai' || s == 'batal' || s == 'cancelled' || s == 'completed';
+  }
+
+  /// Check if the event or installation date has passed today.
+  bool get isDatePassed {
+    if (tanggalPemasangan == null) return false;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dt = tanggalPemasangan!.toLocal();
+    final itemDay = DateTime(dt.year, dt.month, dt.day);
+    final endDay = itemDay.add(Duration(days: rentalDays > 0 ? rentalDays - 1 : 0));
+    return endDay.isBefore(today);
+  }
+
+  /// Whether this order is upcoming (not yet passed and not completed/cancelled).
+  bool get isUpcoming => !isCompletedOrCancelled && !isDatePassed;
+
+  /// Whether this order is past/completed.
+  bool get isPast => isCompletedOrCancelled || isDatePassed;
+
   /// Clean user note without `[SEWA_HARI:...]` and `[TGL_EVENT:...]` tags.
   String get cleanNote {
     final note = catatanOrderan ?? '';

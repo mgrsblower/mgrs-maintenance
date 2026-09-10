@@ -88,8 +88,9 @@ class _HomeScreenState extends State<HomeScreen>
 
       List<OrderanSewa> upcoming = [];
       try {
-        upcoming = await widget.gateway
-            .fetchUpcomingOrders(limit: 5, forceRefresh: forceRefresh);
+        final all = await widget.gateway
+            .fetchUpcomingOrders(limit: 20, forceRefresh: forceRefresh);
+        upcoming = all.where((o) => o.isUpcoming).take(5).toList();
       } catch (_) {}
 
       setState(() {

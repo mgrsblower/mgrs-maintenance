@@ -19,6 +19,7 @@ class UpcomingOrdersScreen extends StatefulWidget {
 class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
   final TextEditingController searchController = TextEditingController();
   List<OrderanSewa> orders = [];
+  String activeFilter = 'Semua';
   bool isLoading = true;
   String? error;
 
@@ -40,7 +41,8 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
       error = null;
     });
     try {
-      final fetched = await widget.gateway.fetchUpcomingOrders(limit: 50);
+      final fetched = await widget.gateway
+          .fetchUpcomingOrders(limit: 50, forceRefresh: true);
       if (mounted) {
         setState(() {
           orders = fetched;
@@ -59,12 +61,98 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
 
   List<OrderanSewa> get filteredOrders {
     final q = searchController.text.trim().toLowerCase();
-    if (q.isEmpty) return orders;
     return orders.where((o) {
+      final matchesFilter = switch (activeFilter) {
+        'Mendatang' => o.isUpcoming,
+        'Selesai' => o.isPast,
+        _ => true,
+      };
+      if (!matchesFilter) return false;
+      if (q.isEmpty) return true;
       return o.namaEvent.toLowerCase().contains(q) ||
           (o.alamat != null && o.alamat!.toLowerCase().contains(q)) ||
-          (o.namaPic != null && o.namaPic!.toLowerCase().contains(q));
+          (o.namaPic != null && o.namaPic!.toLowerCase().contains(q)) ||
+          (o.namaClient != null && o.namaClient!.toLowerCase().contains(q));
     }).toList();
+  }
+
+  Widget _buildFilterChips(BuildContext context) {
+    final filters = ['Semua', 'Mendatang', 'Selesai'];
+    final upcomingCount = orders.where((o) => o.isUpcoming).length;
+    final pastCount = orders.where((o) => o.isPast).length;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: filters.map((f) {
+          final isSelected = activeFilter == f;
+          final count = switch (f) {
+            'Mendatang' => upcomingCount,
+            'Selesai' => pastCount,
+            _ => orders.length,
+          };
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: PressableScale(
+              onTap: () => setState(() => activeFilter = f),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFF0F172A) : Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFFE2E8F0),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      f,
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 12,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w600,
+                        color:
+                            isSelected ? Colors.white : const Color(0xFF475569),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$count',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: isSelected
+                              ? Colors.white
+                              : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
   }
 
   @override
@@ -78,8 +166,12 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
           children: [
             _buildTopBar(context),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
               child: _buildSearchBar(context),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 2, 20, 8),
+              child: _buildFilterChips(context),
             ),
             Expanded(
               child: RefreshIndicator(
@@ -261,44 +353,105 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFEF2F2),
+                      color: order.isPast
+                          ? const Color(0xFFF1F5F9)
+                          : const Color(0xFFFEF2F2),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFFECACA)),
+                      border: Border.all(
+                        color: order.isPast
+                            ? const Color(0xFFE2E8F0)
+                            : const Color(0xFFFECACA),
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.calendar_today_rounded,
-                            size: 11, color: Color(0xFFDC2626)),
+                        Icon(
+                          Icons.calendar_today_rounded,
+                          size: 11,
+                          color: order.isPast
+                              ? const Color(0xFF64748B)
+                              : const Color(0xFFDC2626),
+                        ),
                         const SizedBox(width: 5),
                         Text(
                           order.dayDateYear,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Plus Jakarta Sans',
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFFDC2626),
+                            color: order.isPast
+                                ? const Color(0xFF64748B)
+                                : const Color(0xFFDC2626),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${order.jumlahUnit} Unit',
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF2563EB),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (order.isPast)
+                        Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFCBD5E1)),
+                          ),
+                          child: Text(
+                            order.isCompletedOrCancelled
+                                ? (order.statusOrderan ?? 'Selesai')
+                                : 'Selesai / Lewat',
+                            style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF475569),
+                            ),
+                          ),
+                        )
+                      else if (order.statusOrderan != null &&
+                          order.statusOrderan!.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFECFDF5),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFA7F3D0)),
+                          ),
+                          child: Text(
+                            order.statusOrderan!,
+                            style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF059669),
+                            ),
+                          ),
+                        ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 9, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '${order.jumlahUnit} Unit',
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF2563EB),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
