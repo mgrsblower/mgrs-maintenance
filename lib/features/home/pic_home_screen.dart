@@ -64,33 +64,85 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
   }
 
   int get _thisMonthOrdersCount {
-    final now = DateTime.now();
-    return _allOrders.where((o) {
-      final dt = o.tanggalPemasangan;
-      if (dt == null) return false;
-      return dt.year == now.year && dt.month == now.month;
-    }).length;
+    try {
+      final list = _allOrders;
+      if (list.isEmpty) return 0;
+      final now = DateTime.now();
+      var count = 0;
+      for (var i = 0; i < list.length; i++) {
+        final dt = list[i].tanggalPemasangan;
+        if (dt != null && dt.year == now.year && dt.month == now.month) {
+          count++;
+        }
+      }
+      return count;
+    } catch (_) {
+      return 0;
+    }
   }
 
   int get _thisMonthUnitsCount {
-    final now = DateTime.now();
-    var sum = 0;
-    for (final o in _allOrders) {
-      final dt = o.tanggalPemasangan;
-      if (dt != null && dt.year == now.year && dt.month == now.month) {
-        sum += o.jumlahUnit;
+    try {
+      final list = _allOrders;
+      if (list.isEmpty) return 0;
+      final now = DateTime.now();
+      var sum = 0;
+      for (var i = 0; i < list.length; i++) {
+        final o = list[i];
+        final dt = o.tanggalPemasangan;
+        if (dt != null && dt.year == now.year && dt.month == now.month) {
+          sum += o.jumlahUnit;
+        }
       }
+      return sum;
+    } catch (_) {
+      return 0;
     }
-    return sum;
   }
 
   int get _todayOrdersCount {
-    final now = DateTime.now();
-    return _upcomingOrders.where((o) {
-      final dt = o.tanggalPemasangan;
-      if (dt == null) return false;
-      return dt.year == now.year && dt.month == now.month && dt.day == now.day;
-    }).length;
+    try {
+      final list = _upcomingOrders;
+      if (list.isEmpty) return 0;
+      final now = DateTime.now();
+      var count = 0;
+      for (var i = 0; i < list.length; i++) {
+        final dt = list[i].tanggalPemasangan;
+        if (dt != null &&
+            dt.year == now.year &&
+            dt.month == now.month &&
+            dt.day == now.day) {
+          count++;
+        }
+      }
+      return count;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  int get _totalOrdersCount {
+    try {
+      return _allOrders.length;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  int get _upcomingCount {
+    try {
+      return _upcomingOrders.length;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  int get _pastCount {
+    try {
+      return _pastOrders.length;
+    } catch (_) {
+      return 0;
+    }
   }
 
   Future<void> _openCreateOrder() async {
@@ -724,9 +776,9 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    _allOrders.isEmpty && !_isLoading
+                    _totalOrdersCount == 0 && !_isLoading
                         ? 'Belum ada data orderan'
-                        : 'Total ${_allOrders.length} orderan tercatat di sistem',
+                        : 'Total $_totalOrdersCount orderan tercatat di sistem',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -774,7 +826,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
               child: _buildGradientStatusCard(
                 icon: Icons.assignment_outlined,
                 percentage: 'Semua',
-                count: '${_allOrders.length}',
+                count: '$_totalOrdersCount',
                 title: 'Total Order',
                 subtitle: 'Semua riwayat',
                 solidColor: const Color(0xFF147CC1),
@@ -787,7 +839,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
               child: _buildGradientStatusCard(
                 icon: Icons.event_available_rounded,
                 percentage: 'Mendatang',
-                count: '${_upcomingOrders.length}',
+                count: '$_upcomingCount',
                 title: 'Akan Datang',
                 subtitle: '$_todayOrdersCount hari ini',
                 solidColor: const Color(0xFFD97706),
@@ -800,7 +852,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
               child: _buildGradientStatusCard(
                 icon: Icons.check_circle_outline_rounded,
                 percentage: 'Riwayat',
-                count: '${_pastOrders.length}',
+                count: '$_pastCount',
                 title: 'Selesai',
                 subtitle: 'Event beres',
                 solidColor: const Color(0xFF059669),
@@ -948,7 +1000,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  '${_upcomingOrders.length}',
+                  '$_upcomingCount',
                   style: const TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 11,
@@ -979,7 +1031,8 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
 
   // 5. Order Cards List (matching HomeScreen._buildOrderCard)
   Widget _buildUpcomingOrdersList(BuildContext context) {
-    if (_upcomingOrders.isEmpty) {
+    final list = _upcomingOrders;
+    if (list.isEmpty) {
       return SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1022,7 +1075,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
       );
     }
 
-    final displayList = _upcomingOrders.take(4).toList();
+    final displayList = list.take(4).toList();
 
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
