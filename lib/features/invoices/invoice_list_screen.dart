@@ -44,7 +44,8 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
     });
 
     try {
-      final list = await widget.gateway.fetchInvoices(forceRefresh: forceRefresh);
+      final list =
+          await widget.gateway.fetchInvoices(forceRefresh: forceRefresh);
       if (!mounted) return;
       setState(() {
         _allInvoices = list;
@@ -76,7 +77,9 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
       final ref = inv.invoiceReference.toLowerCase();
       final client = inv.customerName.toLowerCase();
       final product = inv.productName.toLowerCase();
-      return ref.contains(query) || client.contains(query) || product.contains(query);
+      return ref.contains(query) ||
+          client.contains(query) ||
+          product.contains(query);
     }).toList();
   }
 
@@ -85,7 +88,8 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
   int get _paidCount => _allInvoices.where((i) => i.isPaid).length;
 
   Future<void> _shareToWhatsApp(InvoiceRecord invoice) async {
-    final cleanPhone = invoice.customerPhone.replaceAll(RegExp(r'[^0-9]'), '');
+    final cleanPhone =
+        invoice.customerPhone.replaceAll(RegExp(r'[^0-9]'), '');
     var targetPhone = cleanPhone;
     if (targetPhone.startsWith('0')) {
       targetPhone = '62${targetPhone.substring(1)}';
@@ -125,35 +129,20 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        title: const Text(
-          'Daftar Invoice & Tagihan',
-          style: TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF0F172A),
-          ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
-        iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: const Color(0xFFE2E8F0), height: 1),
-        ),
-      ),
+      backgroundColor: const Color(0xFFFBFBFB),
       body: SafeArea(
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
-              child: _buildSearchBar(),
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+              child: _buildHeader(context),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+              child: _buildSearchBar(),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
               child: _buildFilterChips(),
             ),
             Expanded(
@@ -168,12 +157,77 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
     );
   }
 
+  // Header matching HomeScreen style
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+              'Daftar Invoice & Tagihan',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF0F172A),
+                letterSpacing: -0.3,
+              ),
+            ),
+            SizedBox(height: 2),
+            Text(
+              'Status Pembayaran Sewa Blower',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF1F5F9),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(radius: 3, backgroundColor: Color(0xFF10B981)),
+              SizedBox(width: 5),
+              Text(
+                'Keuangan',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF334155),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Search bar matching UpcomingOrdersScreen
   Widget _buildSearchBar() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFCBD5E1)),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x060F172A),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: TextField(
         controller: _searchController,
@@ -190,8 +244,8 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
             fontSize: 13,
             color: Color(0xFF94A3B8),
           ),
-          prefixIcon:
-              const Icon(Icons.search_rounded, size: 20, color: Color(0xFF64748B)),
+          prefixIcon: const Icon(Icons.search_rounded,
+              size: 20, color: Color(0xFF64748B)),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.clear_rounded,
@@ -210,6 +264,7 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
     );
   }
 
+  // Filter chips matching UpcomingOrdersScreen style exactly
   Widget _buildFilterChips() {
     final filters = [
       {'label': 'Semua', 'count': _allInvoices.length},
@@ -220,6 +275,7 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
       child: Row(
         children: filters.map((f) {
           final label = f['label'] as String;
@@ -230,13 +286,12 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
             padding: const EdgeInsets.only(right: 8),
             child: PressableScale(
               onTap: () => setState(() => _activeFilter = label),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
+              child: Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                 decoration: BoxDecoration(
                   color: isSelected ? const Color(0xFF0F172A) : Colors.white,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: isSelected
                         ? const Color(0xFF0F172A)
@@ -251,7 +306,8 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
                       style: TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w600,
                         color:
                             isSelected ? Colors.white : const Color(0xFF475569),
                       ),
@@ -328,39 +384,44 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
 
     if (invoices.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.receipt_long_outlined,
-                size: 48, color: Color(0xFF94A3B8)),
-            SizedBox(height: 10),
-            Text(
-              'Tidak ada invoice yang sesuai.',
-              style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF64748B),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Icon(Icons.receipt_long_outlined,
+                  size: 48, color: Color(0xFF94A3B8)),
+              SizedBox(height: 10),
+              Text(
+                'Tidak ada invoice yang sesuai.',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF64748B),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 110),
       itemCount: invoices.length,
       itemBuilder: (context, index) {
         final item = invoices[index];
         return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.only(bottom: 10),
           child: _buildInvoiceCard(item),
         );
       },
     );
   }
 
+  // Invoice Card matching HomeScreen._buildOrderCard design tokens
   Widget _buildInvoiceCard(InvoiceRecord item) {
     final statusColor = item.isPaid
         ? const Color(0xFF059669)
@@ -374,23 +435,23 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
             ? const Color(0xFFFFFBEB)
             : const Color(0xFFFEF2F2);
 
-    final statusBorder = item.isPaid
-        ? const Color(0xFFA7F3D0)
+    final dotColor = item.isPaid
+        ? const Color(0xFF10B981)
         : item.isDp
-            ? const Color(0xFFFDE68A)
-            : const Color(0xFFFECACA);
+            ? const Color(0xFFF59E0B)
+            : const Color(0xFFEF4444);
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: Color(0x0A0F172A),
             blurRadius: 8,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -400,29 +461,52 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.receipt_rounded,
-                      size: 16, color: Color(0xFF147CC1)),
-                  const SizedBox(width: 6),
-                  Text(
-                    item.invoiceReference,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: dotColor,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        item.invoiceReference,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '• ${item.quantity} Unit',
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: statusBg,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: statusBorder),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   item.paymentStatus,
@@ -436,14 +520,15 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Text(
             item.customerName.isNotEmpty ? item.customerName : 'Klien MGRS',
             style: const TextStyle(
               fontFamily: 'Plus Jakarta Sans',
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
               color: Color(0xFF0F172A),
+              height: 1.4,
             ),
           ),
           const SizedBox(height: 2),
@@ -451,17 +536,19 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
             item.productName,
             style: const TextStyle(
               fontFamily: 'Plus Jakarta Sans',
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w500,
               color: Color(0xFF64748B),
             ),
           ),
           const SizedBox(height: 10),
+          // Amount Box
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: const Color(0xFFF8FAFC),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -473,7 +560,7 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
                       'Total Tagihan',
                       style: TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 11,
+                        fontSize: 10,
                         color: Color(0xFF64748B),
                       ),
                     ),
@@ -482,7 +569,7 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
                       item.totalAmountFormatted,
                       style: const TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 14,
+                        fontSize: 13,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF0F172A),
                       ),
@@ -497,7 +584,7 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
                         'Sisa Bayar',
                         style: TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 11,
+                          fontSize: 10,
                           color: Color(0xFFDC2626),
                           fontWeight: FontWeight.w600,
                         ),
@@ -507,7 +594,7 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
                         item.remainingAmountFormatted,
                         style: const TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 14,
+                          fontSize: 13,
                           fontWeight: FontWeight.w800,
                           color: Color(0xFFDC2626),
                         ),
@@ -517,40 +604,59 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Tgl: ${item.formattedInvoiceDate} • ${item.quantity} Unit (${item.rentalDays} Hari)',
-                style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 11,
-                  color: Color(0xFF94A3B8),
-                ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.only(top: 8),
+            decoration: const BoxDecoration(
+              border: Border(
+                top: BorderSide(color: Color(0xFFF1F5F9)),
               ),
-              OutlinedButton.icon(
-                onPressed: () => _shareToWhatsApp(item),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF059669),
-                  side: const BorderSide(color: Color(0xFFA7F3D0)),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.calendar_today_rounded,
+                      size: 12,
+                      color: Color(0xFF64748B),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Tgl: ${item.formattedInvoiceDate} (${item.rentalDays} Hari)',
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 11,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _shareToWhatsApp(item),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF059669),
+                    side: const BorderSide(color: Color(0xFFA7F3D0)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  icon: const Icon(Icons.send_rounded, size: 13),
+                  label: const Text(
+                    'Kirim WA',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-                icon: const Icon(Icons.send_rounded, size: 14),
-                label: const Text(
-                  'Kirim WA',
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
