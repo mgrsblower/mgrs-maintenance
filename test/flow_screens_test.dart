@@ -250,6 +250,97 @@ void main() {
     expect(kPos < bPos, isTrue);
   });
 
+  testWidgets(
+      'AssetCatalogScreen sorts codes ascending from small to big across filters',
+      (tester) async {
+    final gateway = DynamicMockGateway([
+      {
+        'id': '1',
+        'nomor_stiker': 'K-10',
+        'jenis_komponen': 'Kepala',
+        'kondisi': 'OK',
+      },
+      {
+        'id': '2',
+        'nomor_stiker': 'K-02',
+        'jenis_komponen': 'Kepala',
+        'kondisi': 'OK',
+      },
+      {
+        'id': '3',
+        'nomor_stiker': 'K-01',
+        'jenis_komponen': 'Kepala',
+        'kondisi': 'OK',
+      },
+      {
+        'id': '4',
+        'nomor_stiker': 'B-05',
+        'jenis_komponen': 'Batang',
+        'kondisi': 'OK',
+      },
+      {
+        'id': '5',
+        'nomor_stiker': 'B-01',
+        'jenis_komponen': 'Batang',
+        'kondisi': 'OK',
+      },
+      {
+        'id': '6',
+        'nomor_stiker': 'T-02',
+        'jenis_komponen': 'Tabung',
+        'kondisi': 'OK',
+      },
+      {
+        'id': '7',
+        'nomor_stiker': 'T-01',
+        'jenis_komponen': 'Tabung',
+        'kondisi': 'OK',
+      },
+    ]);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AssetCatalogScreen(
+          gateway: gateway,
+          onNavigateToTab: (_) {},
+          onOpenScanner: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify all rendered
+    expect(find.text('K-01'), findsOneWidget);
+    expect(find.text('K-02'), findsOneWidget);
+    expect(find.text('K-10'), findsOneWidget);
+    expect(find.text('B-01'), findsOneWidget);
+    expect(find.text('B-05'), findsOneWidget);
+    expect(find.text('T-01'), findsOneWidget);
+    expect(find.text('T-02'), findsOneWidget);
+
+    // Verify ascending order: K-01 < K-02 < K-10 < B-01 < B-05
+    final posK01 = tester.getTopLeft(find.text('K-01')).dy;
+    final posK02 = tester.getTopLeft(find.text('K-02')).dy;
+    final posK10 = tester.getTopLeft(find.text('K-10')).dy;
+    final posB01 = tester.getTopLeft(find.text('B-01')).dy;
+    final posB05 = tester.getTopLeft(find.text('B-05')).dy;
+    expect(posK01 < posK02, isTrue);
+    expect(posK02 < posK10, isTrue);
+    expect(posK10 < posB01, isTrue);
+    expect(posB01 < posB05, isTrue);
+
+    // Tap filter tab "Batang"
+    await tester.tap(find.text('Batang'));
+    await tester.pumpAndSettle();
+
+    // Kepala should not be present
+    expect(find.text('K-01'), findsNothing);
+    expect(find.text('B-01'), findsOneWidget);
+    expect(find.text('B-05'), findsOneWidget);
+    final posB01Filter = tester.getTopLeft(find.text('B-01')).dy;
+    final posB05Filter = tester.getTopLeft(find.text('B-05')).dy;
+    expect(posB01Filter < posB05Filter, isTrue);
+  });
+
   testWidgets('ComponentDetailScreen renders dynamic history from gateway', (
     tester,
   ) async {
@@ -565,12 +656,18 @@ class ErrorMockGateway extends MockGateway {
 }
 
 class DynamicMockGateway extends MockGateway {
+  final List<Map<String, Object?>>? customComponents;
+  DynamicMockGateway([this.customComponents]);
+
   @override
   Future<List<Map<String, Object?>>> fetchComponents({
     String? kind,
     String? query,
     String? condition,
   }) async {
+    if (customComponents != null) {
+      return customComponents!;
+    }
     return [
       {
         'id': 'c-dyn-1',

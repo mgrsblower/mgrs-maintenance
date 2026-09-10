@@ -103,19 +103,30 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
   }
 
   static int _compareCode(String a, String b) {
-    final reg = RegExp(r'^([A-Za-z]+)-?(\d+)$');
-    final matchA = reg.firstMatch(a.trim());
-    final matchB = reg.firstMatch(b.trim());
-    if (matchA != null &&
-        matchB != null &&
-        matchA.group(1) == matchB.group(1)) {
-      final numA = int.tryParse(matchA.group(2) ?? '');
-      final numB = int.tryParse(matchB.group(2) ?? '');
+    final regex = RegExp(r'(\d+|\D+)');
+    final matchesA =
+        regex.allMatches(a.trim()).map((m) => m.group(0)!).toList();
+    final matchesB =
+        regex.allMatches(b.trim()).map((m) => m.group(0)!).toList();
+
+    final length =
+        matchesA.length < matchesB.length ? matchesA.length : matchesB.length;
+    for (int i = 0; i < length; i++) {
+      final tokenA = matchesA[i];
+      final tokenB = matchesB[i];
+
+      final numA = int.tryParse(tokenA);
+      final numB = int.tryParse(tokenB);
+
       if (numA != null && numB != null) {
-        return numA.compareTo(numB);
+        final diff = numA.compareTo(numB);
+        if (diff != 0) return diff;
+      } else {
+        final diff = tokenA.toLowerCase().compareTo(tokenB.toLowerCase());
+        if (diff != 0) return diff;
       }
     }
-    return a.compareTo(b);
+    return matchesA.length.compareTo(matchesB.length);
   }
 
   List<Map<String, dynamic>> _getFilteredItems() {
