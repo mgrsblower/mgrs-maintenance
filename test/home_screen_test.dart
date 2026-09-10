@@ -24,6 +24,7 @@ class SignedInGateway extends MaintenanceGateway {
     String? kind,
     String? query,
     String? condition,
+    bool forceRefresh = false,
   }) async {
     return List.generate(
       24,
@@ -37,7 +38,10 @@ class SignedInGateway extends MaintenanceGateway {
   }
 
   @override
-  Future<Map<String, Object?>> fetchTasksSummary({String? periodId}) async {
+  Future<Map<String, Object?>> fetchTasksSummary({
+    String? periodId,
+    bool forceRefresh = false,
+  }) async {
     return {
       'total': 24,
       'completed': 19,
@@ -48,7 +52,10 @@ class SignedInGateway extends MaintenanceGateway {
   }
 
   @override
-  Future<List<OrderanSewa>> fetchUpcomingOrders({int limit = 10}) async {
+  Future<List<OrderanSewa>> fetchUpcomingOrders({
+    int limit = 10,
+    bool forceRefresh = false,
+  }) async {
     return [
       OrderanSewa(
         id: 'ORD-2026-088',

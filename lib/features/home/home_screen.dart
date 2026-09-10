@@ -27,7 +27,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with AutomaticKeepAliveClientMixin {
   int _operatingCount = 0;
   int _serviceCount = 0;
   int _problemCount = 0;
@@ -37,15 +38,19 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _loading = true;
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   void initState() {
     super.initState();
     _loadMetrics();
   }
 
-  Future<void> _loadMetrics() async {
+  Future<void> _loadMetrics({bool forceRefresh = false}) async {
     setState(() => _loading = true);
     try {
-      final list = await widget.gateway.fetchComponents();
+      final list =
+          await widget.gateway.fetchComponents(forceRefresh: forceRefresh);
       if (!mounted) return;
       int ok = 0;
       int service = 0;
@@ -63,7 +68,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
       String countdown = '0';
       try {
-        final tasks = await widget.gateway.fetchTasksSummary();
+        final tasks = await widget.gateway
+            .fetchTasksSummary(forceRefresh: forceRefresh);
         if (tasks.isNotEmpty) {
           final period = tasks['period'];
           if (period is Map) {
@@ -82,7 +88,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
       List<OrderanSewa> upcoming = [];
       try {
-        upcoming = await widget.gateway.fetchUpcomingOrders(limit: 5);
+        upcoming = await widget.gateway
+            .fetchUpcomingOrders(limit: 5, forceRefresh: forceRefresh);
       } catch (_) {}
 
       setState(() {
@@ -101,6 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       backgroundColor: const Color(0xFFFBFBFB),
       body: SafeArea(
@@ -109,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Expanded(
               child: RefreshIndicator(
-                onRefresh: _loadMetrics,
+                onRefresh: () => _loadMetrics(forceRefresh: true),
                 color: const Color(0xFF2563EB),
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(

@@ -24,7 +24,8 @@ class ActionCenterScreen extends StatefulWidget {
   State<ActionCenterScreen> createState() => _ActionCenterScreenState();
 }
 
-class _ActionCenterScreenState extends State<ActionCenterScreen> {
+class _ActionCenterScreenState extends State<ActionCenterScreen>
+    with AutomaticKeepAliveClientMixin {
   int activeSegment = 0; // 0 = Update Kondisi, 1 = Servis
   final searchController = TextEditingController();
 
@@ -40,6 +41,9 @@ class _ActionCenterScreenState extends State<ActionCenterScreen> {
   final ScrollController scrollController = ScrollController();
   List<Map<String, dynamic>> updateKondisiList = [];
   List<Map<String, dynamic>> serviceList = [];
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -107,13 +111,14 @@ class _ActionCenterScreenState extends State<ActionCenterScreen> {
     }).toList();
   }
 
-  Future<void> loadData() async {
+  Future<void> loadData({bool forceRefresh = false}) async {
     setState(() {
       isLoading = true;
       error = null;
     });
     try {
-      final summary = await widget.gateway.fetchTasksSummary();
+      final summary =
+          await widget.gateway.fetchTasksSummary(forceRefresh: forceRefresh);
       if (!mounted) return;
       if (summary.isNotEmpty) {
         if (summary['total'] is int) totalTasks = summary['total'] as int;
@@ -143,7 +148,8 @@ class _ActionCenterScreenState extends State<ActionCenterScreen> {
         }
       }
 
-      final components = await widget.gateway.fetchComponents();
+      final components =
+          await widget.gateway.fetchComponents(forceRefresh: forceRefresh);
       if (!mounted) return;
       if (components.isNotEmpty) {
         final needsService = components.where((c) {
@@ -237,6 +243,7 @@ class _ActionCenterScreenState extends State<ActionCenterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       backgroundColor: const Color(0xFFFBFBFB),
       body: SafeArea(
@@ -245,7 +252,7 @@ class _ActionCenterScreenState extends State<ActionCenterScreen> {
           children: [
             Expanded(
               child: RefreshIndicator(
-                onRefresh: loadData,
+                onRefresh: () => loadData(forceRefresh: true),
                 color: const Color(0xFF2563EB),
                 child: SingleChildScrollView(
                   controller: scrollController,

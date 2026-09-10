@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mgrs_maintenance/app/app.dart';
 import 'package:mgrs_maintenance/app/gateway.dart';
 import 'package:mgrs_maintenance/features/components/asset_catalog_screen.dart';
 import 'package:mgrs_maintenance/features/components/component.dart';
@@ -43,7 +44,10 @@ class MockGateway extends MaintenanceGateway {
   }
 
   @override
-  Future<Map<String, Object?>> fetchTasksSummary({String? periodId}) async {
+  Future<Map<String, Object?>> fetchTasksSummary({
+    String? periodId,
+    bool forceRefresh = false,
+  }) async {
     return {
       'total': 148,
       'completed': 142,
@@ -63,6 +67,7 @@ class MockGateway extends MaintenanceGateway {
     String? kind,
     String? query,
     String? condition,
+    bool forceRefresh = false,
   }) async {
     return [
       {
@@ -82,7 +87,10 @@ class MockGateway extends MaintenanceGateway {
   }
 
   @override
-  Future<List<OrderanSewa>> fetchUpcomingOrders({int limit = 10}) async {
+  Future<List<OrderanSewa>> fetchUpcomingOrders({
+    int limit = 10,
+    bool forceRefresh = false,
+  }) async {
     return [
       const OrderanSewa(
         id: 'ord-test-1',
@@ -632,6 +640,60 @@ void main() {
     await tester.pumpAndSettle();
     expect(finished, isTrue);
   });
+
+  testWidgets('MaintenanceHome preserves tab state with AutomaticKeepAlive', (
+    tester,
+  ) async {
+    int homeFetchCount = 0;
+    final gateway = CountingMockGateway(() => homeFetchCount++);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MaintenanceHome(
+          gateway: gateway,
+          user: const UserProfile('u1', 'Admin', fullName: 'Test User'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(homeFetchCount, 1);
+
+    // Switch to Tab 1 (Aset)
+    await tester.tap(find.text('Aset'));
+    await tester.pumpAndSettle();
+
+    // Switch to Tab 2 (Servis)
+    await tester.tap(find.text('Servis'));
+    await tester.pumpAndSettle();
+
+    // Switch back to Tab 0 (Beranda)
+    await tester.tap(find.text('Beranda'));
+    await tester.pumpAndSettle();
+
+    // Home was kept alive, so homeFetchCount did not increment when returning to Beranda!
+    expect(homeFetchCount, 3); // 1 for Home, 1 for Aset, 1 for Servis. Returning to Home did NOT re-fetch!
+    expect(find.text('Test User'), findsOneWidget);
+  });
+}
+
+class CountingMockGateway extends MockGateway {
+  CountingMockGateway(this.onFetch);
+  final VoidCallback onFetch;
+
+  @override
+  Future<List<Map<String, Object?>>> fetchComponents({
+    String? kind,
+    String? query,
+    String? condition,
+    bool forceRefresh = false,
+  }) async {
+    onFetch();
+    return super.fetchComponents(
+      kind: kind,
+      query: query,
+      condition: condition,
+      forceRefresh: forceRefresh,
+    );
+  }
 }
 
 class EmptyMockGateway extends MockGateway {
@@ -640,6 +702,7 @@ class EmptyMockGateway extends MockGateway {
     String? kind,
     String? query,
     String? condition,
+    bool forceRefresh = false,
   }) async {
     return [];
   }
@@ -664,6 +727,7 @@ class DynamicMockGateway extends MockGateway {
     String? kind,
     String? query,
     String? condition,
+    bool forceRefresh = false,
   }) async {
     if (customComponents != null) {
       return customComponents!;
@@ -692,6 +756,7 @@ class DynamicMockGateway extends MockGateway {
   Future<List<Map<String, Object?>>> fetchComponentHistory(
     String componentId, {
     int limit = 20,
+    bool forceRefresh = false,
   }) async {
     return [
       {

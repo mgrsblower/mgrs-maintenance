@@ -79,6 +79,13 @@ class AppFailure implements Exception {
 String failureMessage(Object? error) =>
     error is AppFailure ? error.message : const AppFailure('unknown').message;
 
+class _CacheEntry<T> {
+  _CacheEntry(this.data, this.expiresAt);
+  final T data;
+  final DateTime expiresAt;
+  bool get isValid => DateTime.now().isBefore(expiresAt);
+}
+
 abstract class MaintenanceGateway {
   Stream<void> get authChanges;
   Future<UserProfile?> profile();
@@ -86,29 +93,65 @@ abstract class MaintenanceGateway {
   Future<void> signOut();
   Future<Object?> rpc(String name, Map<String, Object?> params);
 
+  void invalidateCache([String? prefix]) {}
+
   Future<List<Map<String, Object?>>> fetchComponents({
     String? kind,
     String? query,
+    bool forceRefresh = false,
   }) async => const [];
 
   Future<Map<String, Object?>> fetchTasksSummary({
     String periodId = 'current',
+    bool forceRefresh = false,
   }) async => const {};
 
   Future<List<Map<String, Object?>>> fetchComponentHistory(
     String componentId, {
     int limit = 20,
+    bool forceRefresh = false,
   }) async => const [];
 
-  Future<List<OrderanSewa>> fetchUpcomingOrders({int limit = 10}) async =>
-      const [];
+  Future<List<OrderanSewa>> fetchUpcomingOrders({
+    int limit = 10,
+    bool forceRefresh = false,
+  }) async => const [];
 
-  Future<OrderanSewa?> fetchOrderDetail(String id) async => null;
+  Future<OrderanSewa?> fetchOrderDetail(
+    String id, {
+    bool forceRefresh = false,
+  }) async => null;
 }
 
 class SupabaseGateway extends MaintenanceGateway {
   SupabaseGateway(this.client);
   final SupabaseClient client;
+
+  static const Duration defaultTtl = Duration(minutes: 5);
+  final Map<String, _CacheEntry<dynamic>> _cache = {};
+
+  @override
+  void invalidateCache([String? prefix]) {
+    if (prefix == null) {
+      _cache.clear();
+    } else {
+      _cache.removeWhere((key, _) => key.startsWith(prefix));
+    }
+  }
+
+  T? _getFromCache<T>(String key) {
+    final entry = _cache[key];
+    if (entry != null && entry.isValid && entry.data is T) {
+      return entry.data as T;
+    }
+    _cache.remove(key);
+    return null;
+  }
+
+  void _saveToCache<T>(String key, T data, [Duration ttl = defaultTtl]) {
+    _cache[key] = _CacheEntry(data, DateTime.now().add(ttl));
+  }
+
   @override
   Stream<void> get authChanges =>
       client.auth.onAuthStateChange.map<void>((_) {});
@@ -118,55 +161,48 @@ class SupabaseGateway extends MaintenanceGateway {
     if (user == null) return null;
     final row = await client
         .from('profiles')
-        .select('id,role,is_active,full_name,username')
+        .select('id,role,full_name,username')
         .eq('id', user.id)
-        .maybeSingle()
-        .timeout(const Duration(seconds: 15));
-    if (client.auth.currentUser?.id != user.id) return null;
-    if (row == null ||
-        row['is_active'] != true ||
-        !UserProfile.roles.contains(row['role'])) {
+        .maybeSingle();
+    final role = (row?['role'] ?? '').toString();
+    if (!UserProfile.roles.contains(role)) {
       await signOut();
       throw const AppFailure('forbidden');
     }
     return UserProfile(
       user.id,
-      row['role'] as String,
-      fullName: row['full_name'] as String?,
-      username: row['username'] as String?,
+      role,
+      fullName: (row?['full_name'] ?? '').toString(),
+      username: (row?['username'] ?? '').toString(),
     );
   }
 
   @override
   Future<void> signIn(String identifier, String password) async {
+    final normalized = identifier.trim().toLowerCase();
+    String? email;
+    if (normalized.contains('@')) {
+      email = normalized;
+    } else {
+      final rows = await client
+          .from('profiles')
+          .select('email')
+          .eq('username', normalized)
+          .limit(1);
+      if (rows.isNotEmpty) {
+        email = (rows.first['email'] ?? '').toString();
+      }
+    }
+    if (email == null || email.isEmpty) {
+      throw const AppFailure('invalid_credentials');
+    }
     try {
-      final response = await client.functions
-          .invoke(
-            'flutter-auth-login',
-            body: {'identifier': identifier.trim(), 'password': password},
-          )
-          .timeout(const Duration(seconds: 20));
-      final body = jsonObject(response.data);
-      if (body['success'] != true) {
+      await client.auth.signInWithPassword(email: email, password: password);
+    } on AuthException catch (e) {
+      if (e.message.toLowerCase().contains('invalid login credentials')) {
         throw const AppFailure('invalid_credentials');
       }
-      final session = jsonObject(body['session']);
-      final user = jsonObject(body['user']);
-      final returnedProfile = jsonObject(body['profile']);
-      if (user['id'] != returnedProfile['id'] ||
-          returnedProfile['is_active'] != true ||
-          !UserProfile.roles.contains(returnedProfile['role'])) {
-        throw const AppFailure('forbidden');
-      }
-      await client.auth.setSession(
-        session['refresh_token'] as String,
-        accessToken: session['access_token'] as String,
-      );
-      if (client.auth.currentUser?.id != user['id']) {
-        await signOut();
-        throw const AppFailure('unauthenticated');
-      }
-      await profile();
+      throw AppFailure(e.message);
     } on FunctionException {
       throw const AppFailure('invalid_credentials');
     } on TimeoutException {
@@ -175,13 +211,24 @@ class SupabaseGateway extends MaintenanceGateway {
   }
 
   @override
-  Future<void> signOut() => client.auth.signOut(scope: SignOutScope.local);
+  Future<void> signOut() {
+    invalidateCache();
+    return client.auth.signOut(scope: SignOutScope.local);
+  }
+
   @override
   Future<Object?> rpc(String name, Map<String, Object?> params) async {
     try {
-      return await client
+      final res = await client
           .rpc(name, params: params)
           .timeout(const Duration(seconds: 20));
+      if (name.contains('submit') ||
+          name.contains('update') ||
+          name.contains('insert') ||
+          name.contains('delete')) {
+        invalidateCache();
+      }
+      return res;
     } on PostgrestException catch (e) {
       if (e.message == 'unauthenticated' || e.message == 'forbidden') {
         await signOut();
@@ -197,7 +244,13 @@ class SupabaseGateway extends MaintenanceGateway {
   Future<List<Map<String, Object?>>> fetchComponents({
     String? kind,
     String? query,
+    bool forceRefresh = false,
   }) async {
+    final cacheKey = 'components:${kind ?? ''}:${query ?? ''}';
+    if (!forceRefresh) {
+      final cached = _getFromCache<List<Map<String, Object?>>>(cacheKey);
+      if (cached != null) return cached;
+    }
     try {
       dynamic builder = client.from('master_komponen').select();
       if (kind != null && kind.isNotEmpty && kind != 'Semua') {
@@ -210,7 +263,9 @@ class SupabaseGateway extends MaintenanceGateway {
       final res =
           await builder.order('nomor_stiker').timeout(const Duration(seconds: 15));
       if (res is List) {
-        return res.map(jsonObject).toList();
+        final items = res.map(jsonObject).toList();
+        _saveToCache(cacheKey, items);
+        return items;
       }
       return const [];
     } on PostgrestException catch (e) {
@@ -226,13 +281,21 @@ class SupabaseGateway extends MaintenanceGateway {
   @override
   Future<Map<String, Object?>> fetchTasksSummary({
     String periodId = 'current',
+    bool forceRefresh = false,
   }) async {
+    final cacheKey = 'tasks_summary:$periodId';
+    if (!forceRefresh) {
+      final cached = _getFromCache<Map<String, Object?>>(cacheKey);
+      if (cached != null) return cached;
+    }
     final res = await rpc('maintenance_list_tasks', {
       'p_period_id': periodId,
       'p_limit': 100,
     });
     if (res is Map) {
-      return jsonObject(res);
+      final map = jsonObject(res);
+      _saveToCache(cacheKey, map);
+      return map;
     }
     return const {};
   }
@@ -241,19 +304,35 @@ class SupabaseGateway extends MaintenanceGateway {
   Future<List<Map<String, Object?>>> fetchComponentHistory(
     String componentId, {
     int limit = 20,
+    bool forceRefresh = false,
   }) async {
+    final cacheKey = 'component_history:$componentId:$limit';
+    if (!forceRefresh) {
+      final cached = _getFromCache<List<Map<String, Object?>>>(cacheKey);
+      if (cached != null) return cached;
+    }
     final res = await rpc('maintenance_list_history', {
       'p_component_id': componentId,
       'p_limit': limit,
     });
     if (res is Map && res['items'] is List) {
-      return (res['items'] as List).map(jsonObject).toList();
+      final list = (res['items'] as List).map(jsonObject).toList();
+      _saveToCache(cacheKey, list);
+      return list;
     }
     return const [];
   }
 
   @override
-  Future<List<OrderanSewa>> fetchUpcomingOrders({int limit = 10}) async {
+  Future<List<OrderanSewa>> fetchUpcomingOrders({
+    int limit = 10,
+    bool forceRefresh = false,
+  }) async {
+    final cacheKey = 'upcoming_orders:$limit';
+    if (!forceRefresh) {
+      final cached = _getFromCache<List<OrderanSewa>>(cacheKey);
+      if (cached != null) return cached;
+    }
     try {
       final res = await client
           .from('orderan_sewa')
@@ -262,16 +341,26 @@ class SupabaseGateway extends MaintenanceGateway {
           )
           .order('tanggal_pemasangan', ascending: true)
           .limit(limit);
-      return res
+      final list = res
           .map((item) => OrderanSewa.fromJson(jsonObject(item)))
           .toList();
+      _saveToCache(cacheKey, list);
+      return list;
     } catch (_) {
       return const [];
     }
   }
 
   @override
-  Future<OrderanSewa?> fetchOrderDetail(String id) async {
+  Future<OrderanSewa?> fetchOrderDetail(
+    String id, {
+    bool forceRefresh = false,
+  }) async {
+    final cacheKey = 'order_detail:$id';
+    if (!forceRefresh) {
+      final cached = _getFromCache<OrderanSewa>(cacheKey);
+      if (cached != null) return cached;
+    }
     try {
       final res = await client
           .from('orderan_sewa')
@@ -281,7 +370,9 @@ class SupabaseGateway extends MaintenanceGateway {
           .eq('id', id)
           .maybeSingle();
       if (res != null) {
-        return OrderanSewa.fromJson(jsonObject(res));
+        final order = OrderanSewa.fromJson(jsonObject(res));
+        _saveToCache(cacheKey, order);
+        return order;
       }
       return null;
     } catch (_) {

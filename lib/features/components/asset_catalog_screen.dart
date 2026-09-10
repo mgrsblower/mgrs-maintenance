@@ -24,7 +24,8 @@ class AssetCatalogScreen extends StatefulWidget {
   State<AssetCatalogScreen> createState() => _AssetCatalogScreenState();
 }
 
-class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
+class _AssetCatalogScreenState extends State<AssetCatalogScreen>
+    with AutomaticKeepAliveClientMixin {
   String activeCategory = 'Semua';
   final searchController = TextEditingController();
   final ScrollController scrollController = ScrollController();
@@ -34,6 +35,9 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
   bool isLoading = false;
   Object? error;
   List<Map<String, dynamic>> components = [];
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -143,13 +147,14 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
     return filtered;
   }
 
-  Future<void> loadComponents() async {
+  Future<void> loadComponents({bool forceRefresh = false}) async {
     setState(() {
       isLoading = true;
       error = null;
     });
     try {
-      final rows = await widget.gateway.fetchComponents();
+      final rows =
+          await widget.gateway.fetchComponents(forceRefresh: forceRefresh);
       if (!mounted) return;
       setState(() {
         final mapped = rows.map((r) {
@@ -204,6 +209,7 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final filtered = _getFilteredItems();
 
     return Scaffold(
@@ -214,7 +220,7 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
           children: [
             Expanded(
               child: RefreshIndicator(
-                onRefresh: loadComponents,
+                onRefresh: () => loadComponents(forceRefresh: true),
                 color: const Color(0xFF2563EB),
                 child: SingleChildScrollView(
                   controller: scrollController,
