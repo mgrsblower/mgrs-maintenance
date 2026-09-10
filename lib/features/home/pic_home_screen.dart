@@ -603,7 +603,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                           size: 12, color: Color(0xFF22380E)),
                       const SizedBox(width: 5),
                       Text(
-                        'Bulan Ini • ${_formatMonthName(DateTime.now())}',
+                        _formatMonthName(DateTime.now()),
                         style: const TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 11,
