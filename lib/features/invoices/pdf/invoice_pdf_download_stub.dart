@@ -6,7 +6,7 @@ const _invoicePdfChannel = MethodChannel(
 );
 
 Future<String?> downloadInvoicePdf(Uint8List bytes, String fileName) async {
-  if (Platform.isAndroid) {
+  if (Platform.isAndroid || Platform.isIOS) {
     try {
       final location = await _invoicePdfChannel.invokeMethod<String>('saveInvoicePdf', {
         'bytes': bytes,
@@ -14,7 +14,7 @@ Future<String?> downloadInvoicePdf(Uint8List bytes, String fileName) async {
       });
       if (location != null && location.isNotEmpty) return location;
     } catch (_) {
-      // Fall back to direct file write if Kotlin channel is not registered
+      // Fall back to direct file write if native channel is not registered
     }
   }
 
@@ -23,7 +23,12 @@ Future<String?> downloadInvoicePdf(Uint8List bytes, String fileName) async {
 
 Future<String> _saveDirectToFile(Uint8List bytes, String fileName) async {
   Directory? targetDir;
-  if (Platform.isWindows) {
+  if (Platform.isIOS) {
+    final home = Platform.environment['HOME'];
+    if (home != null && home.isNotEmpty) {
+      targetDir = Directory('$home/Documents/MGRS');
+    }
+  } else if (Platform.isWindows) {
     final userProfile = Platform.environment['USERPROFILE'];
     if (userProfile != null && userProfile.isNotEmpty) {
       targetDir = Directory('$userProfile\\Downloads\\MGRS');
@@ -47,7 +52,7 @@ Future<String> _saveDirectToFile(Uint8List bytes, String fileName) async {
 Future<void> openInvoicePdf(String? location) async {
   if (location == null || location.isEmpty) return;
 
-  if (Platform.isAndroid) {
+  if (Platform.isAndroid || Platform.isIOS) {
     try {
       await _invoicePdfChannel.invokeMethod<void>('openInvoicePdf', {
         'location': location,
@@ -73,7 +78,7 @@ Future<void> openInvoicePdf(String? location) async {
 Future<void> shareInvoicePdf(String? location, String fileName) async {
   if (location == null || location.isEmpty) return;
 
-  if (Platform.isAndroid) {
+  if (Platform.isAndroid || Platform.isIOS) {
     try {
       await _invoicePdfChannel.invokeMethod<void>('shareInvoicePdf', {
         'location': location,

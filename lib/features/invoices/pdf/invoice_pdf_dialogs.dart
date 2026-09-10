@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../../schedule/order_model.dart';
@@ -251,7 +253,35 @@ class InvoicePdfExportHelper {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 14),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF4F4F5),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFE4E4E7)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.folder_outlined,
+                            size: 14, color: Color(0xFF71717A)),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            _storageLocationDescription(),
+                            style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF52525B),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
                   Row(
                     children: <Widget>[
                       Expanded(
@@ -344,3 +374,14 @@ class _InvoicePdfCircleAction extends StatelessWidget {
         ),
       );
 }
+
+String _storageLocationDescription() {
+  if (kIsWeb) return 'Tersimpan di Unduhan Browser';
+  try {
+    if (Platform.isIOS) return 'Tersimpan di Files > Di iPhone Saya > MGRS';
+    if (Platform.isAndroid) return 'Tersimpan di Penyimpanan > Download > MGRS';
+    if (Platform.isWindows) return 'Tersimpan di folder Downloads\\MGRS';
+  } catch (_) {}
+  return 'Tersimpan di folder Downloads/MGRS';
+}
+

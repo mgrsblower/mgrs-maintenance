@@ -332,79 +332,93 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
   }
 
   Widget _buildDialogHeader() {
-    final (statusBg, statusText) = switch (_paymentStatus) {
+    final (statusBg, statusBorder, statusText) = switch (_paymentStatus) {
       InvoicePaymentStatus.paid => (
           const Color(0xFFEDF3EC),
-          const Color(0xFF346538)
+          const Color(0xFFCDE2CF),
+          const Color(0xFF346538),
         ),
       InvoicePaymentStatus.partial => (
           const Color(0xFFFBF3DB),
-          const Color(0xFF956400)
+          const Color(0xFFEEDDAA),
+          const Color(0xFF956400),
         ),
       InvoicePaymentStatus.unpaid => (
           const Color(0xFFFDEBEC),
-          const Color(0xFF9F2F2D)
+          const Color(0xFFF5C5C7),
+          const Color(0xFF9F2F2D),
         ),
     };
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  _refController.text,
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF18181B),
-                  ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _refController.text,
+                style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF18181B),
+                  letterSpacing: -0.2,
                 ),
-                const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: statusBg,
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: Text(
-                    _paymentStatus.label,
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: statusText,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 5),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: statusBg,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: statusBorder),
+                    ),
+                    child: Text(
+                      _paymentStatus.label,
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: statusText,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 2),
-            Text(
-              _isEditing ? 'Mode Ubah Rincian' : 'Dokumen Tagihan Resmi',
-              style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 11.5,
-                color: Color(0xFF71717A),
+                  const SizedBox(width: 8),
+                  Text(
+                    _isEditing ? 'Mode Edit Rincian' : 'Dokumen Tagihan Resmi',
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF71717A),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
+        const SizedBox(width: 8),
         Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             PressableScale(
               onTap: () => setState(() => _isEditing = !_isEditing),
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                height: 32,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF4F4F5),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFE4E4E7)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -419,7 +433,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                       _isEditing ? 'Pratinjau' : 'Ubah',
                       style: const TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 11,
+                        fontSize: 11.5,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF18181B),
                       ),
@@ -429,12 +443,22 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
               ),
             ),
             const SizedBox(width: 6),
-            IconButton(
-              icon: const Icon(Icons.close_rounded,
-                  size: 20, color: Color(0xFF71717A)),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              onPressed: () => Navigator.of(context).pop(),
+            PressableScale(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF4F4F5),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFE4E4E7)),
+                ),
+                child: const Icon(
+                  Icons.close_rounded,
+                  size: 17,
+                  color: Color(0xFF71717A),
+                ),
+              ),
             ),
           ],
         ),
@@ -908,6 +932,47 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
     );
   }
 
+  Widget _buildActionButton({
+    required VoidCallback? onTap,
+    required Widget icon,
+    required String label,
+    required Color bg,
+    required Color border,
+    required Color textColor,
+    Key? key,
+  }) {
+    return PressableScale(
+      onTap: onTap,
+      child: Container(
+        key: key,
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            icon,
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+                color: textColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildFooterActions() {
     if (_isEditing) {
       return Row(
@@ -919,54 +984,36 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                 style: TextStyle(color: Color(0xFF71717A), fontSize: 12)),
           ),
           const SizedBox(width: 6),
-          OutlinedButton.icon(
-            onPressed: _isExporting ? null : _exportPdf,
+          _buildActionButton(
+            onTap: _isExporting ? null : _exportPdf,
             icon: _isExporting
                 ? const SizedBox(
-                    width: 12,
-                    height: 12,
+                    width: 13,
+                    height: 13,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(Icons.download_rounded, size: 14),
-            label: Text(
-              _isExporting ? 'Mengunduh...' : 'Unduh PDF',
-              style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
-              ),
-            ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF18181B),
-              side: const BorderSide(color: Color(0xFFE4E4E7)),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
+                : const Icon(Icons.download_rounded,
+                    size: 14, color: Color(0xFF18181B)),
+            label: _isExporting ? 'Mengunduh...' : 'Unduh PDF',
+            bg: const Color(0xFFF4F4F5),
+            border: const Color(0xFFE4E4E7),
+            textColor: const Color(0xFF18181B),
           ),
-          const SizedBox(width: 8),
-          FilledButton(
-            onPressed: _isSaving ? null : _save,
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF18181B),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            ),
-            child: _isSaving
+          const SizedBox(width: 6),
+          _buildActionButton(
+            onTap: _isSaving ? null : _save,
+            icon: _isSaving
                 ? const SizedBox(
-                    width: 16,
-                    height: 16,
+                    width: 13,
+                    height: 13,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white),
                   )
-                : const Text('Simpan Perubahan',
-                    style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12)),
+                : const Icon(Icons.save_outlined, size: 14, color: Colors.white),
+            label: 'Simpan',
+            bg: const Color(0xFF18181B),
+            border: const Color(0xFF18181B),
+            textColor: Colors.white,
           ),
         ],
       );
@@ -974,75 +1021,40 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
 
     return Row(
       children: [
-        PressableScale(
+        _buildActionButton(
+          key: const Key('btn-export-pdf'),
           onTap: _isExporting ? null : _exportPdf,
-          child: Container(
-            height: 34,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF4F4F5),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFE4E4E7)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _isExporting
-                    ? const SizedBox(
-                        width: 13,
-                        height: 13,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Color(0xFF18181B),
-                        ),
-                      )
-                    : const Icon(Icons.download_rounded,
-                        size: 15, color: Color(0xFF18181B)),
-                const SizedBox(width: 5),
-                Text(
-                  _isExporting ? 'Mengunduh...' : 'Unduh PDF',
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
+          icon: _isExporting
+              ? const SizedBox(
+                  width: 13,
+                  height: 13,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
                     color: Color(0xFF18181B),
                   ),
-                ),
-              ],
-            ),
-          ),
+                )
+              : const Icon(Icons.download_rounded,
+                  size: 14, color: Color(0xFF18181B)),
+          label: _isExporting ? 'Mengunduh...' : 'Unduh PDF',
+          bg: const Color(0xFFF4F4F5),
+          border: const Color(0xFFE4E4E7),
+          textColor: const Color(0xFF18181B),
         ),
         const SizedBox(width: 6),
-        PressableScale(
+        _buildActionButton(
+          key: const Key('btn-share-whatsapp'),
           onTap: _shareToWhatsApp,
-          child: Container(
-            height: 34,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEDF3EC),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.share_rounded, size: 14, color: Color(0xFF346538)),
-                SizedBox(width: 4),
-                Text(
-                  'Kirim WA',
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF346538),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          icon: const Icon(Icons.share_rounded,
+              size: 13.5, color: Color(0xFF346538)),
+          label: 'Kirim WA',
+          bg: const Color(0xFFEDF3EC),
+          border: const Color(0xFFCDE2CF),
+          textColor: const Color(0xFF346538),
         ),
         const Spacer(),
-        OutlinedButton(
-          onPressed: () {
+        _buildActionButton(
+          key: const Key('btn-quick-payment'),
+          onTap: () {
             showDialog<void>(
               context: context,
               builder: (ctx) => QuickPaymentDialog(
@@ -1057,33 +1069,22 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
               ),
             );
           },
-          style: OutlinedButton.styleFrom(
-            foregroundColor: const Color(0xFF18181B),
-            side: const BorderSide(color: Color(0xFFE4E4E7)),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          ),
-          child: const Text('Atur Bayar',
-              style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12)),
+          icon: const Icon(Icons.payments_outlined,
+              size: 14, color: Color(0xFF18181B)),
+          label: 'Atur Bayar',
+          bg: Colors.white,
+          border: const Color(0xFFE4E4E7),
+          textColor: const Color(0xFF18181B),
         ),
-        const SizedBox(width: 8),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(),
-          style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF18181B),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
-          ),
-          child: const Text('Selesai',
-              style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12)),
+        const SizedBox(width: 6),
+        _buildActionButton(
+          key: const Key('btn-close-dialog'),
+          onTap: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.check_rounded, size: 14, color: Colors.white),
+          label: 'Selesai',
+          bg: const Color(0xFF18181B),
+          border: const Color(0xFF18181B),
+          textColor: Colors.white,
         ),
       ],
     );

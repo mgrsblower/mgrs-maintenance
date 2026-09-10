@@ -18,6 +18,10 @@
 	<string>MGRS</string>
 	<key>NSCameraUsageDescription</key>
 	<string>MGRS memerlukan akses kamera untuk memindai kode QR dan barcode komponen.</string>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>whatsapp</string>
