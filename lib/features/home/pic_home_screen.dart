@@ -1020,6 +1020,36 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
   }
 
   Widget _buildOrderCard(BuildContext context, OrderanSewa order) {
+    final hasMaps =
+        order.linkGmaps != null && order.linkGmaps!.trim().isNotEmpty;
+    final hasWa = order.cleanWhatsapp.isNotEmpty;
+
+    final isPast = order.isPast;
+    final String statusText;
+    final Color statusBg;
+    final Color statusBorder;
+    final Color statusColor;
+    final Color dotColor;
+
+    if (isPast) {
+      statusText = order.isCompletedOrCancelled
+          ? (order.statusOrderan ?? 'Selesai')
+          : 'Selesai / Lewat';
+      statusBg = const Color(0xFFF1F5F9);
+      statusBorder = const Color(0xFFCBD5E1);
+      statusColor = const Color(0xFF475569);
+      dotColor = const Color(0xFF94A3B8);
+    } else {
+      statusText =
+          (order.statusOrderan != null && order.statusOrderan!.isNotEmpty)
+              ? order.statusOrderan!
+              : 'Terjadwal';
+      statusBg = const Color(0xFFECFDF5);
+      statusBorder = const Color(0xFFA7F3D0);
+      statusColor = const Color(0xFF059669);
+      dotColor = const Color(0xFF10B981);
+    }
+
     return PressableScale(
       onTap: () {
         Navigator.of(context).push<void>(
@@ -1049,6 +1079,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 1. Header: [ ● ORD-XXX • 10 Unit (1 Hari) ]  ...  [ Terjadwal ]
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1060,7 +1091,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                         width: 7,
                         height: 7,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEF4444),
+                          color: dotColor,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -1079,8 +1110,25 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                         ),
                       ),
                       const SizedBox(width: 4),
+                      const Text(
+                        '• ',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 11,
+                          color: Color(0xFF94A3B8),
+                        ),
+                      ),
                       Text(
-                        '• ${order.jumlahUnit} Unit',
+                        '${order.jumlahUnit} Unit',
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF475569),
+                        ),
+                      ),
+                      Text(
+                        ' (${order.durasiSewaText})',
                         style: const TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
                           fontSize: 11,
@@ -1092,53 +1140,85 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Flexible(
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFEF2F2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      order.dayDateYear,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFDC2626),
-                      ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: statusBg,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: statusBorder),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      color: statusColor,
                     ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 10),
+
+            // 2. Body: Nama Event (Bold)
             Text(
               order.namaEvent,
               style: const TextStyle(
                 fontFamily: 'Plus Jakarta Sans',
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
                 color: Color(0xFF0F172A),
-                height: 1.4,
+                letterSpacing: -0.2,
               ),
             ),
+
+            // Detail Klien jika ada
             if (order.namaClient != null && order.namaClient!.isNotEmpty) ...[
-              const SizedBox(height: 2),
+              const SizedBox(height: 3),
               Text(
-                'Klien: ${order.namaClient}',
+                'Klien: ${order.namaClient}${order.nomorWhatsapp != null && order.nomorWhatsapp!.isNotEmpty ? ' • ${order.nomorWhatsapp}' : ''}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 11,
+                  fontSize: 11.5,
                   fontWeight: FontWeight.w500,
                   color: Color(0xFF64748B),
                 ),
               ),
             ],
+
+            // Alamat Venue
+            if (order.alamat != null && order.alamat!.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.location_on_outlined,
+                      size: 14, color: Color(0xFF64748B)),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      order.alamat!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 11.5,
+                        color: Color(0xFF64748B),
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+
             const SizedBox(height: 10),
+
+            // 3. Footer: [ Kamis, 10 Sep 2026 ]  ...  [ Maps ] [ WA ]
             Container(
               padding: const EdgeInsets.only(top: 8),
               decoration: const BoxDecoration(
@@ -1147,30 +1227,96 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                 ),
               ),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          size: 14,
-                          color: Color(0xFF64748B),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.calendar_today_rounded,
+                        size: 12,
+                        color: Color(0xFF64748B),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        order.dayDateYear,
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF475569),
                         ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            order.alamat ?? 'Lokasi acara belum dicatat',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 11,
-                              color: Color(0xFF64748B),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (hasMaps)
+                        PressableScale(
+                          onTap: () => order.launchMaps(),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 9, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(8),
+                              border:
+                                  Border.all(color: const Color(0xFFBFDBFE)),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.near_me_rounded,
+                                    size: 12, color: Color(0xFF2563EB)),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Maps',
+                                  style: TextStyle(
+                                    fontFamily: 'Plus Jakarta Sans',
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF2563EB),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      if (hasMaps && hasWa) const SizedBox(width: 6),
+                      if (hasWa)
+                        PressableScale(
+                          onTap: () => order.launchWhatsApp(),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 9, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF0FDF4),
+                              borderRadius: BorderRadius.circular(8),
+                              border:
+                                  Border.all(color: const Color(0xFFBBF7D0)),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.chat_rounded,
+                                    size: 12, color: Color(0xFF16A34A)),
+                                SizedBox(width: 4),
+                                Text(
+                                  'WA',
+                                  style: TextStyle(
+                                    fontFamily: 'Plus Jakarta Sans',
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF16A34A),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      if (!hasMaps && !hasWa)
+                        const Icon(Icons.chevron_right_rounded,
+                            size: 18, color: Color(0xFF94A3B8)),
+                    ],
                   ),
                 ],
               ),

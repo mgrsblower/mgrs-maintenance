@@ -398,8 +398,35 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
   }
 
   Widget _buildOrderCard(BuildContext context, OrderanSewa order) {
-    final hasMaps = order.linkGmaps != null && order.linkGmaps!.trim().isNotEmpty;
+    final hasMaps =
+        order.linkGmaps != null && order.linkGmaps!.trim().isNotEmpty;
     final hasWa = order.cleanWhatsapp.isNotEmpty;
+
+    final isPast = order.isPast;
+    final String statusText;
+    final Color statusBg;
+    final Color statusBorder;
+    final Color statusColor;
+    final Color dotColor;
+
+    if (isPast) {
+      statusText = order.isCompletedOrCancelled
+          ? (order.statusOrderan ?? 'Selesai')
+          : 'Selesai / Lewat';
+      statusBg = const Color(0xFFF1F5F9);
+      statusBorder = const Color(0xFFCBD5E1);
+      statusColor = const Color(0xFF475569);
+      dotColor = const Color(0xFF94A3B8);
+    } else {
+      statusText =
+          (order.statusOrderan != null && order.statusOrderan!.isNotEmpty)
+              ? order.statusOrderan!
+              : 'Terjadwal';
+      statusBg = const Color(0xFFECFDF5);
+      statusBorder = const Color(0xFFA7F3D0);
+      statusColor = const Color(0xFF059669);
+      dotColor = const Color(0xFF10B981);
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -432,118 +459,90 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Badge Row
+              // 1. Header: [ ● ORD-XXX • 10 Unit (1 Hari) ]  ...  [ Terjadwal ]
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: order.isPast
-                          ? const Color(0xFFF1F5F9)
-                          : const Color(0xFFFEF2F2),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: order.isPast
-                            ? const Color(0xFFE2E8F0)
-                            : const Color(0xFFFECACA),
-                      ),
-                    ),
+                  Flexible(
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.calendar_today_rounded,
-                          size: 11,
-                          color: order.isPast
-                              ? const Color(0xFF64748B)
-                              : const Color(0xFFDC2626),
+                        Container(
+                          width: 7,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            color: dotColor,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
-                        const SizedBox(width: 5),
-                        Text(
-                          order.dayDateYear,
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            order.displayCode,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Text(
+                          '• ',
                           style: TextStyle(
                             fontFamily: 'Plus Jakarta Sans',
                             fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: order.isPast
-                                ? const Color(0xFF64748B)
-                                : const Color(0xFFDC2626),
+                            color: Color(0xFF94A3B8),
+                          ),
+                        ),
+                        Text(
+                          '${order.jumlahUnit} Unit',
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF475569),
+                          ),
+                        ),
+                        Text(
+                          ' (${order.durasiSewaText})',
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF64748B),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (order.isPast)
-                        Container(
-                          margin: const EdgeInsets.only(right: 6),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFCBD5E1)),
-                          ),
-                          child: Text(
-                            order.isCompletedOrCancelled
-                                ? (order.statusOrderan ?? 'Selesai')
-                                : 'Selesai / Lewat',
-                            style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF475569),
-                            ),
-                          ),
-                        )
-                      else if (order.statusOrderan != null &&
-                          order.statusOrderan!.isNotEmpty)
-                        Container(
-                          margin: const EdgeInsets.only(right: 6),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFECFDF5),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFA7F3D0)),
-                          ),
-                          child: Text(
-                            order.statusOrderan!,
-                            style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF059669),
-                            ),
-                          ),
-                        ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 9, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${order.jumlahUnit} Unit',
-                          style: const TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF2563EB),
-                          ),
-                        ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: statusBg,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: statusBorder),
+                    ),
+                    child: Text(
+                      statusText,
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: statusColor,
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              // Event Name
+              const SizedBox(height: 10),
+
+              // 2. Body: Nama Event (Bold)
               Text(
                 order.namaEvent,
                 style: const TextStyle(
@@ -554,9 +553,26 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                   letterSpacing: -0.2,
                 ),
               ),
-              const SizedBox(height: 6),
-              // Venue / Address
+
+              // Detail Klien
+              if (order.namaClient != null && order.namaClient!.isNotEmpty) ...[
+                const SizedBox(height: 3),
+                Text(
+                  'Klien: ${order.namaClient}${order.nomorWhatsapp != null && order.nomorWhatsapp!.isNotEmpty ? ' • ${order.nomorWhatsapp}' : ''}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              ],
+
+              // Alamat Venue
               if (order.alamat != null && order.alamat!.isNotEmpty) ...[
+                const SizedBox(height: 4),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -570,7 +586,7 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 12,
+                          fontSize: 11.5,
                           color: Color(0xFF64748B),
                           height: 1.35,
                         ),
@@ -578,104 +594,112 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
               ],
-              // PIC & Action Buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  if (order.namaPic != null && order.namaPic!.isNotEmpty)
-                    Expanded(
-                      child: Row(
-                        children: [
-                          const Icon(Icons.person_outline_rounded,
-                              size: 14, color: Color(0xFF64748B)),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              order.namaPic!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontFamily: 'Plus Jakarta Sans',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF334155),
+
+              const SizedBox(height: 10),
+
+              // 3. Footer: [ Kamis, 10 Sep 2026 ]  ...  [ Maps ] [ WA ]
+              Container(
+                padding: const EdgeInsets.only(top: 8),
+                decoration: const BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: Color(0xFFF1F5F9)),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.calendar_today_rounded,
+                          size: 12,
+                          color: Color(0xFF64748B),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          order.dayDateYear,
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF475569),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (hasMaps)
+                          PressableScale(
+                            onTap: () => order.launchMaps(),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 9, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(8),
+                                border:
+                                    Border.all(color: const Color(0xFFBFDBFE)),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.near_me_rounded,
+                                      size: 12, color: Color(0xFF2563EB)),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Maps',
+                                    style: TextStyle(
+                                      fontFamily: 'Plus Jakarta Sans',
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF2563EB),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                        ],
-                      ),
-                    )
-                  else
-                    const Spacer(),
-                  const SizedBox(width: 8),
-                  Row(
-                    children: [
-                      if (hasMaps)
-                        PressableScale(
-                          onTap: () => order.launchMaps(),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 9, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEFF6FF),
-                              borderRadius: BorderRadius.circular(8),
-                              border:
-                                  Border.all(color: const Color(0xFFBFDBFE)),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(Icons.near_me_rounded,
-                                    size: 13, color: Color(0xFF2563EB)),
-                                SizedBox(width: 4),
-                                Text(
-                                  'Maps',
-                                  style: TextStyle(
-                                    fontFamily: 'Plus Jakarta Sans',
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF2563EB),
+                        if (hasMaps && hasWa) const SizedBox(width: 6),
+                        if (hasWa)
+                          PressableScale(
+                            onTap: () => order.launchWhatsApp(),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 9, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF0FDF4),
+                                borderRadius: BorderRadius.circular(8),
+                                border:
+                                    Border.all(color: const Color(0xFFBBF7D0)),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.chat_rounded,
+                                      size: 12, color: Color(0xFF16A34A)),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'WA',
+                                    style: TextStyle(
+                                      fontFamily: 'Plus Jakarta Sans',
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF16A34A),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      if (hasMaps && hasWa) const SizedBox(width: 6),
-                      if (hasWa)
-                        PressableScale(
-                          onTap: () => order.launchWhatsApp(),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 9, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF0FDF4),
-                              borderRadius: BorderRadius.circular(8),
-                              border:
-                                  Border.all(color: const Color(0xFFBBF7D0)),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(Icons.chat_rounded,
-                                    size: 13, color: Color(0xFF16A34A)),
-                                SizedBox(width: 4),
-                                Text(
-                                  'WA',
-                                  style: TextStyle(
-                                    fontFamily: 'Plus Jakarta Sans',
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF16A34A),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
+                        if (!hasMaps && !hasWa)
+                          const Icon(Icons.chevron_right_rounded,
+                              size: 18, color: Color(0xFF94A3B8)),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
