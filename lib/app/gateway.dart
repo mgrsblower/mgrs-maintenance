@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../features/schedule/order_model.dart';
 
@@ -76,8 +77,12 @@ class AppFailure implements Exception {
   };
 }
 
-String failureMessage(Object? error) =>
-    error is AppFailure ? error.message : const AppFailure('unknown').message;
+String failureMessage(Object? error) {
+  if (kDebugMode && error != null) {
+    debugPrint('[MGRS Failure] $error');
+  }
+  return error is AppFailure ? error.message : const AppFailure('unknown').message;
+}
 
 class _CacheEntry<T> {
   _CacheEntry(this.data, this.expiresAt);
@@ -179,32 +184,76 @@ class SupabaseGateway extends MaintenanceGateway {
 
   @override
   Future<void> signIn(String identifier, String password) async {
-    final normalized = identifier.trim().toLowerCase();
-    String? email;
-    if (normalized.contains('@')) {
-      email = normalized;
-    } else {
-      final rows = await client
-          .from('profiles')
-          .select('email')
-          .eq('username', normalized)
-          .limit(1);
-      if (rows.isNotEmpty) {
-        email = (rows.first['email'] ?? '').toString();
-      }
-    }
-    if (email == null || email.isEmpty) {
+    final trimmed = identifier.trim();
+    if (trimmed.isEmpty || password.isEmpty) {
       throw const AppFailure('invalid_credentials');
     }
+    final normalized = trimmed.toLowerCase();
+
+    // If identifier is an email, sign in directly with Supabase Auth
+    if (normalized.contains('@')) {
+      try {
+        await client.auth
+            .signInWithPassword(email: normalized, password: password)
+            .timeout(const Duration(seconds: 15));
+        await profile();
+        return;
+      } on AuthException catch (e) {
+        if (e.message.toLowerCase().contains('invalid login credentials')) {
+          throw const AppFailure('invalid_credentials');
+        }
+        throw AppFailure(e.message);
+      } on TimeoutException {
+        throw const AppFailure('network');
+      }
+    }
+
+    // Otherwise (username / phone), authenticate via flutter-auth-login Edge Function
     try {
-      await client.auth.signInWithPassword(email: email, password: password);
+      final response = await client.functions
+          .invoke(
+            'flutter-auth-login',
+            body: {'identifier': trimmed, 'password': password},
+          )
+          .timeout(const Duration(seconds: 20));
+      final body = jsonObject(response.data);
+      if (body['success'] != true) {
+        final err = body['error'];
+        if (err is Map && err['code'] == 'inactive_account') {
+          throw const AppFailure('forbidden');
+        }
+        throw const AppFailure('invalid_credentials');
+      }
+      final session = jsonObject(body['session']);
+      final user = jsonObject(body['user']);
+      final returnedProfile = jsonObject(body['profile']);
+      if (user['id'] != returnedProfile['id'] ||
+          returnedProfile['is_active'] != true ||
+          !UserProfile.roles.contains(returnedProfile['role'])) {
+        throw const AppFailure('forbidden');
+      }
+      await client.auth.setSession(
+        session['refresh_token'] as String,
+      );
+      if (client.auth.currentUser?.id != user['id']) {
+        await signOut();
+        throw const AppFailure('unauthenticated');
+      }
+      await profile();
+    } on FunctionException catch (e) {
+      final details = e.details;
+      if (details is Map && details['error'] is Map) {
+        final errCode = details['error']['code'];
+        if (errCode == 'inactive_account') {
+          throw const AppFailure('forbidden');
+        }
+      }
+      throw const AppFailure('invalid_credentials');
     } on AuthException catch (e) {
       if (e.message.toLowerCase().contains('invalid login credentials')) {
         throw const AppFailure('invalid_credentials');
       }
       throw AppFailure(e.message);
-    } on FunctionException {
-      throw const AppFailure('invalid_credentials');
     } on TimeoutException {
       throw const AppFailure('network');
     }
