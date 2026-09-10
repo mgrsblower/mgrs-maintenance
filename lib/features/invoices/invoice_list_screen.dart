@@ -143,7 +143,10 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-              child: _buildFilterChips(),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: _buildFilterChips(),
+              ),
             ),
             Expanded(
               child: RefreshIndicator(

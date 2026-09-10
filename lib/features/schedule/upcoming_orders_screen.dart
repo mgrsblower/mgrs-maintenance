@@ -79,30 +79,46 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
     }).toList();
   }
 
+  Future<void> _openCreateOrder() async {
+    if (widget.user == null) return;
+    final created = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => CreateOrderScreen(
+          gateway: widget.gateway,
+          user: widget.user!,
+        ),
+      ),
+    );
+    if (created == true) loadOrders();
+  }
+
   Widget _buildFilterChips(BuildContext context) {
     final filters = ['Semua', 'Mendatang', 'Selesai'];
     final upcomingCount = orders.where((o) => o.isUpcoming).length;
     final pastCount = orders.where((o) => o.isPast).length;
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(
-        children: filters.map((f) {
-          final isSelected = activeFilter == f;
-          final count = switch (f) {
-            'Mendatang' => upcomingCount,
-            'Selesai' => pastCount,
-            _ => orders.length,
-          };
+    return Row(
+      children: filters.asMap().entries.map((entry) {
+        final index = entry.key;
+        final f = entry.value;
+        final isSelected = activeFilter == f;
+        final count = switch (f) {
+          'Mendatang' => upcomingCount,
+          'Selesai' => pastCount,
+          _ => orders.length,
+        };
 
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: index == 0 ? 0 : 4,
+              right: index == filters.length - 1 ? 0 : 4,
+            ),
             child: PressableScale(
               onTap: () => setState(() => activeFilter = f),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
                   color: isSelected ? const Color(0xFF0F172A) : Colors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -113,20 +129,26 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                   ),
                 ),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      f,
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 12,
-                        fontWeight:
-                            isSelected ? FontWeight.w700 : FontWeight.w600,
-                        color:
-                            isSelected ? Colors.white : const Color(0xFF475569),
+                    Flexible(
+                      child: Text(
+                        f,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 12,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w600,
+                          color: isSelected
+                              ? Colors.white
+                              : const Color(0xFF475569),
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 5),
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 1.5),
@@ -152,9 +174,9 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                 ),
               ),
             ),
-          );
-        }).toList(),
-      ),
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -163,34 +185,7 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
     final list = filteredOrders;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      floatingActionButton: widget.user?.canManageOrders == true
-          ? FloatingActionButton.extended(
-              onPressed: () async {
-                final created = await Navigator.of(context).push<bool>(
-                  MaterialPageRoute(
-                    builder: (_) => CreateOrderScreen(
-                      gateway: widget.gateway,
-                      user: widget.user!,
-                    ),
-                  ),
-                );
-                if (created == true) loadOrders();
-              },
-              backgroundColor: const Color(0xFF147CC1),
-              foregroundColor: Colors.white,
-              elevation: 3,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text(
-                'Orderan Baru',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                ),
-              ),
-            )
-          : null,
+      backgroundColor: const Color(0xFFFBFBFB),
       body: SafeArea(
         child: Column(
           children: [
@@ -200,7 +195,7 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
               child: _buildSearchBar(context),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 2, 20, 8),
+              padding: const EdgeInsets.fromLTRB(20, 2, 20, 10),
               child: _buildFilterChips(context),
             ),
             Expanded(
@@ -220,7 +215,7 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                                 physics: const AlwaysScrollableScrollPhysics(
                                   parent: BouncingScrollPhysics(),
                                 ),
-                                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                                padding: const EdgeInsets.fromLTRB(20, 8, 20, 110),
                                 itemCount: list.length,
                                 itemBuilder: (context, index) {
                                   return _buildOrderCard(context, list[index]);
@@ -235,58 +230,119 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
   }
 
   Widget _buildTopBar(BuildContext context) {
+    final canPop = ModalRoute.of(context)?.canPop ?? false;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          PressableScale(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+          Row(
+            children: [
+              if (canPop) ...[
+                PressableScale(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.chevron_left_rounded,
+                        color: Color(0xFF0F172A),
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    'Orderan Mendatang',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Jadwal Pemasangan & Sewa',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ],
               ),
-              child: const Center(
-                child: Icon(
-                  Icons.chevron_left_rounded,
-                  color: Color(0xFF0F172A),
-                  size: 24,
+            ],
+          ),
+          if (widget.user?.canManageOrders == true)
+            PressableScale(
+              onTap: _openCreateOrder,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF147CC1),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF147CC1).withValues(alpha: 0.25),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_rounded, size: 16, color: Colors.white),
+                    SizedBox(width: 4),
+                    Text(
+                      'Orderan Baru',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            PressableScale(
+              onTap: loadOrders,
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.refresh_rounded,
+                    color: Color(0xFF0F172A),
+                    size: 18,
+                  ),
                 ),
               ),
             ),
-          ),
-          const Text(
-            'Orderan Mendatang',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF0F172A),
-            ),
-          ),
-          PressableScale(
-            onTap: loadOrders,
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.refresh_rounded,
-                  color: Color(0xFF0F172A),
-                  size: 20,
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
