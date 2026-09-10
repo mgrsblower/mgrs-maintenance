@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../features/invoices/invoice_model.dart';
 import '../features/schedule/order_model.dart';
 
 Map<String, Object?> jsonObject(Object? value) {
@@ -26,7 +27,17 @@ class UserProfile {
   final String? fullName;
   final String? username;
 
-  static const roles = {'Admin', 'Tim Service', 'Tim Pemasangan'};
+  static const roles = {
+    'Admin',
+    'Tim Service',
+    'Tim Pemasangan',
+    'PIC Pemasangan',
+  };
+
+  bool get isAdmin => role == 'Admin';
+  bool get isPic => role == 'PIC Pemasangan';
+  bool get isTechnician => role == 'Tim Service' || role == 'Tim Pemasangan';
+  bool get canManageOrders => isAdmin || isPic;
 
   String get displayName {
     if (fullName != null && fullName!.trim().isNotEmpty) {
@@ -35,7 +46,9 @@ class UserProfile {
     if (username != null && username!.trim().isNotEmpty) {
       return username!.trim();
     }
-    return role == 'Admin' ? 'Admin MGRS' : 'Petugas Maintenance';
+    if (isAdmin) return 'Admin MGRS';
+    if (isPic) return 'PIC MGRS';
+    return 'Petugas Maintenance';
   }
 
   String get initials {
@@ -46,7 +59,7 @@ class UserProfile {
     } else if (name.isNotEmpty) {
       return name.substring(0, name.length >= 2 ? 2 : 1).toUpperCase();
     }
-    return 'PM';
+    return isPic ? 'PIC' : 'PM';
   }
 }
 
@@ -126,6 +139,19 @@ abstract class MaintenanceGateway {
     String id, {
     bool forceRefresh = false,
   }) async => null;
+
+  Future<List<InvoiceRecord>> fetchInvoices({
+    bool forceRefresh = false,
+  }) async => const [];
+
+  Future<OrderanSewa> createOrderWithInvoice(
+    Map<String, Object?> orderData,
+  ) async => throw UnimplementedError();
+
+  Future<void> updateOrderStatus(
+    String orderanId,
+    String status,
+  ) async {}
 }
 
 class SupabaseGateway extends MaintenanceGateway {
@@ -427,5 +453,99 @@ class SupabaseGateway extends MaintenanceGateway {
     } catch (_) {
       return null;
     }
+  }
+
+  @override
+  Future<List<InvoiceRecord>> fetchInvoices({
+    bool forceRefresh = false,
+  }) async {
+    const cacheKey = 'invoices:all';
+    if (!forceRefresh) {
+      final cached = _getFromCache<List<InvoiceRecord>>(cacheKey);
+      if (cached != null) return cached;
+    }
+    try {
+      final res = await client
+          .from('invoices')
+          .select()
+          .order('invoice_date', ascending: false);
+      final list =
+          (res as List).map((item) => InvoiceRecord.fromJson(jsonObject(item))).toList();
+      _saveToCache(cacheKey, list);
+      return list;
+    } catch (e) {
+      debugPrint('[Fetch Invoices Error] $e');
+      return const [];
+    }
+  }
+
+  @override
+  Future<OrderanSewa> createOrderWithInvoice(
+    Map<String, Object?> orderData,
+  ) async {
+    // 1. Insert order into orderan_sewa
+    final orderRes = await client
+        .from('orderan_sewa')
+        .insert(orderData)
+        .select()
+        .single();
+    final order = OrderanSewa.fromJson(jsonObject(orderRes));
+
+    // 2. Automatically generate and insert invoice
+    try {
+      final dt = order.tanggalPemasangan ?? DateTime.now();
+      final orderanIdStr = order.orderanId ?? order.id;
+      final codeSuffix = orderanIdStr.split('-').last;
+      final yearStr = dt.year.toString().padLeft(4, '0');
+      final monthStr = dt.month.toString().padLeft(2, '0');
+      final dayStr = dt.day.toString().padLeft(2, '0');
+      final invoiceRef = 'INV/$yearStr/$monthStr/$dayStr-$codeSuffix';
+      final dueDate = dt.add(const Duration(days: 7));
+      final qty = order.jumlahUnit > 0 ? order.jumlahUnit : 1;
+      final days = order.rentalDays > 0 ? order.rentalDays : 1;
+      const unitPrice = 250000;
+      final subtotal = qty * unitPrice;
+      final totalAmount = subtotal * days;
+
+      final invoicePayload = <String, Object?>{
+        'orderan_id': orderanIdStr,
+        'invoice_reference': invoiceRef,
+        'invoice_date': dt.toIso8601String().substring(0, 10),
+        'due_date': dueDate.toIso8601String().substring(0, 10),
+        'product_name':
+            order.namaEvent.isNotEmpty ? order.namaEvent : 'Sewa Mistyfan',
+        'customer_name': order.namaClient,
+        'customer_phone': order.nomorWhatsapp ?? '',
+        'quantity': qty,
+        'rental_days': days,
+        'unit_price': unitPrice,
+        'subtotal': subtotal,
+        'total_amount': totalAmount,
+        'paid_amount': 0,
+        'payment_status': 'Belum Lunas',
+        'invoice_source': 'order',
+      };
+      await client.from('invoices').insert(invoicePayload);
+    } catch (e) {
+      debugPrint('[Invoice Auto-Generate] Warning: $e');
+    }
+
+    invalidateCache('upcoming_orders');
+    invalidateCache('invoices');
+    return order;
+  }
+
+  @override
+  Future<void> updateOrderStatus(String orderanId, String status) async {
+    await client
+        .from('orderan_sewa')
+        .update({
+          'status_orderan': status,
+          if (status.toLowerCase() == 'selesai')
+            'closed_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .or('orderan_id.eq.$orderanId,id.eq.$orderanId');
+    invalidateCache('upcoming_orders');
+    invalidateCache('order_detail:$orderanId');
   }
 }

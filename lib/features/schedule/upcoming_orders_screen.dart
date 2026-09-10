@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../app/gateway.dart';
 import '../../shared/pressable.dart';
+import 'create_order_screen.dart';
 import 'order_detail_screen.dart';
 import 'order_model.dart';
 
@@ -8,9 +9,11 @@ class UpcomingOrdersScreen extends StatefulWidget {
   const UpcomingOrdersScreen({
     super.key,
     required this.gateway,
+    this.user,
   });
 
   final MaintenanceGateway gateway;
+  final UserProfile? user;
 
   @override
   State<UpcomingOrdersScreen> createState() => _UpcomingOrdersScreenState();
@@ -161,6 +164,33 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
+      floatingActionButton: widget.user?.canManageOrders == true
+          ? FloatingActionButton.extended(
+              onPressed: () async {
+                final created = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    builder: (_) => CreateOrderScreen(
+                      gateway: widget.gateway,
+                      user: widget.user!,
+                    ),
+                  ),
+                );
+                if (created == true) loadOrders();
+              },
+              backgroundColor: const Color(0xFF147CC1),
+              foregroundColor: Colors.white,
+              elevation: 3,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text(
+                'Orderan Baru',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
+            )
+          : null,
       body: SafeArea(
         child: Column(
           children: [
@@ -324,6 +354,7 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
               builder: (_) => OrderDetailScreen(
                 order: order,
                 gateway: widget.gateway,
+                user: widget.user,
               ),
             ),
           );

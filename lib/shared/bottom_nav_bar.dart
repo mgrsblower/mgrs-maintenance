@@ -7,19 +7,55 @@ import 'pressable.dart';
 /// Features:
 /// 1. Interactive Drag-to-Scrub gesture (press and slide across tabs with live 1:1 tracking)
 /// 2. Liquid Glass Bubble Lens indicator with chromatic aberration / iridescent rainbow refraction rim
+class AppNavItem {
+  const AppNavItem({
+    required this.label,
+    required this.activeIcon,
+    required this.inactiveIcon,
+  });
+
+  final String label;
+  final IconData activeIcon;
+  final IconData inactiveIcon;
+}
+
+/// Elevated Liquid Glass operational bottom navigation dock for MGRS Maintenance.
+/// Features:
+/// 1. Interactive Drag-to-Scrub gesture (press and slide across tabs with live 1:1 tracking)
+/// 2. Liquid Glass Bubble Lens indicator with chromatic aberration / iridescent rainbow refraction rim
 /// 3. Tactile spring release snapping (Curves.easeOutBack) with tick haptic feedback
-/// 4. Prominent cobalt hero QR scanner action button
+/// 4. Prominent cobalt hero QR scanner action button (optional)
 class AppBottomNavBar extends StatefulWidget {
   const AppBottomNavBar({
     super.key,
     required this.currentIndex,
     required this.onNavigateToTab,
-    required this.onOpenScanner,
+    this.onOpenScanner,
+    this.items,
   });
 
   final int currentIndex;
   final ValueChanged<int> onNavigateToTab;
-  final VoidCallback onOpenScanner;
+  final VoidCallback? onOpenScanner;
+  final List<AppNavItem>? items;
+
+  static const defaultItems = [
+    AppNavItem(
+      label: 'Beranda',
+      activeIcon: Icons.home_rounded,
+      inactiveIcon: Icons.home_outlined,
+    ),
+    AppNavItem(
+      label: 'Aset',
+      activeIcon: Icons.inventory_2_rounded,
+      inactiveIcon: Icons.inventory_2_outlined,
+    ),
+    AppNavItem(
+      label: 'Servis',
+      activeIcon: Icons.build_rounded,
+      inactiveIcon: Icons.build_outlined,
+    ),
+  ];
 
   @override
   State<AppBottomNavBar> createState() => _AppBottomNavBarState();
@@ -109,12 +145,15 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                       child: LayoutBuilder(
                         builder: (context, constraints) {
+                          final items = widget.items ?? AppBottomNavBar.defaultItems;
+                          final itemCount = items.length;
+                          final maxIndex = (itemCount - 1).clamp(0, 99);
                           final totalWidth = constraints.maxWidth;
-                          final tabWidth = totalWidth / 3;
+                          final tabWidth = totalWidth / itemCount;
 
                           // Target position based on active or dragged tab
                           final targetLeft =
-                              widget.currentIndex.clamp(0, 2) * tabWidth;
+                              widget.currentIndex.clamp(0, maxIndex) * tabWidth;
                           final currentLeft = _isDragging && _dragX != null
                               ? (_dragX! - tabWidth / 2)
                                   .clamp(0.0, totalWidth - tabWidth)
@@ -132,7 +171,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                             behavior: HitTestBehavior.translucent,
                             onTapDown: (details) {
                               final x = details.localPosition.dx;
-                              final index = (x / tabWidth).floor().clamp(0, 2);
+                              final index = (x / tabWidth).floor().clamp(0, maxIndex);
                               setState(() {
                                 _isPressed = true;
                                 _pressedIndex = index;
@@ -141,7 +180,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                             },
                             onTapUp: (details) {
                               final x = details.localPosition.dx;
-                              final index = (x / tabWidth).floor().clamp(0, 2);
+                              final index = (x / tabWidth).floor().clamp(0, maxIndex);
                               setState(() {
                                 _isPressed = false;
                                 _pressedIndex = index;
@@ -159,7 +198,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                             },
                             onHorizontalDragStart: (details) {
                               final x = details.localPosition.dx;
-                              final hover = (x / tabWidth).floor().clamp(0, 2);
+                              final hover = (x / tabWidth).floor().clamp(0, maxIndex);
                               setState(() {
                                 _isDragging = true;
                                 _isPressed = false;
@@ -171,7 +210,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                             },
                             onHorizontalDragUpdate: (details) {
                               final x = details.localPosition.dx;
-                              final hover = (x / tabWidth).floor().clamp(0, 2);
+                              final hover = (x / tabWidth).floor().clamp(0, maxIndex);
                               if (hover != _lastHapticTab) {
                                 HapticFeedback.selectionClick();
                                 _lastHapticTab = hover;
@@ -183,7 +222,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                             },
                             onHorizontalDragEnd: (details) {
                               final finalTab = _dragX != null
-                                  ? (_dragX! / tabWidth).floor().clamp(0, 2)
+                                  ? (_dragX! / tabWidth).floor().clamp(0, maxIndex)
                                   : (_pressedIndex ?? widget.currentIndex);
                               setState(() {
                                 _isDragging = false;
@@ -230,27 +269,14 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                                 // Tab items row
                                 Row(
                                   children: [
-                                    _buildTab(
-                                      index: 0,
-                                      label: 'Beranda',
-                                      activeIcon: Icons.home_rounded,
-                                      inactiveIcon: Icons.home_outlined,
-                                      currentActiveTab: activeTab,
-                                    ),
-                                    _buildTab(
-                                      index: 1,
-                                      label: 'Aset',
-                                      activeIcon: Icons.inventory_2_rounded,
-                                      inactiveIcon: Icons.inventory_2_outlined,
-                                      currentActiveTab: activeTab,
-                                    ),
-                                    _buildTab(
-                                      index: 2,
-                                      label: 'Servis',
-                                      activeIcon: Icons.build_rounded,
-                                      inactiveIcon: Icons.build_outlined,
-                                      currentActiveTab: activeTab,
-                                    ),
+                                    for (int i = 0; i < items.length; i++)
+                                      _buildTab(
+                                        index: i,
+                                        label: items[i].label,
+                                        activeIcon: items[i].activeIcon,
+                                        inactiveIcon: items[i].inactiveIcon,
+                                        currentActiveTab: activeTab,
+                                      ),
                                   ],
                                 ),
                               ],
@@ -264,33 +290,35 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
               ),
             ),
           ),
-          const SizedBox(width: 10),
-          // Floating QR Scanner Button (MGRS Cobalt Hero Action)
-          PressableScale(
-            onTap: widget.onOpenScanner,
-            child: Container(
-              width: 58,
-              height: 58,
-              decoration: BoxDecoration(
-                color: const Color(0xFF147CC1),
-                shape: BoxShape.circle,
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x33147CC1),
-                    blurRadius: 14,
-                    offset: Offset(0, 4),
+          if (widget.onOpenScanner != null) ...[
+            const SizedBox(width: 10),
+            // Floating QR Scanner Button (MGRS Cobalt Hero Action)
+            PressableScale(
+              onTap: widget.onOpenScanner,
+              child: Container(
+                width: 58,
+                height: 58,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF147CC1),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x33147CC1),
+                      blurRadius: 14,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.qr_code_scanner_rounded,
+                    color: Colors.white,
+                    size: 26,
                   ),
-                ],
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.qr_code_scanner_rounded,
-                  color: Colors.white,
-                  size: 26,
                 ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );

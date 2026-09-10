@@ -9,11 +9,13 @@ class OrderDetailScreen extends StatefulWidget {
     this.order,
     this.orderId,
     this.gateway,
+    this.user,
   });
 
   final OrderanSewa? order;
   final String? orderId;
   final MaintenanceGateway? gateway;
+  final UserProfile? user;
 
   @override
   State<OrderDetailScreen> createState() => _OrderDetailScreenState();
@@ -630,9 +632,90 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
+  Future<void> _markAsCompleted() async {
+    final order = _order;
+    if (order == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text(
+          'Selesaikan Orderan?',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF0F172A),
+          ),
+        ),
+        content: Text(
+          'Apakah event "${order.namaEvent}" sudah selesai dan unit blower siap kembali?\nStatus orderan akan diubah menjadi Selesai.',
+          style: const TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 13,
+            color: Color(0xFF475569),
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF0F172A),
+            ),
+            child: const Text('Ya, Selesaikan'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        final orderanIdStr = order.orderanId ?? order.id;
+        await widget.gateway?.updateOrderStatus(orderanIdStr, 'Selesai');
+        if (!mounted) return;
+        setState(() {
+          _order = order.copyWith(statusOrderan: 'Selesai');
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Orderan berhasil ditandai selesai.',
+              style: TextStyle(fontFamily: 'Plus Jakarta Sans'),
+            ),
+            backgroundColor: Color(0xFF059669),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              failureMessage(e),
+              style: const TextStyle(fontFamily: 'Plus Jakarta Sans'),
+            ),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   // Bottom Floating CTA Bar
   Widget _buildBottomCta(BuildContext context) {
     final order = _order;
+    final canComplete =
+        widget.user?.canManageOrders == true &&
+        order != null &&
+        !order.isCompletedOrCancelled;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
       decoration: BoxDecoration(
@@ -646,54 +729,98 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           ),
         ],
       ),
-      child: PressableScale(
-        onTap: () async {
-          if (order != null && order.cleanWhatsapp.isNotEmpty) {
-            final ok = await order.launchWhatsApp();
-            if (!ok && context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Tidak dapat membuka WhatsApp.'),
+      child: canComplete
+          ? Row(
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: PressableScale(
+                    onTap: _markAsCompleted,
+                    child: Container(
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F172A),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.check_circle_rounded,
+                              color: Colors.white, size: 18),
+                          SizedBox(width: 8),
+                          Text(
+                            'Tandai Selesai',
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-              );
-            }
-          } else {
+                const SizedBox(width: 10),
+                Expanded(
+                  flex: 6,
+                  child: _buildWhatsappButton(order),
+                ),
+              ],
+            )
+          : _buildWhatsappButton(order),
+    );
+  }
+
+  Widget _buildWhatsappButton(OrderanSewa? order) {
+    return PressableScale(
+      onTap: () async {
+        if (order != null && order.cleanWhatsapp.isNotEmpty) {
+          final ok = await order.launchWhatsApp();
+          if (!ok && mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Nomor WhatsApp pemesan belum terdaftar.'),
+                content: Text('Tidak dapat membuka WhatsApp.'),
               ),
             );
           }
-        },
-        child: Container(
-          height: 48,
-          decoration: BoxDecoration(
-            color: const Color(0xFF16A34A),
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x3316A34A),
-                blurRadius: 8,
-                offset: Offset(0, 3),
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Nomor WhatsApp pemesan belum terdaftar.'),
+            ),
+          );
+        }
+      },
+      child: Container(
+        height: 48,
+        decoration: BoxDecoration(
+          color: const Color(0xFF16A34A),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x3316A34A),
+              blurRadius: 8,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.chat_rounded, color: Colors.white, size: 18),
+            SizedBox(width: 8),
+            Text(
+              'Hubungi Pemesan',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
               ),
-            ],
-          ),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.chat_rounded, color: Colors.white, size: 18),
-              SizedBox(width: 8),
-              Text(
-                'Hubungi Pemesan',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

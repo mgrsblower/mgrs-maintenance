@@ -63,6 +63,38 @@ class OrderanSewa {
     );
   }
 
+  OrderanSewa copyWith({
+    String? id,
+    String? orderanId,
+    String? namaEvent,
+    String? namaClient,
+    String? alamat,
+    int? jumlahUnit,
+    String? namaPic,
+    String? nomorWhatsapp,
+    String? linkGmaps,
+    DateTime? tanggalPemasangan,
+    String? statusOrderan,
+    String? catatanOrderan,
+    DateTime? createdAt,
+  }) {
+    return OrderanSewa(
+      id: id ?? this.id,
+      orderanId: orderanId ?? this.orderanId,
+      namaEvent: namaEvent ?? this.namaEvent,
+      namaClient: namaClient ?? this.namaClient,
+      alamat: alamat ?? this.alamat,
+      jumlahUnit: jumlahUnit ?? this.jumlahUnit,
+      namaPic: namaPic ?? this.namaPic,
+      nomorWhatsapp: nomorWhatsapp ?? this.nomorWhatsapp,
+      linkGmaps: linkGmaps ?? this.linkGmaps,
+      tanggalPemasangan: tanggalPemasangan ?? this.tanggalPemasangan,
+      statusOrderan: statusOrderan ?? this.statusOrderan,
+      catatanOrderan: catatanOrderan ?? this.catatanOrderan,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
   static final _rentalDaysPattern = RegExp(r'\[SEWA_HARI:(\d+)\]', caseSensitive: false);
   static final _eventDatePattern = RegExp(r'\[TGL_EVENT:(\d{4}-\d{2}-\d{2})\]', caseSensitive: false);
 

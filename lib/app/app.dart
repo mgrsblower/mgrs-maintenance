@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import '../features/auth/login_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/home/home_skeleton.dart';
+import '../features/home/pic_home_screen.dart';
 import '../features/components/asset_catalog_screen.dart';
+import '../features/invoices/invoice_list_screen.dart';
 import '../features/maintenance/action_center_screen.dart';
 import '../features/scan/scan_screen.dart';
+import '../features/schedule/upcoming_orders_screen.dart';
 import '../features/splash/splash_screen.dart';
 import '../shared/async_state_view.dart';
 import '../shared/bottom_nav_bar.dart';
@@ -150,6 +153,24 @@ class MaintenanceHome extends StatefulWidget {
 
 class _MaintenanceHomeState extends State<MaintenanceHome>
     with SingleTickerProviderStateMixin {
+  static const picNavItems = [
+    AppNavItem(
+      label: 'Beranda',
+      activeIcon: Icons.space_dashboard_rounded,
+      inactiveIcon: Icons.space_dashboard_outlined,
+    ),
+    AppNavItem(
+      label: 'Orderan',
+      activeIcon: Icons.event_note_rounded,
+      inactiveIcon: Icons.event_note_outlined,
+    ),
+    AppNavItem(
+      label: 'Invoice',
+      activeIcon: Icons.receipt_long_rounded,
+      inactiveIcon: Icons.receipt_long_outlined,
+    ),
+  ];
+
   int tab = 0;
   late final PageController _pageController;
   late final AnimationController _fadeController;
@@ -194,8 +215,48 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
 
   @override
   Widget build(BuildContext context) {
+    final isPic = widget.user.isPic;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final scrimHeight = 98.0 + bottomInset;
+
+    final children = isPic
+        ? [
+            PicHomeScreen(
+              gateway: widget.gateway,
+              user: widget.user,
+              onOpenOrdersTab: () => _onNavigateToTab(1),
+              onOpenInvoicesTab: () => _onNavigateToTab(2),
+            ),
+            UpcomingOrdersScreen(
+              gateway: widget.gateway,
+              user: widget.user,
+            ),
+            InvoiceListScreen(
+              gateway: widget.gateway,
+              user: widget.user,
+            ),
+          ]
+        : [
+            HomeScreen(
+              gateway: widget.gateway,
+              user: widget.user,
+              showBottomNav: false,
+              onNavigateToTab: _onNavigateToTab,
+              onOpenScanner: openScannerModal,
+            ),
+            AssetCatalogScreen(
+              gateway: widget.gateway,
+              showBottomNav: false,
+              onNavigateToTab: _onNavigateToTab,
+              onOpenScanner: openScannerModal,
+            ),
+            ActionCenterScreen(
+              gateway: widget.gateway,
+              showBottomNav: false,
+              onNavigateToTab: _onNavigateToTab,
+              onOpenScanner: openScannerModal,
+            ),
+          ];
 
     return Scaffold(
       extendBody: true,
@@ -208,27 +269,7 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
               controller: _pageController,
               onPageChanged: (index) => setState(() => tab = index),
               physics: const BouncingScrollPhysics(),
-              children: [
-                HomeScreen(
-                  gateway: widget.gateway,
-                  user: widget.user,
-                  showBottomNav: false,
-                  onNavigateToTab: _onNavigateToTab,
-                  onOpenScanner: openScannerModal,
-                ),
-                AssetCatalogScreen(
-                  gateway: widget.gateway,
-                  showBottomNav: false,
-                  onNavigateToTab: _onNavigateToTab,
-                  onOpenScanner: openScannerModal,
-                ),
-                ActionCenterScreen(
-                  gateway: widget.gateway,
-                  showBottomNav: false,
-                  onNavigateToTab: _onNavigateToTab,
-                  onOpenScanner: openScannerModal,
-                ),
-              ],
+              children: children,
             ),
           ),
           // Native iOS style bottom gradient scrim (fades content softly beneath floating navbar)
@@ -259,7 +300,8 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: tab,
         onNavigateToTab: _onNavigateToTab,
-        onOpenScanner: openScannerModal,
+        items: isPic ? picNavItems : null,
+        onOpenScanner: isPic ? null : openScannerModal,
       ),
     );
   }
