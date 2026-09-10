@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../app/gateway.dart';
+import '../../shared/pressable.dart';
 import 'invoice_adjustment_editor.dart';
 import 'invoice_model.dart';
+import 'quick_payment_dialog.dart';
 
 class InvoiceBuilderDialog extends StatefulWidget {
   const InvoiceBuilderDialog({
@@ -47,17 +49,27 @@ class _InvoiceBuilderDialogState extends State<InvoiceBuilderDialog> {
     super.initState();
     _isEditing = widget.initiallyEditing;
 
-    _refController = TextEditingController(text: widget.invoice.invoiceReference);
-    _orderIdController = TextEditingController(text: widget.invoice.orderanId ?? '');
-    _productController = TextEditingController(text: widget.invoice.productName);
-    _customerNameController = TextEditingController(text: widget.invoice.customerName);
-    _customerPhoneController = TextEditingController(text: widget.invoice.customerPhone);
-    _invoiceDateController = TextEditingController(text: widget.invoice.invoiceDate);
+    _refController =
+        TextEditingController(text: widget.invoice.invoiceReference);
+    _orderIdController =
+        TextEditingController(text: widget.invoice.orderanId ?? '');
+    _productController =
+        TextEditingController(text: widget.invoice.productName);
+    _customerNameController =
+        TextEditingController(text: widget.invoice.customerName);
+    _customerPhoneController =
+        TextEditingController(text: widget.invoice.customerPhone);
+    _invoiceDateController =
+        TextEditingController(text: widget.invoice.invoiceDate);
     _dueDateController = TextEditingController(text: widget.invoice.dueDate);
-    _qtyController = TextEditingController(text: widget.invoice.quantity.toString());
-    _daysController = TextEditingController(text: widget.invoice.rentalDays.toString());
-    _unitPriceController = TextEditingController(text: widget.invoice.unitPrice.toString());
-    _paidAmountController = TextEditingController(text: widget.invoice.paidAmount.toString());
+    _qtyController =
+        TextEditingController(text: widget.invoice.quantity.toString());
+    _daysController =
+        TextEditingController(text: widget.invoice.rentalDays.toString());
+    _unitPriceController =
+        TextEditingController(text: widget.invoice.unitPrice.toString());
+    _paidAmountController =
+        TextEditingController(text: widget.invoice.paidAmount.toString());
     _paymentStatus = widget.invoice.paymentStatus;
 
     for (final adj in widget.invoice.adjustments) {
@@ -67,7 +79,12 @@ class _InvoiceBuilderDialogState extends State<InvoiceBuilderDialog> {
       ));
     }
 
-    for (final c in [_qtyController, _daysController, _unitPriceController, _paidAmountController]) {
+    for (final c in [
+      _qtyController,
+      _daysController,
+      _unitPriceController,
+      _paidAmountController
+    ]) {
       c.addListener(() => setState(() {}));
     }
   }
@@ -97,11 +114,14 @@ class _InvoiceBuilderDialogState extends State<InvoiceBuilderDialog> {
     final unitPrice = num.tryParse(_unitPriceController.text.trim()) ?? 250000;
     final paid = num.tryParse(_paidAmountController.text.trim()) ?? 0;
 
-    final resolvedAdjustments = _adjustments.map((a) {
-      final desc = a.descCtrl.text.trim();
-      final amt = num.tryParse(a.amountCtrl.text.trim()) ?? 0;
-      return InvoiceAdjustment(description: desc, amount: amt);
-    }).where((a) => a.description.isNotEmpty || a.amount != 0).toList();
+    final resolvedAdjustments = _adjustments
+        .map((a) {
+          final desc = a.descCtrl.text.trim();
+          final amt = num.tryParse(a.amountCtrl.text.trim()) ?? 0;
+          return InvoiceAdjustment(description: desc, amount: amt);
+        })
+        .where((a) => a.description.isNotEmpty || a.amount != 0)
+        .toList();
 
     return InvoiceCalculator.calculate(
       quantity: qty,
@@ -115,13 +135,15 @@ class _InvoiceBuilderDialogState extends State<InvoiceBuilderDialog> {
 
   Future<void> _shareToWhatsApp() async {
     final calc = _calculation;
-    final cleanPhone = _customerPhoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
+    final cleanPhone =
+        _customerPhoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
     var targetPhone = cleanPhone;
     if (targetPhone.startsWith('0')) {
       targetPhone = '62${targetPhone.substring(1)}';
     }
 
-    final message = '''Halo *${_customerNameController.text.trim().isNotEmpty ? _customerNameController.text.trim() : 'Klien MGRS'}*,
+    final message =
+        '''Halo *${_customerNameController.text.trim().isNotEmpty ? _customerNameController.text.trim() : 'Klien MGRS'}*,
 
 Berikut rincian tagihan resmi dari *MGRS Blower*:
 📄 *No. Invoice:* ${_refController.text.trim()}
@@ -150,7 +172,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Tidak dapat membuka WhatsApp.'),
-          backgroundColor: Color(0xFFDC2626),
+          backgroundColor: Color(0xFF9F2F2D),
         ),
       );
     }
@@ -160,15 +182,20 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
     if (!_formKey.currentState!.validate()) return;
 
     final calc = _calculation;
-    final resolvedAdjustments = _adjustments.map((a) {
-      final desc = a.descCtrl.text.trim();
-      final amt = num.tryParse(a.amountCtrl.text.trim()) ?? 0;
-      return InvoiceAdjustment(description: desc, amount: amt);
-    }).where((a) => a.description.isNotEmpty || a.amount != 0).toList();
+    final resolvedAdjustments = _adjustments
+        .map((a) {
+          final desc = a.descCtrl.text.trim();
+          final amt = num.tryParse(a.amountCtrl.text.trim()) ?? 0;
+          return InvoiceAdjustment(description: desc, amount: amt);
+        })
+        .where((a) => a.description.isNotEmpty || a.amount != 0)
+        .toList();
 
     final input = SaveInvoiceInput(
       invoiceId: widget.invoice.id,
-      orderanId: _orderIdController.text.trim().isEmpty ? null : _orderIdController.text.trim(),
+      orderanId: _orderIdController.text.trim().isEmpty
+          ? null
+          : _orderIdController.text.trim(),
       invoiceReference: _refController.text.trim(),
       invoiceDate: _invoiceDateController.text.trim(),
       dueDate: _dueDateController.text.trim(),
@@ -192,14 +219,17 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
       final saved = await widget.gateway.saveInvoice(input);
       if (!mounted) return;
       widget.onSaved(saved);
-      Navigator.of(context).pop();
+      setState(() {
+        _isSaving = false;
+        _isEditing = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             'Invoice ${saved.invoiceReference} berhasil disimpan.',
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
-          backgroundColor: const Color(0xFF059669),
+          backgroundColor: const Color(0xFF346538),
         ),
       );
     } catch (e) {
@@ -208,7 +238,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Gagal menyimpan invoice: $e'),
-          backgroundColor: const Color(0xFFDC2626),
+          backgroundColor: const Color(0xFF9F2F2D),
         ),
       );
     }
@@ -216,456 +246,31 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
 
   @override
   Widget build(BuildContext context) {
-    final calc = _calculation;
-
     return Dialog(
       backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 850),
+        constraints: const BoxConstraints(maxWidth: 480, maxHeight: 750),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              _isEditing ? 'Edit Formulir Invoice' : 'Rincian Invoice',
-                              style: const TextStyle(
-                                fontFamily: 'Plus Jakarta Sans',
-                                fontSize: 17,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF0F172A),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: _isEditing ? const Color(0xFFFEF3C7) : const Color(0xFFF1F5F9),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _isEditing ? 'Mode Edit' : 'Pratinjau',
-                                style: TextStyle(
-                                  fontFamily: 'Plus Jakarta Sans',
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: _isEditing ? const Color(0xFFB45309) : const Color(0xFF64748B),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          widget.invoice.invoiceReference,
-                          style: const TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 12,
-                            color: Color(0xFF64748B),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          _isEditing ? Icons.visibility_outlined : Icons.edit_outlined,
-                          size: 20,
-                          color: const Color(0xFF2563EB),
-                        ),
-                        tooltip: _isEditing ? 'Lihat Pratinjau' : 'Edit Invoice',
-                        onPressed: () => setState(() => _isEditing = !_isEditing),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 20, color: Color(0xFF64748B)),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const Divider(height: 24),
-              // Body (Scrollable Form)
+              _buildDialogHeader(),
+              const SizedBox(height: 12),
+              const Divider(height: 1, color: Color(0xFFF4F4F5)),
+              const SizedBox(height: 14),
+              // Body: Mode Pratinjau (Document Receipt) vs Mode Edit
               Expanded(
-                child: SingleChildScrollView(
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Customer & Order Info
-                        const Text(
-                          'Informasi Klien & Order',
-                          style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF334155),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                controller: _customerNameController,
-                                readOnly: !_isEditing,
-                                style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13),
-                                decoration: InputDecoration(
-                                  labelText: 'Nama Klien',
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: TextFormField(
-                                controller: _customerPhoneController,
-                                readOnly: !_isEditing,
-                                keyboardType: TextInputType.phone,
-                                style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13),
-                                decoration: InputDecoration(
-                                  labelText: 'No. WhatsApp',
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        TextFormField(
-                          controller: _productController,
-                          readOnly: !_isEditing,
-                          style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13),
-                          decoration: InputDecoration(
-                            labelText: 'Nama Acara / Keterangan',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Dates
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                controller: _invoiceDateController,
-                                readOnly: !_isEditing,
-                                style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13),
-                                decoration: InputDecoration(
-                                  labelText: 'Tanggal Invoice',
-                                  hintText: 'YYYY-MM-DD',
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: TextFormField(
-                                controller: _dueDateController,
-                                readOnly: !_isEditing,
-                                style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13),
-                                decoration: InputDecoration(
-                                  labelText: 'Jatuh Tempo',
-                                  hintText: 'YYYY-MM-DD',
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 18),
-                        // Unit & Price Matrix
-                        const Text(
-                          'Kuantitas & Biaya Sewa',
-                          style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF334155),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                controller: _qtyController,
-                                readOnly: !_isEditing,
-                                keyboardType: TextInputType.number,
-                                style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13),
-                                decoration: InputDecoration(
-                                  labelText: 'Jumlah Unit',
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: TextFormField(
-                                controller: _daysController,
-                                readOnly: !_isEditing,
-                                keyboardType: TextInputType.number,
-                                style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13),
-                                decoration: InputDecoration(
-                                  labelText: 'Durasi (Hari)',
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              flex: 2,
-                              child: TextFormField(
-                                controller: _unitPriceController,
-                                readOnly: !_isEditing,
-                                keyboardType: TextInputType.number,
-                                style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13),
-                                decoration: InputDecoration(
-                                  labelText: 'Harga Satuan',
-                                  prefixText: 'Rp ',
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 18),
-                        // Adjustments
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Penyesuaian Biaya / Diskon',
-                              style: TextStyle(
-                                fontFamily: 'Plus Jakarta Sans',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF334155),
-                              ),
-                            ),
-                            if (_isEditing)
-                              TextButton.icon(
-                                onPressed: () {
-                                  setState(() {
-                                    _adjustments.add(_AdjustmentItem(
-                                      descCtrl: TextEditingController(),
-                                      amountCtrl: TextEditingController(text: '0'),
-                                    ));
-                                  });
-                                },
-                                icon: const Icon(Icons.add_rounded, size: 16),
-                                label: const Text('Tambah', style: TextStyle(fontSize: 12)),
-                              ),
-                          ],
-                        ),
-                        if (_adjustments.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: Text(
-                              'Tidak ada penyesuaian biaya tambahan.',
-                              style: TextStyle(
-                                fontFamily: 'Plus Jakarta Sans',
-                                fontSize: 12,
-                                color: Colors.grey[500],
-                              ),
-                            ),
-                          )
-                        else
-                          ...List.generate(_adjustments.length, (i) {
-                            final item = _adjustments[i];
-                            return InvoiceAdjustmentEditor(
-                              index: i,
-                              descriptionController: item.descCtrl,
-                              amountController: item.amountCtrl,
-                              readOnly: !_isEditing,
-                              canRemove: _isEditing,
-                              onChanged: () => setState(() {}),
-                              onRemove: () {
-                                setState(() {
-                                  _adjustments.removeAt(i).dispose();
-                                });
-                              },
-                            );
-                          }),
-                        const SizedBox(height: 18),
-                        // Payment reconciliation
-                        const Text(
-                          'Status & Pembayaran',
-                          style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF334155),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: DropdownButtonFormField<InvoicePaymentStatus>(
-                                key: ValueKey<InvoicePaymentStatus>(_paymentStatus),
-                                initialValue: _paymentStatus,
-                                decoration: InputDecoration(
-                                  labelText: 'Status Pembayaran',
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                ),
-                                items: InvoicePaymentStatus.values.map((s) {
-                                  return DropdownMenuItem(value: s, child: Text(s.label));
-                                }).toList(),
-                                onChanged: _isEditing
-                                    ? (val) {
-                                        if (val != null) {
-                                          setState(() {
-                                            _paymentStatus = val;
-                                            if (val == InvoicePaymentStatus.unpaid) {
-                                              _paidAmountController.text = '0';
-                                            } else if (val == InvoicePaymentStatus.paid) {
-                                              _paidAmountController.text = calc.totalAmount.toString();
-                                            }
-                                          });
-                                        }
-                                      }
-                                    : null,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: TextFormField(
-                                controller: _paidAmountController,
-                                readOnly: !_isEditing,
-                                keyboardType: TextInputType.number,
-                                style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13),
-                                decoration: InputDecoration(
-                                  labelText: 'Nominal Terbayar',
-                                  prefixText: 'Rp ',
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        // Live Summary Card
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                          ),
-                          child: Column(
-                            children: [
-                              _summaryRow('Subtotal Sewa', InvoiceRecord.formatRupiah(calc.subtotal)),
-                              if (calc.adjustmentTotal != 0) ...[
-                                const SizedBox(height: 6),
-                                _summaryRow('Total Penyesuaian', InvoiceRecord.formatRupiah(calc.adjustmentTotal)),
-                              ],
-                              const Divider(height: 18),
-                              _summaryRow(
-                                'Total Tagihan',
-                                InvoiceRecord.formatRupiah(calc.totalAmount),
-                                isBold: true,
-                              ),
-                              const SizedBox(height: 6),
-                              _summaryRow(
-                                'Terbayar',
-                                InvoiceRecord.formatRupiah(calc.paidAmount),
-                                valueColor: const Color(0xFF059669),
-                              ),
-                              const SizedBox(height: 6),
-                              _summaryRow(
-                                'Sisa Tagihan',
-                                InvoiceRecord.formatRupiah(calc.remainingAmount),
-                                isBold: true,
-                                valueColor: calc.remainingAmount > 0
-                                    ? const Color(0xFFDC2626)
-                                    : const Color(0xFF059669),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                child: _isEditing ? _buildEditForm() : _buildReceiptView(),
               ),
-              const Divider(height: 24),
-              // Footer Action Buttons
-              Row(
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: _shareToWhatsApp,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF059669),
-                      side: const BorderSide(color: Color(0xFFA7F3D0)),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    icon: const Icon(Icons.share_rounded, size: 16),
-                    label: const Text(
-                      'Kirim WA',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Batal'),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: _isSaving ? null : _save,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF0F172A),
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: _isSaving
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Text(
-                            'Simpan Invoice',
-                            style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
-                            ),
-                          ),
-                  ),
-                ],
-              ),
+              const SizedBox(height: 12),
+              const Divider(height: 1, color: Color(0xFFF4F4F5)),
+              const SizedBox(height: 12),
+              // Footer Actions
+              _buildFooterActions(),
             ],
           ),
         ),
@@ -673,7 +278,310 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
     );
   }
 
-  Widget _summaryRow(String label, String value, {bool isBold = false, Color? valueColor}) {
+  Widget _buildDialogHeader() {
+    final (statusBg, statusText) = switch (_paymentStatus) {
+      InvoicePaymentStatus.paid => (
+          const Color(0xFFEDF3EC),
+          const Color(0xFF346538)
+        ),
+      InvoicePaymentStatus.partial => (
+          const Color(0xFFFBF3DB),
+          const Color(0xFF956400)
+        ),
+      InvoicePaymentStatus.unpaid => (
+          const Color(0xFFFDEBEC),
+          const Color(0xFF9F2F2D)
+        ),
+    };
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  _refController.text,
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF18181B),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: statusBg,
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Text(
+                    _paymentStatus.label,
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: statusText,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              _isEditing ? 'Mode Ubah Rincian' : 'Dokumen Tagihan Resmi',
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 11.5,
+                color: Color(0xFF71717A),
+              ),
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            PressableScale(
+              onTap: () => setState(() => _isEditing = !_isEditing),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF4F4F5),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _isEditing ? Icons.visibility_outlined : Icons.edit_outlined,
+                      size: 13,
+                      color: const Color(0xFF18181B),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _isEditing ? 'Pratinjau' : 'Ubah',
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF18181B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            IconButton(
+              icon: const Icon(Icons.close_rounded,
+                  size: 20, color: Color(0xFF71717A)),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // Minimalist Receipt / Document Style (Read-only)
+  Widget _buildReceiptView() {
+    final calc = _calculation;
+    final clientName = _customerNameController.text.trim().isNotEmpty
+        ? _customerNameController.text.trim()
+        : 'Klien MGRS';
+    final eventName = _productController.text.trim().isNotEmpty
+        ? _productController.text.trim()
+        : 'Sewa Mistyfan';
+    final phone = _customerPhoneController.text.trim();
+    final qty = _qtyController.text.trim();
+    final days = _daysController.text.trim();
+    final unitPrice = num.tryParse(_unitPriceController.text.trim()) ?? 250000;
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Client & Event block
+          Text(
+            clientName,
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF18181B),
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            '$eventName${phone.isNotEmpty ? " • $phone" : ""}',
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF71717A),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Tgl Invoice: ${_invoiceDateController.text.trim()} • Jatuh Tempo: ${_dueDateController.text.trim()}',
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 11,
+              color: Color(0xFFA1A1AA),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: Color(0xFFF4F4F5)),
+          const SizedBox(height: 12),
+          // Rincian Item Sewa
+          const Text(
+            'RINCIAN SEWA',
+            style: TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFFA1A1AA),
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Sewa Mistyfan Blower MGRS',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF18181B),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$qty Unit × $days Hari @ ${InvoiceRecord.formatRupiah(unitPrice)}',
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 11.5,
+                        color: Color(0xFF71717A),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                InvoiceRecord.formatRupiah(calc.subtotal),
+                style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF18181B),
+                ),
+              ),
+            ],
+          ),
+          // Adjustments if any
+          if (_adjustments.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            for (final adj in _adjustments)
+              if (adj.descCtrl.text.trim().isNotEmpty ||
+                  (num.tryParse(adj.amountCtrl.text) ?? 0) != 0)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        adj.descCtrl.text.trim().isNotEmpty
+                            ? adj.descCtrl.text.trim()
+                            : 'Penyesuaian Biaya',
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 12,
+                          color: Color(0xFF71717A),
+                        ),
+                      ),
+                      Text(
+                        InvoiceRecord.formatRupiah(
+                            num.tryParse(adj.amountCtrl.text) ?? 0),
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF18181B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+          ],
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: Color(0xFFF4F4F5)),
+          const SizedBox(height: 12),
+          // Summary Rows
+          _receiptRow('Subtotal Tagihan', InvoiceRecord.formatRupiah(calc.subtotal)),
+          if (calc.adjustmentTotal != 0) ...[
+            const SizedBox(height: 4),
+            _receiptRow('Penyesuaian', InvoiceRecord.formatRupiah(calc.adjustmentTotal)),
+          ],
+          const SizedBox(height: 6),
+          _receiptRow('Total Tagihan', InvoiceRecord.formatRupiah(calc.totalAmount), isBold: true),
+          const SizedBox(height: 4),
+          _receiptRow('Terbayar', InvoiceRecord.formatRupiah(calc.paidAmount), valueColor: const Color(0xFF346538)),
+          const SizedBox(height: 6),
+          _receiptRow(
+            calc.remainingAmount > 0 ? 'Sisa Pembayaran' : 'Status Tagihan',
+            calc.remainingAmount > 0
+                ? InvoiceRecord.formatRupiah(calc.remainingAmount)
+                : 'Lunas',
+            isBold: true,
+            valueColor: calc.remainingAmount > 0
+                ? const Color(0xFF9F2F2D)
+                : const Color(0xFF346538),
+          ),
+          const SizedBox(height: 14),
+          // Bank info
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4F4F5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.account_balance_outlined,
+                    size: 16, color: Color(0xFF71717A)),
+                SizedBox(width: 8),
+                Text(
+                  'BCA 2302619141 a/n MADNUR',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF18181B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _receiptRow(String label, String value,
+      {bool isBold = false, Color? valueColor}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -683,17 +591,380 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
             fontFamily: 'Plus Jakarta Sans',
             fontSize: isBold ? 13 : 12,
             fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
-            color: const Color(0xFF475569),
+            color: const Color(0xFF71717A),
           ),
         ),
         Text(
           value,
           style: TextStyle(
             fontFamily: 'Plus Jakarta Sans',
-            fontSize: isBold ? 14 : 12,
+            fontSize: isBold ? 13.5 : 12,
             fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
-            color: valueColor ?? const Color(0xFF0F172A),
+            color: valueColor ?? const Color(0xFF18181B),
           ),
+        ),
+      ],
+    );
+  }
+
+  // Edit Mode (Clean, spacious form without cramped labels)
+  Widget _buildEditForm() {
+    final calc = _calculation;
+
+    return SingleChildScrollView(
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'INFORMASI KLIEN & ACARA',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFFA1A1AA),
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _customerNameController,
+              style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+              decoration: _inputDecoration('Nama Klien'),
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _customerPhoneController,
+              keyboardType: TextInputType.phone,
+              style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+              decoration: _inputDecoration('No. WhatsApp Klien'),
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _productController,
+              style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+              decoration: _inputDecoration('Nama Acara / Keterangan'),
+            ),
+            const SizedBox(height: 14),
+            // Dates in 2 balanced columns
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _invoiceDateController,
+                    style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans', fontSize: 12.5),
+                    decoration: _inputDecoration('Tanggal Invoice'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    controller: _dueDateController,
+                    style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans', fontSize: 12.5),
+                    decoration: _inputDecoration('Jatuh Tempo'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'KUANTITAS & HARGA SEWA',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFFA1A1AA),
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Balanced quantity and price row
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _qtyController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                    decoration: _inputDecoration('Unit'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    controller: _daysController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                    decoration: _inputDecoration('Durasi (Hari)'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 2,
+                  child: TextFormField(
+                    controller: _unitPriceController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                    decoration: _inputDecoration('Harga Satuan', prefix: 'Rp '),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Adjustments
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'PENYESUAIAN / DISKON',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFFA1A1AA),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _adjustments.add(_AdjustmentItem(
+                        descCtrl: TextEditingController(),
+                        amountCtrl: TextEditingController(text: '0'),
+                      ));
+                    });
+                  },
+                  icon: const Icon(Icons.add_rounded, size: 14),
+                  label: const Text('Tambah', style: TextStyle(fontSize: 11.5)),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ],
+            ),
+            if (_adjustments.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  'Tidak ada penyesuaian biaya tambahan.',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 11.5,
+                    color: Color(0xFFA1A1AA),
+                  ),
+                ),
+              )
+            else
+              ...List.generate(_adjustments.length, (i) {
+                final item = _adjustments[i];
+                return InvoiceAdjustmentEditor(
+                  index: i,
+                  descriptionController: item.descCtrl,
+                  amountController: item.amountCtrl,
+                  readOnly: false,
+                  canRemove: true,
+                  onChanged: () => setState(() {}),
+                  onRemove: () {
+                    setState(() {
+                      _adjustments.removeAt(i).dispose();
+                    });
+                  },
+                );
+              }),
+            const SizedBox(height: 14),
+            // Payment fields
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<InvoicePaymentStatus>(
+                    key: ValueKey<InvoicePaymentStatus>(_paymentStatus),
+                    initialValue: _paymentStatus,
+                    decoration: _inputDecoration('Status'),
+                    items: InvoicePaymentStatus.values.map((s) {
+                      return DropdownMenuItem(
+                          value: s, child: Text(s.label, style: const TextStyle(fontSize: 12)));
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _paymentStatus = val;
+                          if (val == InvoicePaymentStatus.unpaid) {
+                            _paidAmountController.text = '0';
+                          } else if (val == InvoicePaymentStatus.paid) {
+                            _paidAmountController.text =
+                                calc.totalAmount.toString();
+                          }
+                        });
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    controller: _paidAmountController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                    decoration: _inputDecoration('Terbayar', prefix: 'Rp '),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String label, {String? prefix}) {
+    return InputDecoration(
+      isDense: true,
+      labelText: label,
+      labelStyle: const TextStyle(
+        fontFamily: 'Plus Jakarta Sans',
+        fontSize: 12,
+        color: Color(0xFF71717A),
+      ),
+      prefixText: prefix,
+      prefixStyle: const TextStyle(
+        fontFamily: 'Plus Jakarta Sans',
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF18181B),
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFFE4E4E7)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFF18181B)),
+      ),
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    );
+  }
+
+  Widget _buildFooterActions() {
+    if (_isEditing) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          TextButton(
+            onPressed: () => setState(() => _isEditing = false),
+            child: const Text('Batal Ubah',
+                style: TextStyle(color: Color(0xFF71717A), fontSize: 12)),
+          ),
+          const SizedBox(width: 8),
+          FilledButton(
+            onPressed: _isSaving ? null : _save,
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF18181B),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+            child: _isSaving
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
+                  )
+                : const Text('Simpan Perubahan',
+                    style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12)),
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        PressableScale(
+          onTap: _shareToWhatsApp,
+          child: Container(
+            height: 34,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEDF3EC),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.share_rounded, size: 14, color: Color(0xFF346538)),
+                SizedBox(width: 6),
+                Text(
+                  'Kirim WA',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF346538),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const Spacer(),
+        OutlinedButton(
+          onPressed: () {
+            showDialog<void>(
+              context: context,
+              builder: (ctx) => QuickPaymentDialog(
+                invoice: widget.invoice,
+                gateway: widget.gateway,
+                onPaymentUpdated: (updated) {
+                  _paidAmountController.text = updated.paidAmount.toString();
+                  _paymentStatus = updated.paymentStatus;
+                  widget.onSaved(updated);
+                  setState(() {});
+                },
+              ),
+            );
+          },
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFF18181B),
+            side: const BorderSide(color: Color(0xFFE4E4E7)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          ),
+          child: const Text('Atur Bayar',
+              style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12)),
+        ),
+        const SizedBox(width: 8),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(),
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF18181B),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+          ),
+          child: const Text('Selesai',
+              style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12)),
         ),
       ],
     );
