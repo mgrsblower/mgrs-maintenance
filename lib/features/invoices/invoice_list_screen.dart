@@ -512,7 +512,7 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  item.paymentStatus,
+                  item.paymentStatusDisplay,
                   style: TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
                     fontSize: 11,

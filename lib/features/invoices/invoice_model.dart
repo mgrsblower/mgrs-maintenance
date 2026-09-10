@@ -40,13 +40,21 @@ class InvoiceRecord {
 
   bool get isPaid =>
       paymentStatus.toLowerCase() == 'lunas' ||
+      paymentStatus.toLowerCase() == 'paid' ||
       (totalAmount > 0 && paidAmount >= totalAmount);
 
   bool get isDp =>
       paymentStatus.toLowerCase() == 'dp' ||
+      paymentStatus.toLowerCase() == 'partial' ||
       (paidAmount > 0 && paidAmount < totalAmount);
 
   bool get isUnpaid => !isPaid && !isDp;
+
+  String get paymentStatusDisplay {
+    if (isPaid) return 'Lunas';
+    if (isDp) return 'DP';
+    return 'Belum Lunas';
+  }
 
   static String formatRupiah(num value) {
     final str = value.toInt().toString();
