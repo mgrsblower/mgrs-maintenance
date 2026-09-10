@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../app/gateway.dart';
 import '../../shared/pressable.dart';
 import 'create_invoice_dialog.dart';
 import 'invoice_builder_dialog.dart';
 import 'invoice_model.dart';
-import 'pdf/invoice_pdf_download.dart';
-import 'pdf/invoice_pdf_export_service.dart';
 import 'quick_payment_dialog.dart';
 
 enum InvoiceSourceFilter { automatic, manual }
@@ -142,86 +139,6 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
         },
       ),
     );
-  }
-
-  Future<void> _shareToWhatsApp(InvoiceRecord invoice) async {
-    final cleanPhone =
-        invoice.customerPhone.replaceAll(RegExp(r'[^0-9]'), '');
-    var targetPhone = cleanPhone;
-    if (targetPhone.startsWith('0')) {
-      targetPhone = '62${targetPhone.substring(1)}';
-    }
-
-    final message = '''Halo *${invoice.customerName.isNotEmpty ? invoice.customerName : 'Klien MGRS'}*,
-
-Berikut rincian tagihan resmi dari *MGRS Blower*:
-📄 *No. Invoice:* ${invoice.invoiceReference}
-🎉 *Acara / Produk:* ${invoice.productName}
-📅 *Tanggal:* ${invoice.formattedInvoiceDate}
-📦 *Kuantitas:* ${invoice.quantity} Unit (${invoice.rentalDays} Hari)
-💰 *Total Tagihan:* ${invoice.totalAmountFormatted}
-💳 *Status:* ${invoice.paymentStatusDisplay}
-${invoice.remainingAmount > 0 ? '⚠️ *Sisa Pembayaran:* ${invoice.remainingAmountFormatted}\n' : ''}
-Rekening Pembayaran:
-*BCA: 2302619141 a/n MADNUR*
-
-Terima kasih telah mempercayai layanan MGRS!''';
-
-    final uri = Uri.parse(
-      targetPhone.isNotEmpty
-          ? 'https://wa.me/$targetPhone?text=${Uri.encodeComponent(message)}'
-          : 'whatsapp://send?text=${Uri.encodeComponent(message)}',
-    );
-
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tidak dapat membuka WhatsApp.'),
-          backgroundColor: Color(0xFF9F2F2D),
-        ),
-      );
-    }
-  }
-
-  Future<void> _exportPdf(InvoiceRecord item) async {
-    try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Mengunduh PDF ${item.invoiceReference}...'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-      final service = InvoicePdfExportService();
-      final location = await service.exportAndDownload(invoice: item);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            'PDF faktur resmi berhasil diunduh.',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          backgroundColor: const Color(0xFF346538),
-          action: location != null
-              ? SnackBarAction(
-                  label: 'Buka File',
-                  textColor: Colors.white,
-                  onPressed: () => openInvoicePdf(location),
-                )
-              : null,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Gagal mengekspor PDF: $e'),
-          backgroundColor: const Color(0xFF9F2F2D),
-        ),
-      );
-    }
   }
 
   @override
@@ -796,7 +713,7 @@ Terima kasih telah mempercayai layanan MGRS!''';
                   ),
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 8),
               Expanded(
                 child: FilledButton(
                   key: Key('btn-open-builder-${item.id}'),
@@ -807,74 +724,16 @@ Terima kasih telah mempercayai layanan MGRS!''';
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 7),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     visualDensity: VisualDensity.compact,
                   ),
                   child: const Text(
                     'Buka Invoice',
                     style: TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 11.5,
+                      fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              PressableScale(
-                onTap: () => _shareToWhatsApp(item),
-                child: Container(
-                  height: 30,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEDF3EC),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.share_rounded, size: 13, color: Color(0xFF346538)),
-                      SizedBox(width: 4),
-                      Text(
-                        'WA',
-                        style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF346538),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              PressableScale(
-                onTap: () => _exportPdf(item),
-                child: Container(
-                  height: 30,
-                  padding: const EdgeInsets.symmetric(horizontal: 9),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF4F4F5),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFFE4E4E7)),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.download_rounded,
-                          size: 13, color: Color(0xFF18181B)),
-                      SizedBox(width: 4),
-                      Text(
-                        'PDF',
-                        style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF18181B),
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ),
