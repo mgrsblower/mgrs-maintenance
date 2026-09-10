@@ -1,7 +1,7 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../app/gateway.dart';
 import '../../shared/pressable.dart';
-import '../schedule/create_order_screen.dart';
 import '../schedule/order_detail_screen.dart';
 import '../schedule/order_model.dart';
 
@@ -81,25 +81,6 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
     }
   }
 
-  int get _thisMonthUnitsCount {
-    try {
-      final list = _allOrders;
-      if (list.isEmpty) return 0;
-      final now = DateTime.now();
-      var sum = 0;
-      for (var i = 0; i < list.length; i++) {
-        final o = list[i];
-        final dt = o.tanggalPemasangan;
-        if (dt != null && dt.year == now.year && dt.month == now.month) {
-          sum += o.jumlahUnit;
-        }
-      }
-      return sum;
-    } catch (_) {
-      return 0;
-    }
-  }
-
   int get _todayOrdersCount {
     try {
       final list = _upcomingOrders;
@@ -142,21 +123,6 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
       return _pastOrders.length;
     } catch (_) {
       return 0;
-    }
-  }
-
-  Future<void> _openCreateOrder() async {
-    final created = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => CreateOrderScreen(
-          gateway: widget.gateway,
-          user: widget.user,
-        ),
-      ),
-    );
-
-    if (created == true) {
-      _loadData(forceRefresh: true);
     }
   }
 
@@ -607,7 +573,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
     );
   }
 
-  // 2. Bento Hero Card: Total orderan bulan ini
+  // 2. Bento Hero Card: Total orderan bulan ini dengan Progress Ring (identik dengan HomeScreen)
   Widget _buildCreateOrderBento(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
@@ -660,45 +626,28 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                     letterSpacing: -0.4,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  '$_thisMonthUnitsCount Unit Blower Terdata',
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF425C22),
-                  ),
-                ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          Column(
-            children: [
-              Container(
-                width: 82,
-                height: 82,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFBCE66E), width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF1B350F).withValues(alpha: 0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
+          // Circular Progress Ring Widget identik dengan HomeScreen
+          SizedBox(
+            width: 86,
+            height: 86,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CustomPaint(
+                  size: const Size(86, 86),
+                  painter: _CircularProgressRingPainter(),
                 ),
-                child: Column(
+                Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       '$_thisMonthOrdersCount',
                       style: const TextStyle(
                         fontFamily: 'Inter',
-                        fontSize: 26,
+                        fontSize: 22,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF1B350F),
                         height: 1.0,
@@ -709,43 +658,15 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                       'Orderan',
                       style: TextStyle(
                         fontFamily: 'Inter',
-                        fontSize: 10,
+                        fontSize: 9,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF527032),
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 8),
-              PressableScale(
-                onTap: _openCreateOrder,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1B350F),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.add_rounded, size: 14, color: Colors.white),
-                      SizedBox(width: 3),
-                      Text(
-                        'Input Baru',
-                        style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -818,14 +739,14 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        // 3 Vibrant Solid Status Cards: Total Order, Akan Datang, Selesai
+        // 3 Vibrant Solid Status Cards: Total Order, Akan Datang, Selesai (style identik HomeScreen)
         Row(
           children: [
             // Card 1: Total Order (Blue Solid)
             Expanded(
               child: _buildGradientStatusCard(
                 icon: Icons.assignment_outlined,
-                percentage: 'Semua',
+                percentage: '100%',
                 count: '$_totalOrdersCount',
                 title: 'Total Order',
                 subtitle: 'Semua riwayat',
@@ -838,7 +759,9 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
             Expanded(
               child: _buildGradientStatusCard(
                 icon: Icons.event_available_rounded,
-                percentage: 'Mendatang',
+                percentage: _totalOrdersCount > 0
+                    ? '${((_upcomingCount / _totalOrdersCount) * 100).round()}%'
+                    : '0%',
                 count: '$_upcomingCount',
                 title: 'Akan Datang',
                 subtitle: '$_todayOrdersCount hari ini',
@@ -851,7 +774,9 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
             Expanded(
               child: _buildGradientStatusCard(
                 icon: Icons.check_circle_outline_rounded,
-                percentage: 'Riwayat',
+                percentage: _totalOrdersCount > 0
+                    ? '${((_pastCount / _totalOrdersCount) * 100).round()}%'
+                    : '0%',
                 count: '$_pastCount',
                 title: 'Selesai',
                 subtitle: 'Event beres',
@@ -1255,4 +1180,50 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
       ),
     );
   }
+}
+
+class _CircularProgressRingPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+
+    // Background track ring
+    final trackPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 10;
+    canvas.drawCircle(center, 35, trackPaint);
+
+    // Inner filled circle with opacity
+    final innerPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.45)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, 25, innerPaint);
+
+    // Inner border stroke
+    final innerStroke = Paint()
+      ..color = const Color(0xFFCEF284)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+    canvas.drawCircle(center, 25, innerStroke);
+
+    // Progress Arc #78C423
+    final progressPaint = Paint()
+      ..color = const Color(0xFF78C423)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 10
+      ..strokeCap = StrokeCap.round;
+
+    // Draw arc ~ 270 degrees
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: 35),
+      -math.pi / 2,
+      math.pi * 1.5,
+      false,
+      progressPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
