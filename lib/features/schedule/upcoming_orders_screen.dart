@@ -97,26 +97,28 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
     final upcomingCount = orders.where((o) => o.isUpcoming).length;
     final pastCount = orders.where((o) => o.isPast).length;
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(
-        children: filters.map((f) {
-          final isSelected = activeFilter == f;
-          final count = switch (f) {
-            'Mendatang' => upcomingCount,
-            'Selesai' => pastCount,
-            _ => orders.length,
-          };
+    return Row(
+      children: filters.asMap().entries.map((entry) {
+        final index = entry.key;
+        final f = entry.value;
+        final isSelected = activeFilter == f;
+        final count = switch (f) {
+          'Mendatang' => upcomingCount,
+          'Selesai' => pastCount,
+          _ => orders.length,
+        };
 
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: index == 0 ? 0 : 4,
+              right: index == filters.length - 1 ? 0 : 4,
+            ),
             child: PressableScale(
               onTap: () => setState(() => activeFilter = f),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
                   color: isSelected ? const Color(0xFF0F172A) : Colors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -127,20 +129,26 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                   ),
                 ),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      f,
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 12,
-                        fontWeight:
-                            isSelected ? FontWeight.w700 : FontWeight.w600,
-                        color:
-                            isSelected ? Colors.white : const Color(0xFF475569),
+                    Flexible(
+                      child: Text(
+                        f,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 12,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w600,
+                          color: isSelected
+                              ? Colors.white
+                              : const Color(0xFF475569),
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 5),
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 1.5),
@@ -166,9 +174,9 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                 ),
               ),
             ),
-          );
-        }).toList(),
-      ),
+          ),
+        );
+      }).toList(),
     );
   }
 
