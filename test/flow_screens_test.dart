@@ -245,6 +245,9 @@ void main() {
 
     expect(find.text('DYNAMIC-KPL-999'), findsOneWidget);
     expect(find.text('DYNAMIC-BTG-888'), findsOneWidget);
+    final kPos = tester.getTopLeft(find.text('DYNAMIC-KPL-999')).dy;
+    final bPos = tester.getTopLeft(find.text('DYNAMIC-BTG-888')).dy;
+    expect(kPos < bPos, isTrue);
   });
 
   testWidgets('ComponentDetailScreen renders dynamic history from gateway', (

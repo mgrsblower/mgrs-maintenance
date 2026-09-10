@@ -66,8 +66,60 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
     }
   }
 
+  static int _componentSortWeight(Map<String, dynamic> c) {
+    final kind = (c['kind'] ?? '').toString().toLowerCase();
+    final code = (c['code'] ?? '').toString().toUpperCase();
+    if (kind.contains('kepala') ||
+        code.startsWith('K-') ||
+        code.startsWith('KPL') ||
+        code.startsWith('K')) {
+      return 1;
+    }
+    if (kind.contains('batang') ||
+        code.startsWith('B-') ||
+        code.startsWith('BTG') ||
+        code.startsWith('B')) {
+      return 2;
+    }
+    if (kind.contains('tabung') ||
+        code.startsWith('T-') ||
+        code.startsWith('TBG') ||
+        code.startsWith('T')) {
+      return 3;
+    }
+    return 4;
+  }
+
+  static int _compareComponents(
+      Map<String, dynamic> a, Map<String, dynamic> b) {
+    final weightA = _componentSortWeight(a);
+    final weightB = _componentSortWeight(b);
+    if (weightA != weightB) {
+      return weightA.compareTo(weightB);
+    }
+    final codeA = (a['code'] ?? '').toString();
+    final codeB = (b['code'] ?? '').toString();
+    return _compareCode(codeA, codeB);
+  }
+
+  static int _compareCode(String a, String b) {
+    final reg = RegExp(r'^([A-Za-z]+)-?(\d+)$');
+    final matchA = reg.firstMatch(a.trim());
+    final matchB = reg.firstMatch(b.trim());
+    if (matchA != null &&
+        matchB != null &&
+        matchA.group(1) == matchB.group(1)) {
+      final numA = int.tryParse(matchA.group(2) ?? '');
+      final numB = int.tryParse(matchB.group(2) ?? '');
+      if (numA != null && numB != null) {
+        return numA.compareTo(numB);
+      }
+    }
+    return a.compareTo(b);
+  }
+
   List<Map<String, dynamic>> _getFilteredItems() {
-    return components.where((c) {
+    final filtered = components.where((c) {
       final matchesCat =
           activeCategory == 'Semua' || c['kind'] == activeCategory;
       final query = searchController.text.trim().toLowerCase();
@@ -76,6 +128,8 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
           (c['description'] as String).toLowerCase().contains(query);
       return matchesCat && matchesSearch;
     }).toList();
+    filtered.sort(_compareComponents);
+    return filtered;
   }
 
   Future<void> loadComponents() async {
@@ -87,10 +141,12 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
       final rows = await widget.gateway.fetchComponents();
       if (!mounted) return;
       setState(() {
-        components = rows.map((r) {
+        final mapped = rows.map((r) {
           final cond = (r['kondisi'] ?? r['condition'] ?? 'OK').toString();
           final isOk = cond == 'OK' || cond == 'Layak Pakai';
-          final isService = cond == 'Service' || cond == 'Rusak Berat' || cond == 'Gangguan Fungsi';
+          final isService = cond == 'Service' ||
+              cond == 'Rusak Berat' ||
+              cond == 'Gangguan Fungsi';
           final color = isOk
               ? const Color(0xFF10B981)
               : (isService
@@ -115,6 +171,8 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen> {
             'inspector': dateStr,
           };
         }).toList();
+        mapped.sort(_compareComponents);
+        components = mapped;
         _visibleCount = _pageSize;
       });
     } catch (e) {
