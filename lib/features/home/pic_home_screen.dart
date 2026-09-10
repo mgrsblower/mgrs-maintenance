@@ -12,12 +12,16 @@ class PicHomeScreen extends StatefulWidget {
     required this.user,
     required this.onOpenOrdersTab,
     required this.onOpenInvoicesTab,
+    this.adminMode,
+    this.onSwitchAdminMode,
   });
 
   final MaintenanceGateway gateway;
   final UserProfile user;
   final VoidCallback onOpenOrdersTab;
   final VoidCallback onOpenInvoicesTab;
+  final AdminAppMode? adminMode;
+  final ValueChanged<AdminAppMode>? onSwitchAdminMode;
 
   @override
   State<PicHomeScreen> createState() => _PicHomeScreenState();
@@ -276,14 +280,16 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                     color: const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.check_circle_rounded,
+                      const Icon(Icons.check_circle_rounded,
                           size: 15, color: Color(0xFF16A34A)),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Text(
-                        'Sistem MGRS • Terhubung (Mode PIC)',
-                        style: TextStyle(
+                        widget.user.isAdmin
+                            ? 'Sistem MGRS • Akun Administrator'
+                            : 'Sistem MGRS • Terhubung (Mode PIC)',
+                        style: const TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -293,7 +299,167 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+
+                // Mode Tampilan Operasional (Admin Only)
+                if (widget.user.isAdmin && widget.onSwitchAdminMode != null) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.admin_panel_settings_rounded,
+                                size: 16, color: Color(0xFF0F172A)),
+                            SizedBox(width: 6),
+                            Text(
+                              'Mode Tampilan (Khusus Admin)',
+                              style: TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF0F172A),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 5),
+                        const Text(
+                          'Pilih peran tampilan operasional yang ingin Anda akses:',
+                          style: TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 11,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          height: 38,
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE2E8F0),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: PressableScale(
+                                  onTap: () {
+                                    Navigator.of(sheetContext).pop();
+                                    widget.onSwitchAdminMode!(AdminAppMode.pic);
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: widget.adminMode == AdminAppMode.pic
+                                          ? Colors.white
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                      boxShadow: widget.adminMode == AdminAppMode.pic
+                                          ? const [
+                                              BoxShadow(
+                                                color: Color(0x10000000),
+                                                blurRadius: 4,
+                                                offset: Offset(0, 1),
+                                              ),
+                                            ]
+                                          : null,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.event_note_rounded,
+                                          size: 14,
+                                          color: widget.adminMode == AdminAppMode.pic
+                                              ? const Color(0xFF0F172A)
+                                              : const Color(0xFF64748B),
+                                        ),
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          'Mode PIC',
+                                          style: TextStyle(
+                                            fontFamily: 'Plus Jakarta Sans',
+                                            fontSize: 11.5,
+                                            fontWeight: widget.adminMode == AdminAppMode.pic
+                                                ? FontWeight.w700
+                                                : FontWeight.w500,
+                                            color: widget.adminMode == AdminAppMode.pic
+                                                ? const Color(0xFF0F172A)
+                                                : const Color(0xFF64748B),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: PressableScale(
+                                  onTap: () {
+                                    Navigator.of(sheetContext).pop();
+                                    widget.onSwitchAdminMode!(AdminAppMode.service);
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: widget.adminMode == AdminAppMode.service
+                                          ? Colors.white
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                      boxShadow: widget.adminMode == AdminAppMode.service
+                                          ? const [
+                                              BoxShadow(
+                                                color: Color(0x10000000),
+                                                blurRadius: 4,
+                                                offset: Offset(0, 1),
+                                              ),
+                                            ]
+                                          : null,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.build_rounded,
+                                          size: 14,
+                                          color: widget.adminMode == AdminAppMode.service
+                                              ? const Color(0xFF0F172A)
+                                              : const Color(0xFF64748B),
+                                        ),
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          'Mode Servis',
+                                          style: TextStyle(
+                                            fontFamily: 'Plus Jakarta Sans',
+                                            fontSize: 11.5,
+                                            fontWeight: widget.adminMode == AdminAppMode.service
+                                                ? FontWeight.w700
+                                                : FontWeight.w500,
+                                            color: widget.adminMode == AdminAppMode.service
+                                                ? const Color(0xFF0F172A)
+                                                : const Color(0xFF64748B),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 18),
 
                 // Logout Button
                 PressableScale(

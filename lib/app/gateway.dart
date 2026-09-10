@@ -14,6 +14,14 @@ List<Map<String, Object?>> jsonItems(Object? value) {
   return value.map(jsonObject).toList();
 }
 
+enum AdminAppMode {
+  pic('Mode PIC (Order & Invoice)'),
+  service('Mode Servis (Teknisi Maintenance)');
+
+  const AdminAppMode(this.label);
+  final String label;
+}
+
 class UserProfile {
   const UserProfile(
     this.id,
@@ -26,6 +34,20 @@ class UserProfile {
   final String role;
   final String? fullName;
   final String? username;
+
+  UserProfile copyWith({
+    String? id,
+    String? role,
+    String? fullName,
+    String? username,
+  }) {
+    return UserProfile(
+      id ?? this.id,
+      role ?? this.role,
+      fullName: fullName ?? this.fullName,
+      username: username ?? this.username,
+    );
+  }
 
   static const roles = {
     'Admin',

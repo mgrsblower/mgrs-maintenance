@@ -171,6 +171,7 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
     ),
   ];
 
+  AdminAppMode _adminMode = AdminAppMode.service;
   int tab = 0;
   late final PageController _pageController;
   late final AnimationController _fadeController;
@@ -205,13 +206,43 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
     _fadeController.forward(from: 0.0);
   }
 
+  void _switchAdminMode(AdminAppMode newMode) {
+    if (_adminMode == newMode) return;
+    setState(() {
+      _adminMode = newMode;
+      tab = 0;
+    });
+    _pageController.jumpToPage(0);
+    _fadeController.forward(from: 0.0);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          newMode == AdminAppMode.pic
+              ? 'Beralih ke Mode PIC (Orderan & Invoice)'
+              : 'Beralih ke Mode Servis (Teknisi Maintenance)',
+          style: const TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        backgroundColor: const Color(0xFF18181B),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  bool get effectiveIsPic =>
+      widget.user.isPic ||
+      (widget.user.isAdmin && _adminMode == AdminAppMode.pic);
+
   void openScannerModal() {
     Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => ScanScreen(
           gateway: widget.gateway,
           user: widget.user,
-          readOnly: widget.user.isPic,
+          readOnly: effectiveIsPic,
         ),
       ),
     );
@@ -219,7 +250,7 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
 
   @override
   Widget build(BuildContext context) {
-    final isPic = widget.user.isPic;
+    final isPic = effectiveIsPic;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final scrimHeight = 98.0 + bottomInset;
 
@@ -228,6 +259,9 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
             PicHomeScreen(
               gateway: widget.gateway,
               user: widget.user,
+              adminMode: widget.user.isAdmin ? _adminMode : null,
+              onSwitchAdminMode:
+                  widget.user.isAdmin ? _switchAdminMode : null,
               onOpenOrdersTab: () => _onNavigateToTab(1),
               onOpenInvoicesTab: () => _onNavigateToTab(2),
             ),
@@ -244,6 +278,9 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
             HomeScreen(
               gateway: widget.gateway,
               user: widget.user,
+              adminMode: widget.user.isAdmin ? _adminMode : null,
+              onSwitchAdminMode:
+                  widget.user.isAdmin ? _switchAdminMode : null,
               showBottomNav: false,
               onNavigateToTab: _onNavigateToTab,
               onOpenScanner: openScannerModal,
