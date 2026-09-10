@@ -149,30 +149,128 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
+            _buildTopBar(context),
+            const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _buildTopBar(context),
-                      const SizedBox(height: 16),
-                      _buildEventInfoCard(context),
-                      const SizedBox(height: 16),
-                      _buildScheduleUnitsCard(context),
-                      const SizedBox(height: 16),
-                      _buildVenueCard(context),
-                      const SizedBox(height: 16),
-                      _buildInvoicePreviewCard(context),
+                      _buildSectionHeader(
+                        icon: Icons.event_note_rounded,
+                        title: 'Informasi Acara & Klien',
+                        caption: 'Wajib Diisi',
+                      ),
+                      _buildFormField(
+                        controller: _eventNameController,
+                        label: 'Nama Acara / Event *',
+                        hint: 'Misal: Pernikahan Budi & Ani, Konser Musik',
+                        validator: (v) => v == null || v.trim().isEmpty
+                            ? 'Harap isi nama acara'
+                            : null,
+                      ),
+                      const SizedBox(height: 14),
+                      _buildFormField(
+                        controller: _clientNameController,
+                        label: 'Nama Klien / Penyelenggara *',
+                        hint: 'Misal: Ibu Sarah / PT Maju Jaya',
+                        validator: (v) => v == null || v.trim().isEmpty
+                            ? 'Harap isi nama klien'
+                            : null,
+                      ),
+                      const SizedBox(height: 14),
+                      _buildFormField(
+                        controller: _whatsappController,
+                        label: 'Nomor WhatsApp Klien *',
+                        hint: 'Contoh: 08123456789',
+                        keyboardType: TextInputType.phone,
+                        validator: (v) => v == null || v.trim().isEmpty
+                            ? 'Harap isi nomor WhatsApp klien'
+                            : null,
+                      ),
+
                       const SizedBox(height: 24),
+                      const Divider(
+                          height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
+                      const SizedBox(height: 20),
+
+                      _buildSectionHeader(
+                        icon: Icons.calendar_today_rounded,
+                        title: 'Jadwal & Kebutuhan Unit',
+                      ),
+                      _buildDatePickerField(),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStepperBox(
+                              title: 'Jumlah Unit',
+                              value: _unitCount,
+                              unitSuffix: 'Unit',
+                              min: 1,
+                              max: 30,
+                              onChanged: (v) => setState(() => _unitCount = v),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildStepperBox(
+                              title: 'Durasi Sewa',
+                              value: _rentalDays,
+                              unitSuffix: 'Hari',
+                              min: 1,
+                              max: 14,
+                              onChanged: (v) => setState(() => _rentalDays = v),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 24),
+                      const Divider(
+                          height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
+                      const SizedBox(height: 20),
+
+                      _buildSectionHeader(
+                        icon: Icons.location_on_outlined,
+                        title: 'Lokasi & Keterangan',
+                      ),
+                      _buildFormField(
+                        controller: _addressController,
+                        label: 'Alamat Lengkap Lokasi *',
+                        hint: 'Nama gedung, jalan, nomor, patokan venue',
+                        maxLines: 2,
+                        validator: (v) => v == null || v.trim().isEmpty
+                            ? 'Harap isi alamat lokasi'
+                            : null,
+                      ),
+                      const SizedBox(height: 14),
+                      _buildFormField(
+                        controller: _mapsController,
+                        label: 'Link Google Maps (Opsional)',
+                        hint: 'https://maps.app.goo.gl/...',
+                        keyboardType: TextInputType.url,
+                      ),
+                      const SizedBox(height: 14),
+                      _buildFormField(
+                        controller: _noteController,
+                        label: 'Catatan Tambahan (Opsional)',
+                        hint: 'Misal: pasang sebelum jam 9 pagi, kabel panjang',
+                        maxLines: 2,
+                      ),
+
+                      const SizedBox(height: 24),
+                      _buildInvoicePreview(),
+                      const SizedBox(height: 12),
                     ],
                   ),
                 ),
@@ -185,80 +283,336 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  // Top Bar matching CheckingScreen
+  // Top Bar clean and native
   Widget _buildTopBar(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            PressableScale(
-              onTap: () => Navigator.of(context).pop(),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.chevron_left_rounded,
-                    color: Color(0xFF0F172A),
-                    size: 24,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              PressableScale(
+                onTap: () => Navigator.of(context).pop(),
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.chevron_left_rounded,
+                      color: Color(0xFF0F172A),
+                      size: 22,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Input Orderan Sewa',
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF0F172A),
-                    letterSpacing: -0.3,
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    'Input Orderan Sewa',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                      letterSpacing: -0.3,
+                    ),
                   ),
+                  Text(
+                    'Jadwal Acara & Terbit Invoice',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircleAvatar(
+                  radius: 3,
+                  backgroundColor: Color(0xFF2563EB),
                 ),
+                SizedBox(width: 5),
                 Text(
-                  'Jadwal Acara & Terbit Invoice',
+                  'PIC Order',
                   style: TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF64748B),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2563EB),
                   ),
                 ),
               ],
             ),
-          ],
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: const Color(0xFFEFF6FF),
-            borderRadius: BorderRadius.circular(20),
           ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 3,
-                backgroundColor: Color(0xFF2563EB),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader({
+    required IconData icon,
+    required String title,
+    String? caption,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Icon(icon, size: 15, color: const Color(0xFF64748B)),
+          const SizedBox(width: 6),
+          Text(
+            title.toUpperCase(),
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 11.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.8,
+              color: Color(0xFF64748B),
+            ),
+          ),
+          if (caption != null) ...[
+            const Spacer(),
+            Text(
+              caption,
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2563EB),
               ),
-              SizedBox(width: 5),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    TextInputType keyboardType = TextInputType.text,
+    int maxLines = 1,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 12.5,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF334155),
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          maxLines: maxLines,
+          validator: validator,
+          style: const TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 13.5,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF0F172A),
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 13,
+              color: Color(0xFF94A3B8),
+            ),
+            filled: true,
+            fillColor: const Color(0xFFF8FAFC),
+            isDense: true,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide:
+                  const BorderSide(color: Color(0xFF147CC1), width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFEF4444)),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide:
+                  const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDatePickerField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Tanggal Pemasangan *',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 12.5,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF334155),
+          ),
+        ),
+        const SizedBox(height: 6),
+        PressableScale(
+          onTap: _pickDate,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today_rounded,
+                        size: 16, color: Color(0xFF147CC1)),
+                    const SizedBox(width: 10),
+                    Text(
+                      _formatDateFull(_selectedDate),
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                  ],
+                ),
+                const Icon(Icons.arrow_drop_down_rounded,
+                    color: Color(0xFF64748B)),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStepperBox({
+    required String title,
+    required int value,
+    required String unitSuffix,
+    required int min,
+    required int max,
+    required ValueChanged<int> onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 12.5,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF334155),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              InkWell(
+                onTap: value > min ? () => onChanged(value - 1) : null,
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: value > min ? Colors.white : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFFE2E8F0),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.remove_rounded,
+                    size: 18,
+                    color: value > min
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFF94A3B8),
+                  ),
+                ),
+              ),
               Text(
-                'PIC Order',
-                style: TextStyle(
+                '$value $unitSuffix',
+                style: const TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF2563EB),
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              InkWell(
+                onTap: value < max ? () => onChanged(value + 1) : null,
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: value < max ? Colors.white : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFFE2E8F0),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.add_rounded,
+                    size: 18,
+                    color: value < max
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFF94A3B8),
+                  ),
                 ),
               ),
             ],
@@ -268,278 +622,90 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  // Card 1: Informasi Acara & Klien
-  Widget _buildEventInfoCard(BuildContext context) {
+  Widget _buildInvoicePreview() {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
-                'Informasi Acara & Klien',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              Text(
-                'Wajib Diisi',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF2563EB),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          _buildFormField(
-            controller: _eventNameController,
-            label: 'Nama Acara / Event *',
-            hint: 'Misal: Pernikahan Budi & Ani, Konser Musik',
-            validator: (v) =>
-                v == null || v.trim().isEmpty ? 'Harap isi nama acara' : null,
-          ),
-          const SizedBox(height: 12),
-          _buildFormField(
-            controller: _clientNameController,
-            label: 'Nama Klien / Penyelenggara *',
-            hint: 'Misal: Ibu Sarah / PT Maju Jaya',
-            validator: (v) =>
-                v == null || v.trim().isEmpty ? 'Harap isi nama klien' : null,
-          ),
-          const SizedBox(height: 12),
-          _buildFormField(
-            controller: _whatsappController,
-            label: 'Nomor WhatsApp Klien *',
-            hint: 'Contoh: 08123456789',
-            keyboardType: TextInputType.phone,
-            validator: (v) => v == null || v.trim().isEmpty
-                ? 'Harap isi nomor WhatsApp klien'
-                : null,
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Card 2: Jadwal & Kebutuhan Unit
-  Widget _buildScheduleUnitsCard(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Jadwal & Kebutuhan Unit',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF0F172A),
-            ),
-          ),
-          const SizedBox(height: 14),
-          // Date Picker Trigger
-          const Text(
-            'Tanggal Pemasangan',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF334155),
-            ),
-          ),
-          const SizedBox(height: 6),
-          PressableScale(
-            onTap: _pickDate,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
                 children: [
-                  Row(
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.receipt_long_rounded,
+                      size: 17,
+                      color: Color(0xFF147CC1),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.calendar_today_rounded,
-                          size: 16, color: Color(0xFF147CC1)),
-                      const SizedBox(width: 10),
+                      const Text(
+                        'Estimasi Total Tagihan',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
                       Text(
-                        _formatDateFull(_selectedDate),
+                        '$_unitCount Unit × $_rentalDays Hari',
                         style: const TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF0F172A),
                         ),
                       ),
                     ],
                   ),
-                  const Icon(Icons.arrow_drop_down_rounded,
-                      color: Color(0xFF64748B)),
                 ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStepperBox(
-                  title: 'Jumlah Unit Blower',
-                  value: _unitCount,
-                  unitSuffix: 'Unit',
-                  min: 1,
-                  max: 30,
-                  onChanged: (v) => setState(() => _unitCount = v),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStepperBox(
-                  title: 'Durasi Sewa',
-                  value: _rentalDays,
-                  unitSuffix: 'Hari',
-                  min: 1,
-                  max: 14,
-                  onChanged: (v) => setState(() => _rentalDays = v),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Card 3: Lokasi & Alamat Venue
-  Widget _buildVenueCard(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Lokasi & Alamat Venue',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF0F172A),
-            ),
-          ),
-          const SizedBox(height: 14),
-          _buildFormField(
-            controller: _addressController,
-            label: 'Alamat Lengkap Lokasi *',
-            hint: 'Nama gedung, jalan, nomor, patokan venue',
-            maxLines: 2,
-            validator: (v) =>
-                v == null || v.trim().isEmpty ? 'Harap isi alamat lokasi' : null,
-          ),
-          const SizedBox(height: 12),
-          _buildFormField(
-            controller: _mapsController,
-            label: 'Link Google Maps (Opsional)',
-            hint: 'https://maps.app.goo.gl/...',
-            keyboardType: TextInputType.url,
-          ),
-          const SizedBox(height: 12),
-          _buildFormField(
-            controller: _noteController,
-            label: 'Catatan Tambahan (Opsional)',
-            hint: 'Misal: pasang sebelum jam 9 pagi, kabel panjang',
-            maxLines: 2,
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Card 4: Ringkasan Invoice Otomatis
-  Widget _buildInvoicePreviewCard(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFBFDBFE)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.receipt_long_rounded,
-                  size: 18, color: Color(0xFF1D4ED8)),
-              SizedBox(width: 8),
-              Text(
-                'Estimasi Tagihan Invoice Otomatis',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF1E3A8A),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '$_unitCount Unit × $_rentalDays Hari (Rp 250rb/unit)',
-                style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 12,
-                  color: Color(0xFF475569),
-                ),
               ),
               Text(
                 InvoiceRecord.formatRupiah(_totalInvoiceAmount),
                 style: const TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 15,
+                  fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
+                  color: Color(0xFF147CC1),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          const Text(
-            '*Invoice resmi berstatus Belum Lunas akan otomatis terbit saat orderan disimpan.',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 10.5,
-              color: Color(0xFF64748B),
-            ),
+          const SizedBox(height: 10),
+          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+          const SizedBox(height: 8),
+          const Row(
+            children: [
+              Icon(Icons.info_outline_rounded,
+                  size: 13, color: Color(0xFF94A3B8)),
+              SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Invoice resmi otomatis terbit dan masuk ke tab Invoice.',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 10.5,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -590,155 +756,6 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   ),
                 ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildFormField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    TextInputType keyboardType = TextInputType.text,
-    int maxLines = 1,
-    String? Function(String?)? validator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF334155),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-          ),
-          child: TextFormField(
-            controller: controller,
-            keyboardType: keyboardType,
-            maxLines: maxLines,
-            validator: validator,
-            style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 13,
-              color: Color(0xFF0F172A),
-            ),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 13,
-                color: Color(0xFF94A3B8),
-              ),
-              border: InputBorder.none,
-              isDense: true,
-              contentPadding: EdgeInsets.zero,
-              filled: false,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStepperBox({
-    required String title,
-    required int value,
-    required String unitSuffix,
-    required int min,
-    required int max,
-    required ValueChanged<int> onChanged,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF64748B),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              InkWell(
-                onTap: value > min ? () => onChanged(value - 1) : null,
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: value > min ? Colors.white : const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: value > min
-                          ? const Color(0xFFE2E8F0)
-                          : const Color(0xFFF1F5F9),
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.remove_rounded,
-                    size: 18,
-                    color: value > min
-                        ? const Color(0xFF0F172A)
-                        : const Color(0xFFCBD5E1),
-                  ),
-                ),
-              ),
-              Text(
-                '$value $unitSuffix',
-                style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              InkWell(
-                onTap: value < max ? () => onChanged(value + 1) : null,
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: value < max ? Colors.white : const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: value < max
-                          ? const Color(0xFFE2E8F0)
-                          : const Color(0xFFF1F5F9),
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.add_rounded,
-                    size: 18,
-                    color: value < max
-                        ? const Color(0xFF0F172A)
-                        : const Color(0xFFCBD5E1),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
