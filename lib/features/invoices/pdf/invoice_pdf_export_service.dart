@@ -225,8 +225,8 @@ class InvoicePdfExportService {
           .timeout(timeout);
 
       if (response.statusCode != 200) {
-        throw const InvoicePdfExportException(
-          'Ekspor PDF gagal. Silakan coba lagi.',
+        throw InvoicePdfExportException(
+          'Server gagal merespons (HTTP ${response.statusCode}): ${response.body.isNotEmpty ? response.body : 'Respon kosong'}',
         );
       }
       final contentType = response.headers['content-type']
@@ -235,13 +235,13 @@ class InvoicePdfExportService {
           .trim()
           .toLowerCase();
       if (contentType != 'application/pdf') {
-        throw const InvoicePdfExportException(
-          'Ekspor PDF gagal karena file tidak valid.',
+        throw InvoicePdfExportException(
+          'Ekspor gagal: Server tidak mengembalikan file PDF (Content-Type: ${contentType ?? 'unknown'}).',
         );
       }
       if (response.bodyBytes.isEmpty) {
         throw const InvoicePdfExportException(
-          'Ekspor PDF gagal karena file kosong.',
+          'Ekspor PDF gagal karena file yang dihasilkan kosong.',
         );
       }
 
@@ -258,11 +258,11 @@ class InvoicePdfExportService {
       rethrow;
     } on TimeoutException {
       throw const InvoicePdfExportException(
-        'Ekspor PDF melebihi batas waktu. Silakan coba lagi.',
+        'Ekspor PDF melebihi batas waktu (timeout). Silakan coba lagi.',
       );
-    } on Object {
-      throw const InvoicePdfExportException(
-        'Ekspor PDF gagal. Periksa koneksi lalu coba lagi.',
+    } on Object catch (e) {
+      throw InvoicePdfExportException(
+        'Ekspor PDF gagal: $e',
       );
     }
   }
@@ -282,8 +282,12 @@ class InvoicePdfExportService {
       invoice.invoiceReference.replaceAll('/', '-'),
     );
     final result = await export(payload: payload, fileName: fileName);
-    final location = await downloadInvoicePdf(result.bytes, result.fileName);
-    return location;
+    try {
+      final location = await downloadInvoicePdf(result.bytes, result.fileName);
+      return location;
+    } catch (e) {
+      throw InvoicePdfExportException('Gagal menyimpan file PDF: $e');
+    }
   }
 }
 
