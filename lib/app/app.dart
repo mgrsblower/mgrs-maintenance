@@ -148,18 +148,31 @@ class MaintenanceHome extends StatefulWidget {
   State<MaintenanceHome> createState() => _MaintenanceHomeState();
 }
 
-class _MaintenanceHomeState extends State<MaintenanceHome> {
+class _MaintenanceHomeState extends State<MaintenanceHome>
+    with SingleTickerProviderStateMixin {
   int tab = 0;
   late final PageController _pageController;
+  late final AnimationController _fadeController;
+  late final Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: tab);
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+      value: 1.0,
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOutCubic,
+    );
   }
 
   @override
   void dispose() {
+    _fadeController.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -168,6 +181,7 @@ class _MaintenanceHomeState extends State<MaintenanceHome> {
     if (tab == index) return;
     setState(() => tab = index);
     _pageController.jumpToPage(index);
+    _fadeController.forward(from: 0.0);
   }
 
   void openScannerModal() {
@@ -188,31 +202,34 @@ class _MaintenanceHomeState extends State<MaintenanceHome> {
       backgroundColor: const Color(0xFFFBFBFB),
       body: Stack(
         children: [
-          PageView(
-            controller: _pageController,
-            onPageChanged: (index) => setState(() => tab = index),
-            physics: const BouncingScrollPhysics(),
-            children: [
-              HomeScreen(
-                gateway: widget.gateway,
-                user: widget.user,
-                showBottomNav: false,
-                onNavigateToTab: _onNavigateToTab,
-                onOpenScanner: openScannerModal,
-              ),
-              AssetCatalogScreen(
-                gateway: widget.gateway,
-                showBottomNav: false,
-                onNavigateToTab: _onNavigateToTab,
-                onOpenScanner: openScannerModal,
-              ),
-              ActionCenterScreen(
-                gateway: widget.gateway,
-                showBottomNav: false,
-                onNavigateToTab: _onNavigateToTab,
-                onOpenScanner: openScannerModal,
-              ),
-            ],
+          FadeTransition(
+            opacity: _fadeAnimation,
+            child: PageView(
+              controller: _pageController,
+              onPageChanged: (index) => setState(() => tab = index),
+              physics: const BouncingScrollPhysics(),
+              children: [
+                HomeScreen(
+                  gateway: widget.gateway,
+                  user: widget.user,
+                  showBottomNav: false,
+                  onNavigateToTab: _onNavigateToTab,
+                  onOpenScanner: openScannerModal,
+                ),
+                AssetCatalogScreen(
+                  gateway: widget.gateway,
+                  showBottomNav: false,
+                  onNavigateToTab: _onNavigateToTab,
+                  onOpenScanner: openScannerModal,
+                ),
+                ActionCenterScreen(
+                  gateway: widget.gateway,
+                  showBottomNav: false,
+                  onNavigateToTab: _onNavigateToTab,
+                  onOpenScanner: openScannerModal,
+                ),
+              ],
+            ),
           ),
           // Native iOS style bottom gradient scrim (fades content softly beneath floating navbar)
           Positioned(
