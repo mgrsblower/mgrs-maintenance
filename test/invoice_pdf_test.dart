@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mgrs_maintenance/features/invoices/invoice_model.dart';
+import 'package:mgrs_maintenance/features/invoices/pdf/invoice_pdf_dialogs.dart';
 import 'package:mgrs_maintenance/features/invoices/pdf/invoice_pdf_download.dart';
 import 'package:mgrs_maintenance/features/invoices/pdf/invoice_pdf_export_service.dart';
 import 'package:mgrs_maintenance/features/schedule/order_model.dart';
@@ -91,5 +93,63 @@ void main() {
       expect(sanitizeInvoicePdfFileName('Invoice Test #123!'), 'Invoice-Test-123.pdf');
       expect(sanitizeInvoicePdfFileName(''), 'invoice.pdf');
     });
+
+    testWidgets('renders invoice-pdf-success-dialog properly', (tester) async {
+      final invoice = const InvoiceRecord(
+        id: 'inv-1',
+        orderanId: 'ord-100',
+        invoiceReference: 'INV/2026/09/001',
+        productName: 'Sewa Blower',
+        quantity: 2,
+        rentalDays: 1,
+        unitPrice: 300000,
+        subtotal: 600000,
+        totalAmount: 600000,
+        paidAmount: 0,
+        paymentStatus: InvoicePaymentStatus.unpaid,
+        invoiceDate: '11/09/2026',
+        dueDate: '11/09/2026',
+        customerName: 'Budi',
+        customerPhone: '08123456789',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () {
+                    InvoicePdfExportHelper.showInvoicePdfSuccessDialog(
+                      context: context,
+                      invoice: invoice,
+                      fileLocation: 'Downloads/MGRS/INV-2026-09-001.pdf',
+                    );
+                  },
+                  child: const Text('Open Dialog'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('invoice-pdf-success-dialog')), findsOneWidget);
+      expect(find.byKey(const Key('invoice-pdf-success-icon')), findsOneWidget);
+      expect(find.text('Sukses'), findsOneWidget);
+      expect(find.text('INV/2026/09/001'), findsOneWidget);
+      expect(find.text('Berhasil Export PDF'), findsOneWidget);
+      expect(find.byKey(const Key('invoice-pdf-open-action')), findsOneWidget);
+      expect(find.byKey(const Key('invoice-pdf-share-action')), findsOneWidget);
+      expect(find.byKey(const Key('invoice-pdf-close-action')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('invoice-pdf-close-action')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('invoice-pdf-success-dialog')), findsNothing);
+    });
   });
 }
+

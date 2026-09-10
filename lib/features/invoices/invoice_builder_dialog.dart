@@ -5,8 +5,7 @@ import '../schedule/order_model.dart';
 import '../../shared/pressable.dart';
 import 'invoice_adjustment_editor.dart';
 import 'invoice_model.dart';
-import 'pdf/invoice_pdf_download.dart';
-import 'pdf/invoice_pdf_export_service.dart';
+import 'pdf/invoice_pdf_dialogs.dart';
 import 'quick_payment_dialog.dart';
 
 class InvoiceBuilderDialog extends StatefulWidget {
@@ -254,7 +253,6 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
   Future<void> _exportPdf() async {
     setState(() => _isExporting = true);
     try {
-      final service = InvoicePdfExportService();
       final calc = _calculation;
       final resolvedAdjustments = _adjustments
           .map((adj) {
@@ -288,36 +286,11 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
         printedAt: widget.invoice.printedAt,
       );
 
-      final location = await service.exportAndDownload(
+      await InvoicePdfExportHelper.exportWithModalProgress(
+        context: context,
         invoice: widget.invoice,
         currentInput: currentInput,
         order: widget.selectedOrder,
-      );
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            'PDF faktur resmi berhasil diunduh.',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          backgroundColor: const Color(0xFF346538),
-          action: location != null
-              ? SnackBarAction(
-                  label: 'Buka File',
-                  textColor: Colors.white,
-                  onPressed: () => openInvoicePdf(location),
-                )
-              : null,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Gagal mengekspor PDF: $e'),
-          backgroundColor: const Color(0xFF9F2F2D),
-        ),
       );
     } finally {
       if (mounted) setState(() => _isExporting = false);
