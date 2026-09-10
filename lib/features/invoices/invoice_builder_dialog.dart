@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../app/gateway.dart';
+import '../schedule/order_model.dart';
 import '../../shared/pressable.dart';
 import 'invoice_adjustment_editor.dart';
 import 'invoice_model.dart';
+import 'pdf/invoice_pdf_download.dart';
+import 'pdf/invoice_pdf_export_service.dart';
 import 'quick_payment_dialog.dart';
 
 class InvoiceBuilderDialog extends StatefulWidget {
@@ -12,12 +15,14 @@ class InvoiceBuilderDialog extends StatefulWidget {
     required this.invoice,
     required this.gateway,
     required this.onSaved,
+    this.selectedOrder,
     this.initiallyEditing = false,
   });
 
   final InvoiceRecord invoice;
   final MaintenanceGateway gateway;
   final ValueChanged<InvoiceRecord> onSaved;
+  final OrderanSewa? selectedOrder;
   final bool initiallyEditing;
 
   @override
@@ -241,6 +246,81 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
           backgroundColor: const Color(0xFF9F2F2D),
         ),
       );
+    }
+  }
+
+  bool _isExporting = false;
+
+  Future<void> _exportPdf() async {
+    setState(() => _isExporting = true);
+    try {
+      final service = InvoicePdfExportService();
+      final calc = _calculation;
+      final resolvedAdjustments = _adjustments
+          .map((adj) {
+            final desc = adj.descCtrl.text.trim();
+            final amt = num.tryParse(adj.amountCtrl.text.trim()) ?? 0;
+            return InvoiceAdjustment(description: desc, amount: amt);
+          })
+          .where((a) => a.description.isNotEmpty || a.amount != 0)
+          .toList();
+
+      final currentInput = SaveInvoiceInput(
+        invoiceId: widget.invoice.id,
+        orderanId: _orderIdController.text.trim().isEmpty
+            ? null
+            : _orderIdController.text.trim(),
+        invoiceReference: _refController.text.trim(),
+        invoiceDate: _invoiceDateController.text.trim(),
+        dueDate: _dueDateController.text.trim(),
+        productName: _productController.text.trim(),
+        quantity: num.tryParse(_qtyController.text.trim()) ?? 1,
+        rentalDays: num.tryParse(_daysController.text.trim()) ?? 1,
+        unitPrice: num.tryParse(_unitPriceController.text.trim()) ?? 250000,
+        subtotal: calc.subtotal,
+        totalAmount: calc.totalAmount,
+        paidAmount: calc.paidAmount,
+        paymentStatus: _paymentStatus,
+        invoiceSource: widget.invoice.invoiceSource,
+        customerName: _customerNameController.text.trim(),
+        customerPhone: _customerPhoneController.text.trim(),
+        adjustments: resolvedAdjustments,
+        printedAt: widget.invoice.printedAt,
+      );
+
+      final location = await service.exportAndDownload(
+        invoice: widget.invoice,
+        currentInput: currentInput,
+        order: widget.selectedOrder,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'PDF faktur resmi berhasil diunduh.',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: const Color(0xFF346538),
+          action: location != null
+              ? SnackBarAction(
+                  label: 'Buka File',
+                  textColor: Colors.white,
+                  onPressed: () => openInvoicePdf(location),
+                )
+              : null,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal mengekspor PDF: $e'),
+          backgroundColor: const Color(0xFF9F2F2D),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
     }
   }
 
@@ -865,6 +945,33 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
             child: const Text('Batal Ubah',
                 style: TextStyle(color: Color(0xFF71717A), fontSize: 12)),
           ),
+          const SizedBox(width: 6),
+          OutlinedButton.icon(
+            onPressed: _isExporting ? null : _exportPdf,
+            icon: _isExporting
+                ? const SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.download_rounded, size: 14),
+            label: Text(
+              _isExporting ? 'Mengunduh...' : 'Unduh PDF',
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF18181B),
+              side: const BorderSide(color: Color(0xFFE4E4E7)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            ),
+          ),
           const SizedBox(width: 8),
           FilledButton(
             onPressed: _isSaving ? null : _save,
@@ -895,10 +1002,49 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
     return Row(
       children: [
         PressableScale(
+          onTap: _isExporting ? null : _exportPdf,
+          child: Container(
+            height: 34,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4F4F5),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE4E4E7)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _isExporting
+                    ? const SizedBox(
+                        width: 13,
+                        height: 13,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFF18181B),
+                        ),
+                      )
+                    : const Icon(Icons.download_rounded,
+                        size: 15, color: Color(0xFF18181B)),
+                const SizedBox(width: 5),
+                Text(
+                  _isExporting ? 'Mengunduh...' : 'Unduh PDF',
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF18181B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        PressableScale(
           onTap: _shareToWhatsApp,
           child: Container(
             height: 34,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
               color: const Color(0xFFEDF3EC),
               borderRadius: BorderRadius.circular(8),
@@ -907,12 +1053,12 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.share_rounded, size: 14, color: Color(0xFF346538)),
-                SizedBox(width: 6),
+                SizedBox(width: 4),
                 Text(
                   'Kirim WA',
                   style: TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 12,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF346538),
                   ),
