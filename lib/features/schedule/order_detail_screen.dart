@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../app/gateway.dart';
 import '../../shared/pressable.dart';
+import '../invoices/invoice_builder_dialog.dart';
+import '../invoices/invoice_model.dart';
+import '../invoices/quick_payment_dialog.dart';
 import 'order_model.dart';
 
 class OrderDetailScreen extends StatefulWidget {
@@ -23,6 +26,7 @@ class OrderDetailScreen extends StatefulWidget {
 
 class _OrderDetailScreenState extends State<OrderDetailScreen> {
   OrderanSewa? _order;
+  InvoiceRecord? _invoice;
   bool _isLoading = false;
   String? _error;
 
@@ -46,6 +50,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         tanggalPemasangan: null,
       );
     }
+    if (widget.gateway != null) {
+      _loadInvoice();
+    }
+  }
+
+  Future<void> _loadInvoice() async {
+    final orderanId = _order?.orderanId ?? _order?.id ?? widget.orderId;
+    if (orderanId == null || widget.gateway == null) return;
+    try {
+      final inv = await widget.gateway!.fetchInvoiceByOrderanId(orderanId);
+      if (mounted && inv != null) {
+        setState(() => _invoice = inv);
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadOrderDetail() async {
@@ -60,6 +78,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           _order = fetched;
           _isLoading = false;
         });
+        _loadInvoice();
       }
     } catch (_) {
       if (mounted) {
@@ -131,6 +150,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                               _buildCustomerCard(context),
                               const SizedBox(height: 16),
                               _buildEventNotesCard(context),
+                              const SizedBox(height: 16),
+                              _buildInvoiceCard(context),
                               const SizedBox(height: 24),
                             ],
                           ),
@@ -822,6 +843,212 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildInvoiceCard(BuildContext context) {
+    final inv = _invoice;
+    final isPaid = inv?.isPaid ?? false;
+    final isDp = inv?.isDp ?? false;
+
+    final statusBg = isPaid
+        ? const Color(0xFFECFDF5)
+        : isDp
+            ? const Color(0xFFFFFBEB)
+            : const Color(0xFFFEF2F2);
+
+    final statusColor = isPaid
+        ? const Color(0xFF059669)
+        : isDp
+            ? const Color(0xFFD97706)
+            : const Color(0xFFDC2626);
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Invoice Terkait',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              if (inv != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: statusBg,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    inv.paymentStatusDisplay,
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: statusColor,
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    'Belum Ada',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            inv != null
+                ? '${inv.invoiceReference} • Total: ${inv.totalAmountFormatted}${inv.remainingAmount > 0 ? " (Sisa: ${inv.remainingAmountFormatted})" : ""}'
+                : 'Lihat atau terbitkan invoice resmi untuk orderan ini.',
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 12,
+              color: Color(0xFF64748B),
+            ),
+          ),
+          const SizedBox(height: 14),
+          if (inv != null)
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      showDialog<void>(
+                        context: context,
+                        builder: (ctx) => QuickPaymentDialog(
+                          invoice: inv,
+                          gateway: widget.gateway!,
+                          onPaymentUpdated: (updated) {
+                            setState(() => _invoice = updated);
+                          },
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.payments_outlined, size: 15),
+                    label: const Text('Atur Bayar', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      showDialog<void>(
+                        context: context,
+                        builder: (ctx) => InvoiceBuilderDialog(
+                          invoice: inv,
+                          gateway: widget.gateway!,
+                          onSaved: (saved) {
+                            setState(() => _invoice = saved);
+                          },
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.receipt_long_rounded, size: 15),
+                    label: const Text('Buka Invoice', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF0F172A),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else if (widget.gateway != null && _order != null)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final order = _order!;
+                  final dt = order.tanggalPemasangan ?? DateTime.now();
+                  final orderanIdStr = order.orderanId ?? order.id;
+                  final codeSuffix = orderanIdStr.split('-').last;
+                  final y = dt.year.toString().padLeft(4, '0');
+                  final m = dt.month.toString().padLeft(2, '0');
+                  final d = dt.day.toString().padLeft(2, '0');
+                  final ref = 'INV/$y/$m/$d-$codeSuffix';
+                  final qty = order.jumlahUnit > 0 ? order.jumlahUnit : 1;
+                  final days = order.rentalDays > 0 ? order.rentalDays : 1;
+                  const unitPrice = 250000;
+                  final subtotal = qty * unitPrice;
+
+                  final payload = <String, Object?>{
+                    'orderan_id': orderanIdStr,
+                    'invoice_reference': ref,
+                    'invoice_date': dt.toIso8601String().substring(0, 10),
+                    'due_date': dt.add(const Duration(days: 7)).toIso8601String().substring(0, 10),
+                    'product_name': order.namaEvent.isNotEmpty ? order.namaEvent : 'Sewa Mistyfan',
+                    'quantity': qty,
+                    'rental_days': days,
+                    'unit_price': unitPrice,
+                    'subtotal': subtotal,
+                    'total_amount': subtotal * days,
+                    'paid_amount': 0,
+                    'payment_status': 'unpaid',
+                    'invoice_source': 'order',
+                    'customer_name': order.namaClient,
+                    'customer_phone': order.nomorWhatsapp ?? '',
+                  };
+                  final messenger = ScaffoldMessenger.of(context);
+                  try {
+                    final created = await widget.gateway!.createInvoice(payload);
+                    if (mounted) {
+                      setState(() => _invoice = created);
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      messenger.showSnackBar(
+                        SnackBar(content: Text('Gagal membuat invoice: $e'), backgroundColor: const Color(0xFFDC2626)),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: const Text('Terbitkan Invoice untuk Order Ini', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                style: OutlinedButton.styleFrom(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

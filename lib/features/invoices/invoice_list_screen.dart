@@ -2,17 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../app/gateway.dart';
 import '../../shared/pressable.dart';
+import 'create_invoice_dialog.dart';
+import 'invoice_builder_dialog.dart';
 import 'invoice_model.dart';
+import 'quick_payment_dialog.dart';
+
+enum InvoiceSourceFilter { automatic, manual }
 
 class InvoiceListScreen extends StatefulWidget {
   const InvoiceListScreen({
     super.key,
     required this.gateway,
     required this.user,
+    this.fromOrderanId,
   });
 
   final MaintenanceGateway gateway;
   final UserProfile user;
+  final String? fromOrderanId;
 
   @override
   State<InvoiceListScreen> createState() => _InvoiceListScreenState();
@@ -23,7 +30,9 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
   bool _isLoading = true;
   String? _error;
   List<InvoiceRecord> _allInvoices = [];
-  String _activeFilter = 'Semua';
+
+  InvoiceSourceFilter _sourceFilter = InvoiceSourceFilter.automatic;
+  InvoicePaymentStatus? _paymentFilter;
 
   @override
   void initState() {
@@ -64,28 +73,89 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
     final query = _searchController.text.trim().toLowerCase();
 
     return _allInvoices.where((inv) {
-      final matchesFilter = switch (_activeFilter) {
-        'Belum Lunas' => inv.isUnpaid,
-        'DP' => inv.isDp,
-        'Lunas' => inv.isPaid,
-        _ => true,
-      };
+      // 1. Source filter
+      final sourceMatches = _sourceFilter == InvoiceSourceFilter.automatic
+          ? inv.invoiceSource != 'manual_reimbursement'
+          : inv.invoiceSource == 'manual_reimbursement';
+      if (!sourceMatches) return false;
 
-      if (!matchesFilter) return false;
+      // 2. Order ID match if opened for specific order
+      if (widget.fromOrderanId != null &&
+          inv.orderanId != widget.fromOrderanId) {
+        return false;
+      }
+
+      // 3. Payment status filter
+      if (_paymentFilter != null && inv.paymentStatus != _paymentFilter) {
+        return false;
+      }
+
+      // 4. Search query
       if (query.isEmpty) return true;
-
       final ref = inv.invoiceReference.toLowerCase();
       final client = inv.customerName.toLowerCase();
       final product = inv.productName.toLowerCase();
+      final orderId = (inv.orderanId ?? '').toLowerCase();
+
       return ref.contains(query) ||
           client.contains(query) ||
-          product.contains(query);
+          product.contains(query) ||
+          orderId.contains(query);
     }).toList();
   }
 
-  int get _unpaidCount => _allInvoices.where((i) => i.isUnpaid).length;
-  int get _dpCount => _allInvoices.where((i) => i.isDp).length;
-  int get _paidCount => _allInvoices.where((i) => i.isPaid).length;
+  List<InvoiceRecord> get _sourceInvoices {
+    return _allInvoices.where((inv) {
+      return _sourceFilter == InvoiceSourceFilter.automatic
+          ? inv.invoiceSource != 'manual_reimbursement'
+          : inv.invoiceSource == 'manual_reimbursement';
+    }).toList();
+  }
+
+  int get _unpaidCount =>
+      _sourceInvoices.where((i) => i.paymentStatus == InvoicePaymentStatus.unpaid).length;
+  int get _partialCount =>
+      _sourceInvoices.where((i) => i.paymentStatus == InvoicePaymentStatus.partial).length;
+  int get _paidCount =>
+      _sourceInvoices.where((i) => i.paymentStatus == InvoicePaymentStatus.paid).length;
+
+  void _openCreateDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => CreateInvoiceDialog(
+        gateway: widget.gateway,
+        onCreated: (created) {
+          _loadInvoices(forceRefresh: true);
+        },
+      ),
+    );
+  }
+
+  void _openQuickPayment(InvoiceRecord invoice) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => QuickPaymentDialog(
+        invoice: invoice,
+        gateway: widget.gateway,
+        onPaymentUpdated: (updated) {
+          _loadInvoices(forceRefresh: true);
+        },
+      ),
+    );
+  }
+
+  void _openInvoiceBuilder(InvoiceRecord invoice) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => InvoiceBuilderDialog(
+        invoice: invoice,
+        gateway: widget.gateway,
+        onSaved: (saved) {
+          _loadInvoices(forceRefresh: true);
+        },
+      ),
+    );
+  }
 
   Future<void> _shareToWhatsApp(InvoiceRecord invoice) async {
     final cleanPhone =
@@ -95,17 +165,20 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
       targetPhone = '62${targetPhone.substring(1)}';
     }
 
-    final message = '''Halo *${invoice.customerName}*,
+    final message = '''Halo *${invoice.customerName.isNotEmpty ? invoice.customerName : 'Klien MGRS'}*,
 
-Berikut informasi tagihan sewa Mistyfan MGRS:
+Berikut rincian tagihan resmi dari *MGRS Blower*:
 📄 *No. Invoice:* ${invoice.invoiceReference}
-🎉 *Acara:* ${invoice.productName}
+🎉 *Acara / Produk:* ${invoice.productName}
 📅 *Tanggal:* ${invoice.formattedInvoiceDate}
-📦 *Unit:* ${invoice.quantity} Unit (${invoice.rentalDays} Hari)
+📦 *Kuantitas:* ${invoice.quantity} Unit (${invoice.rentalDays} Hari)
 💰 *Total Tagihan:* ${invoice.totalAmountFormatted}
-💳 *Status:* ${invoice.paymentStatus}
+💳 *Status:* ${invoice.paymentStatusDisplay}
 ${invoice.remainingAmount > 0 ? '⚠️ *Sisa Pembayaran:* ${invoice.remainingAmountFormatted}\n' : ''}
-Terima kasih telah menggunakan jasa MGRS Blower!''';
+Rekening Pembayaran:
+*BCA: 2302619141 a/n MADNUR*
+
+Terima kasih telah mempercayai layanan MGRS!''';
 
     final uri = Uri.parse(
       targetPhone.isNotEmpty
@@ -134,15 +207,23 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
               child: _buildHeader(context),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: _buildCreateInvoiceButton(),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: _buildSourceTabs(),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
               child: _buildSearchBar(),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: _buildFilterChips(),
@@ -160,17 +241,18 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
     );
   }
 
-  // Header matching HomeScreen style
   Widget _buildHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
+          children: [
             Text(
-              'Daftar Invoice & Tagihan',
-              style: TextStyle(
+              widget.fromOrderanId != null
+                  ? 'Invoice #${widget.fromOrderanId}'
+                  : 'Daftar Invoice & Tagihan',
+              style: const TextStyle(
                 fontFamily: 'Plus Jakarta Sans',
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -178,8 +260,8 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
                 letterSpacing: -0.3,
               ),
             ),
-            SizedBox(height: 2),
-            Text(
+            const SizedBox(height: 2),
+            const Text(
               'Status Pembayaran Sewa Blower',
               style: TextStyle(
                 fontFamily: 'Plus Jakarta Sans',
@@ -217,12 +299,125 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
     );
   }
 
-  // Search bar matching UpcomingOrdersScreen
+  Widget _buildCreateInvoiceButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 40,
+      child: FilledButton.icon(
+        key: const Key('invoice-create-action'),
+        onPressed: _openCreateDialog,
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFF0F172A),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        icon: const Icon(Icons.add_rounded, size: 18),
+        label: const Text(
+          'Buat invoice baru',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSourceTabs() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFE2E8F0),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(3),
+      child: Row(
+        children: [
+          Expanded(
+            child: PressableScale(
+              onTap: () => setState(() => _sourceFilter = InvoiceSourceFilter.automatic),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 7),
+                decoration: BoxDecoration(
+                  color: _sourceFilter == InvoiceSourceFilter.automatic
+                      ? Colors.white
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(9),
+                  boxShadow: _sourceFilter == InvoiceSourceFilter.automatic
+                      ? const [
+                          BoxShadow(
+                            color: Color(0x0A0F172A),
+                            blurRadius: 4,
+                            offset: Offset(0, 1),
+                          ),
+                        ]
+                      : null,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  'Otomatis (Order Sewa)',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 12,
+                    fontWeight: _sourceFilter == InvoiceSourceFilter.automatic
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                    color: _sourceFilter == InvoiceSourceFilter.automatic
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFF64748B),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: PressableScale(
+              onTap: () => setState(() => _sourceFilter = InvoiceSourceFilter.manual),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 7),
+                decoration: BoxDecoration(
+                  color: _sourceFilter == InvoiceSourceFilter.manual
+                      ? Colors.white
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(9),
+                  boxShadow: _sourceFilter == InvoiceSourceFilter.manual
+                      ? const [
+                          BoxShadow(
+                            color: Color(0x0A0F172A),
+                            blurRadius: 4,
+                            offset: Offset(0, 1),
+                          ),
+                        ]
+                      : null,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  'Manual Reimbursement',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 12,
+                    fontWeight: _sourceFilter == InvoiceSourceFilter.manual
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                    color: _sourceFilter == InvoiceSourceFilter.manual
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFF64748B),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSearchBar() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: const [
           BoxShadow(
@@ -241,7 +436,7 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
           color: Color(0xFF0F172A),
         ),
         decoration: InputDecoration(
-          hintText: 'Cari no. invoice, nama klien, atau acara...',
+          hintText: 'Cari no. invoice, order, atau klien...',
           hintStyle: const TextStyle(
             fontFamily: 'Plus Jakarta Sans',
             fontSize: 13,
@@ -261,19 +456,30 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
               : null,
           border: InputBorder.none,
           contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         ),
       ),
     );
   }
 
-  // Filter chips matching UpcomingOrdersScreen style exactly
   Widget _buildFilterChips() {
     final filters = [
-      {'label': 'Semua', 'count': _allInvoices.length},
-      {'label': 'Belum Lunas', 'count': _unpaidCount},
-      {'label': 'DP', 'count': _dpCount},
-      {'label': 'Lunas', 'count': _paidCount},
+      {'label': 'Semua', 'status': null, 'count': _sourceInvoices.length},
+      {
+        'label': 'Belum Bayar',
+        'status': InvoicePaymentStatus.unpaid,
+        'count': _unpaidCount,
+      },
+      {
+        'label': 'Sebagian',
+        'status': InvoicePaymentStatus.partial,
+        'count': _partialCount,
+      },
+      {
+        'label': 'Lunas',
+        'status': InvoicePaymentStatus.paid,
+        'count': _paidCount,
+      },
     ];
 
     return SingleChildScrollView(
@@ -282,16 +488,17 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
       child: Row(
         children: filters.map((f) {
           final label = f['label'] as String;
+          final status = f['status'] as InvoicePaymentStatus?;
           final count = f['count'] as int;
-          final isSelected = _activeFilter == label;
+          final isSelected = _paymentFilter == status;
 
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: PressableScale(
-              onTap: () => setState(() => _activeFilter = label),
+              onTap: () => setState(() => _paymentFilter = status),
               child: Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: isSelected ? const Color(0xFF0F172A) : Colors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -417,14 +624,13 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
       itemBuilder: (context, index) {
         final item = invoices[index];
         return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.only(bottom: 12),
           child: _buildInvoiceCard(item),
         );
       },
     );
   }
 
-  // Invoice Card matching HomeScreen._buildOrderCard design tokens
   Widget _buildInvoiceCard(InvoiceRecord item) {
     final statusColor = item.isPaid
         ? const Color(0xFF059669)
@@ -461,6 +667,7 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header Card: Ref & Status
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -484,7 +691,7 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 12,
+                          fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF0F172A),
                         ),
@@ -545,7 +752,7 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
             ),
           ),
           const SizedBox(height: 10),
-          // Amount Box
+          // Amount Box (Total & Sisa)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
@@ -579,87 +786,130 @@ Terima kasih telah menggunakan jasa MGRS Blower!''';
                     ),
                   ],
                 ),
-                if (item.remainingAmount > 0)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text(
-                        'Sisa Bayar',
-                        style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 10,
-                          color: Color(0xFFDC2626),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        item.remainingAmountFormatted,
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFFDC2626),
-                        ),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.only(top: 8),
-            decoration: const BoxDecoration(
-              border: Border(
-                top: BorderSide(color: Color(0xFFF1F5F9)),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Icon(
-                      Icons.calendar_today_rounded,
-                      size: 12,
-                      color: Color(0xFF64748B),
-                    ),
-                    const SizedBox(width: 4),
                     Text(
-                      'Tgl: ${item.formattedInvoiceDate} (${item.rentalDays} Hari)',
-                      style: const TextStyle(
+                      item.remainingAmount > 0 ? 'Sisa Bayar' : 'Status Bayar',
+                      style: TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 11,
-                        color: Color(0xFF64748B),
+                        fontSize: 10,
+                        color: item.remainingAmount > 0
+                            ? const Color(0xFFDC2626)
+                            : const Color(0xFF059669),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      item.remainingAmount > 0
+                          ? item.remainingAmountFormatted
+                          : 'Lunas',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: item.remainingAmount > 0
+                            ? const Color(0xFFDC2626)
+                            : const Color(0xFF059669),
                       ),
                     ),
                   ],
                 ),
-                OutlinedButton.icon(
-                  onPressed: () => _shareToWhatsApp(item),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF059669),
-                    side: const BorderSide(color: Color(0xFFA7F3D0)),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  icon: const Icon(Icons.send_rounded, size: 13),
-                  label: const Text(
-                    'Kirim WA',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Date & Order ID info
+          Row(
+            children: [
+              const Icon(
+                Icons.calendar_today_rounded,
+                size: 12,
+                color: Color(0xFF64748B),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Tgl: ${item.formattedInvoiceDate} (${item.rentalDays} Hari)',
+                style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 11,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+              if (item.orderanId != null && item.orderanId!.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Text(
+                  '• #${item.orderanId}',
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 11,
+                    color: Color(0xFF94A3B8),
                   ),
                 ),
               ],
-            ),
+            ],
+          ),
+          const Divider(height: 18),
+          // Action Buttons: Atur Pembayaran & Buka Invoice & WA
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  key: Key('btn-quick-payment-${item.id}'),
+                  onPressed: () => _openQuickPayment(item),
+                  icon: const Icon(Icons.payments_outlined, size: 14),
+                  label: const Text(
+                    'Atur Bayar',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FilledButton.icon(
+                  key: Key('btn-open-builder-${item.id}'),
+                  onPressed: () => _openInvoiceBuilder(item),
+                  icon: const Icon(Icons.receipt_long_rounded, size: 14),
+                  label: const Text(
+                    'Buka Invoice',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF0F172A),
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              IconButton(
+                onPressed: () => _shareToWhatsApp(item),
+                tooltip: 'Kirim WA',
+                icon: const Icon(Icons.share_rounded, size: 18, color: Color(0xFF059669)),
+                style: IconButton.styleFrom(
+                  backgroundColor: const Color(0xFFECFDF5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding: const EdgeInsets.all(8),
+                ),
+              ),
+            ],
           ),
         ],
       ),

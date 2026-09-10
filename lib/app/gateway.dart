@@ -144,6 +144,22 @@ abstract class MaintenanceGateway {
     bool forceRefresh = false,
   }) async => const [];
 
+  Future<InvoiceRecord> createInvoice(Map<String, Object?> payload) async =>
+      throw UnimplementedError();
+
+  Future<InvoiceRecord> saveInvoice(SaveInvoiceInput input) async =>
+      throw UnimplementedError();
+
+  Future<InvoiceRecord> updateInvoicePayment(
+    String invoiceId,
+    InvoicePaymentStatus status,
+    num paidAmount,
+  ) async =>
+      throw UnimplementedError();
+
+  Future<InvoiceRecord?> fetchInvoiceByOrderanId(String orderanId) async =>
+      null;
+
   Future<OrderanSewa> createOrderWithInvoice(
     Map<String, Object?> orderData,
   ) async => throw UnimplementedError();
@@ -476,6 +492,73 @@ class SupabaseGateway extends MaintenanceGateway {
     } catch (e) {
       debugPrint('[Fetch Invoices Error] $e');
       return const [];
+    }
+  }
+
+  @override
+  Future<InvoiceRecord> createInvoice(Map<String, Object?> payload) async {
+    final insertPayload = <String, Object?>{...payload}
+      ..remove('id')
+      ..remove('created_at')
+      ..remove('updated_at');
+    final res = await client
+        .from('invoices')
+        .insert(insertPayload)
+        .select()
+        .single();
+    invalidateCache('invoices');
+    return InvoiceRecord.fromJson(jsonObject(res));
+  }
+
+  @override
+  Future<InvoiceRecord> saveInvoice(SaveInvoiceInput input) async {
+    final payload = <String, Object?>{
+      ...input.toPayload(),
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    };
+    final res = await client
+        .from('invoices')
+        .update(payload)
+        .eq('id', input.invoiceId)
+        .select()
+        .single();
+    invalidateCache('invoices');
+    return InvoiceRecord.fromJson(jsonObject(res));
+  }
+
+  @override
+  Future<InvoiceRecord> updateInvoicePayment(
+    String invoiceId,
+    InvoicePaymentStatus status,
+    num paidAmount,
+  ) async {
+    final payload = <String, Object?>{
+      'payment_status': status.toJson(),
+      'paid_amount': paidAmount,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    };
+    final res = await client
+        .from('invoices')
+        .update(payload)
+        .eq('id', invoiceId)
+        .select()
+        .single();
+    invalidateCache('invoices');
+    return InvoiceRecord.fromJson(jsonObject(res));
+  }
+
+  @override
+  Future<InvoiceRecord?> fetchInvoiceByOrderanId(String orderanId) async {
+    try {
+      final res = await client
+          .from('invoices')
+          .select()
+          .eq('orderan_id', orderanId)
+          .maybeSingle();
+      if (res == null) return null;
+      return InvoiceRecord.fromJson(jsonObject(res));
+    } catch (_) {
+      return null;
     }
   }
 

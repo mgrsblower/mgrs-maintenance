@@ -51,7 +51,7 @@ class MockPicGateway extends MaintenanceGateway {
       subtotal: 3000000,
       totalAmount: 3000000,
       paidAmount: 0,
-      paymentStatus: 'Belum Lunas',
+      paymentStatus: InvoicePaymentStatus.unpaid,
       customerName: 'CV Maju Jaya',
       customerPhone: '081234567890',
     ),
@@ -68,7 +68,7 @@ class MockPicGateway extends MaintenanceGateway {
       subtotal: 1500000,
       totalAmount: 1500000,
       paidAmount: 1500000,
-      paymentStatus: 'Lunas',
+      paymentStatus: InvoicePaymentStatus.paid,
       customerName: 'Ibu Ratna Wedding',
       customerPhone: '081298765432',
     ),
@@ -160,7 +160,7 @@ class MockPicGateway extends MaintenanceGateway {
       'subtotal': order.jumlahUnit * order.rentalDays * 250000,
       'total_amount': order.jumlahUnit * order.rentalDays * 250000,
       'paid_amount': 0,
-      'payment_status': 'Belum Lunas',
+      'payment_status': 'unpaid',
       'customer_name': order.namaClient,
       'customer_phone': order.nomorWhatsapp,
     });
@@ -209,7 +209,7 @@ void main() {
         subtotal: 1500000,
         totalAmount: 1500000,
         paidAmount: 0,
-        paymentStatus: 'Belum Lunas',
+        paymentStatus: InvoicePaymentStatus.unpaid,
       );
       expect(unpaidInv.isUnpaid, isTrue);
       expect(unpaidInv.isPaid, isFalse);
@@ -229,7 +229,7 @@ void main() {
         subtotal: 1500000,
         totalAmount: 1500000,
         paidAmount: 500000,
-        paymentStatus: 'DP',
+        paymentStatus: InvoicePaymentStatus.partial,
       );
       expect(dpInv.isDp, isTrue);
       expect(dpInv.remainingAmount, 1000000);
@@ -247,7 +247,7 @@ void main() {
         subtotal: 1500000,
         totalAmount: 1500000,
         paidAmount: 1500000,
-        paymentStatus: 'Lunas',
+        paymentStatus: InvoicePaymentStatus.paid,
       );
       expect(paidInv.isPaid, isTrue);
       expect(paidInv.remainingAmount, 0);
@@ -353,8 +353,8 @@ void main() {
       expect(find.text('INV/2026/09/10-001'), findsOneWidget);
       expect(find.text('INV/2026/09/05-002'), findsOneWidget);
 
-      // Filter by 'Belum Lunas'
-      await tester.tap(find.text('Belum Lunas').first);
+      // Filter by 'Belum Bayar'
+      await tester.tap(find.text('Belum Bayar').first);
       await tester.pumpAndSettle();
 
       expect(find.text('INV/2026/09/10-001'), findsOneWidget);
