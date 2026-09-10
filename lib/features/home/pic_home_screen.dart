@@ -1229,26 +1229,33 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.calendar_today_rounded,
-                        size: 12,
-                        color: Color(0xFF64748B),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        order.dayDateYear,
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF475569),
+                  Expanded(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.calendar_today_rounded,
+                          size: 12,
+                          color: Color(0xFF64748B),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            order.dayDateYear,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF475569),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
