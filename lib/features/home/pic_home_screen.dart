@@ -4,7 +4,6 @@ import '../../shared/pressable.dart';
 import '../schedule/create_order_screen.dart';
 import '../schedule/order_detail_screen.dart';
 import '../schedule/order_model.dart';
-import '../invoices/invoice_model.dart';
 
 class PicHomeScreen extends StatefulWidget {
   const PicHomeScreen({
@@ -27,8 +26,9 @@ class PicHomeScreen extends StatefulWidget {
 class _PicHomeScreenState extends State<PicHomeScreen> {
   bool _isLoading = true;
   String? _error;
+  List<OrderanSewa> _allOrders = [];
   List<OrderanSewa> _upcomingOrders = [];
-  List<InvoiceRecord> _invoices = [];
+  List<OrderanSewa> _pastOrders = [];
 
   @override
   void initState() {
@@ -43,18 +43,15 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
     });
 
     try {
-      final results = await Future.wait([
-        widget.gateway.fetchUpcomingOrders(limit: 30, forceRefresh: forceRefresh),
-        widget.gateway.fetchInvoices(forceRefresh: forceRefresh),
-      ]);
+      final allOrders = await widget.gateway
+          .fetchUpcomingOrders(limit: 50, forceRefresh: forceRefresh);
 
       if (!mounted) return;
-      final allOrders = results[0] as List<OrderanSewa>;
-      final allInvoices = results[1] as List<InvoiceRecord>;
 
       setState(() {
+        _allOrders = allOrders;
         _upcomingOrders = allOrders.where((o) => o.isUpcoming).toList();
-        _invoices = allInvoices;
+        _pastOrders = allOrders.where((o) => o.isPast).toList();
         _isLoading = false;
       });
     } catch (e) {
@@ -66,6 +63,27 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
     }
   }
 
+  int get _thisMonthOrdersCount {
+    final now = DateTime.now();
+    return _allOrders.where((o) {
+      final dt = o.tanggalPemasangan;
+      if (dt == null) return false;
+      return dt.year == now.year && dt.month == now.month;
+    }).length;
+  }
+
+  int get _thisMonthUnitsCount {
+    final now = DateTime.now();
+    var sum = 0;
+    for (final o in _allOrders) {
+      final dt = o.tanggalPemasangan;
+      if (dt != null && dt.year == now.year && dt.month == now.month) {
+        sum += o.jumlahUnit;
+      }
+    }
+    return sum;
+  }
+
   int get _todayOrdersCount {
     final now = DateTime.now();
     return _upcomingOrders.where((o) {
@@ -74,8 +92,6 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
       return dt.year == now.year && dt.month == now.month && dt.day == now.day;
     }).length;
   }
-
-  int get _unpaidInvoicesCount => _invoices.where((i) => i.isUnpaid).length;
 
   Future<void> _openCreateOrder() async {
     final created = await Navigator.of(context).push<bool>(
@@ -98,6 +114,14 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
     if (hour < 15) return 'Selamat Siang!';
     if (hour < 18) return 'Selamat Sore!';
     return 'Selamat Malam!';
+  }
+
+  static String _formatMonthName(DateTime dt) {
+    const months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    return '${months[dt.month - 1]} ${dt.year}';
   }
 
   void _showUserProfileBottomSheet(BuildContext context) {
@@ -531,7 +555,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
     );
   }
 
-  // 2. Bento Hero Card: matching HomeScreen bento styling (#CEF284 lime)
+  // 2. Bento Hero Card: Total orderan bulan ini
   Widget _buildCreateOrderBento(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
@@ -554,15 +578,15 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.auto_awesome,
+                      const Icon(Icons.auto_awesome,
                           size: 12, color: Color(0xFF22380E)),
-                      SizedBox(width: 5),
+                      const SizedBox(width: 5),
                       Text(
-                        'Orderan Baru Masuk?',
-                        style: TextStyle(
+                        'Bulan Ini • ${_formatMonthName(DateTime.now())}',
+                        style: const TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -574,7 +598,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                 ),
                 const SizedBox(height: 10),
                 const Text(
-                  'Input Jadwal\nSewa Blower',
+                  'Total Orderan\nBulan Ini',
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 19,
@@ -584,52 +608,100 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                     letterSpacing: -0.4,
                   ),
                 ),
+                const SizedBox(height: 6),
+                Text(
+                  '$_thisMonthUnitsCount Unit Blower Terdata',
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF425C22),
+                  ),
+                ),
               ],
             ),
           ),
-          const SizedBox(width: 14),
-          PressableScale(
-            onTap: _openCreateOrder,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1B350F),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF1B350F).withValues(alpha: 0.25),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.add_rounded, size: 18, color: Colors.white),
-                  SizedBox(width: 6),
-                  Text(
-                    'Input Order',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+          const SizedBox(width: 12),
+          Column(
+            children: [
+              Container(
+                width: 82,
+                height: 82,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFBCE66E), width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF1B350F).withValues(alpha: 0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '$_thisMonthOrdersCount',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 26,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1B350F),
+                        height: 1.0,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Orderan',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF527032),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+              const SizedBox(height: 8),
+              PressableScale(
+                onTap: _openCreateOrder,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1B350F),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add_rounded, size: 14, color: Colors.white),
+                      SizedBox(width: 3),
+                      Text(
+                        'Input Baru',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  // 3. Status Section: 3 Gradient/Solid Status Cards (matching HomeScreen exactly)
+  // 3. Status Section: 3 Ringkasan Order (Total Order, Akan Datang, Selesai)
   Widget _buildSummaryStatusSection(BuildContext context) {
-    final paidCount = _invoices.where((i) => i.isPaid).length;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -641,7 +713,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Ringkasan Order & Tagihan',
+                    'Ringkasan Orderan',
                     style: TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 16,
@@ -652,9 +724,9 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    _upcomingOrders.isEmpty && !_isLoading
-                        ? 'Belum ada jadwal orderan'
-                        : 'Total ${_upcomingOrders.length} orderan aktif dipantau',
+                    _allOrders.isEmpty && !_isLoading
+                        ? 'Belum ada data orderan'
+                        : 'Total ${_allOrders.length} orderan tercatat di sistem',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -694,45 +766,45 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        // 3 Vibrant Solid Status Cards
+        // 3 Vibrant Solid Status Cards: Total Order, Akan Datang, Selesai
         Row(
           children: [
-            // Card 1: Orderan Aktif (Blue Solid)
+            // Card 1: Total Order (Blue Solid)
             Expanded(
               child: _buildGradientStatusCard(
-                icon: Icons.event_available_rounded,
-                percentage: '$_todayOrdersCount Hari Ini',
-                count: '${_upcomingOrders.length}',
-                title: 'Orderan Aktif',
-                subtitle: 'Jadwal terdata',
+                icon: Icons.assignment_outlined,
+                percentage: 'Semua',
+                count: '${_allOrders.length}',
+                title: 'Total Order',
+                subtitle: 'Semua riwayat',
                 solidColor: const Color(0xFF147CC1),
                 onTap: widget.onOpenOrdersTab,
               ),
             ),
             const SizedBox(width: 10),
-            // Card 2: Belum Lunas (Amber Solid)
+            // Card 2: Akan Datang (Amber Solid)
             Expanded(
               child: _buildGradientStatusCard(
-                icon: Icons.receipt_long_rounded,
-                percentage: 'Pending',
-                count: '$_unpaidInvoicesCount',
-                title: 'Belum Lunas',
-                subtitle: 'Perlu dicek',
+                icon: Icons.event_available_rounded,
+                percentage: 'Mendatang',
+                count: '${_upcomingOrders.length}',
+                title: 'Akan Datang',
+                subtitle: '$_todayOrdersCount hari ini',
                 solidColor: const Color(0xFFD97706),
-                onTap: widget.onOpenInvoicesTab,
+                onTap: widget.onOpenOrdersTab,
               ),
             ),
             const SizedBox(width: 10),
-            // Card 3: Sudah Lunas (Emerald Solid)
+            // Card 3: Selesai (Emerald Solid)
             Expanded(
               child: _buildGradientStatusCard(
-                icon: Icons.check_circle_rounded,
-                percentage: 'Lunas',
-                count: '$paidCount',
-                title: 'Sudah Lunas',
-                subtitle: 'Transaksi beres',
+                icon: Icons.check_circle_outline_rounded,
+                percentage: 'Riwayat',
+                count: '${_pastOrders.length}',
+                title: 'Selesai',
+                subtitle: 'Event beres',
                 solidColor: const Color(0xFF059669),
-                onTap: widget.onOpenInvoicesTab,
+                onTap: widget.onOpenOrdersTab,
               ),
             ),
           ],

@@ -325,7 +325,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Orderan Baru Masuk?'), findsOneWidget);
+      expect(find.text('Total Orderan\nBulan Ini'), findsOneWidget);
+      expect(find.text('Total Order'), findsOneWidget);
+      expect(find.text('Akan Datang'), findsOneWidget);
+      expect(find.text('Selesai'), findsOneWidget);
       expect(find.text('Pameran Otomotif Akbar'), findsOneWidget);
     });
 
