@@ -1,4 +1,5 @@
 import 'package:url_launcher/url_launcher.dart';
+import 'unit_allocation_model.dart';
 
 class OrderanSewa {
   const OrderanSewa({
@@ -97,6 +98,8 @@ class OrderanSewa {
 
   static final _rentalDaysPattern = RegExp(r'\[SEWA_HARI:(\d+)\]', caseSensitive: false);
   static final _eventDatePattern = RegExp(r'\[TGL_EVENT:(\d{4}-\d{2}-\d{2})\]', caseSensitive: false);
+  static final _cancellationPattern = RegExp(r'\[BATAL:\s*([^\]]+)\]', caseSensitive: false);
+  static final _unitAllocationPattern = RegExp(r'\[UNIT_ALOKASI:\s*[^\]]+\]', caseSensitive: false);
 
   /// Rental duration in days extracted from [catatanOrderan] metadata tag `[SEWA_HARI:N]`, defaults to 1.
   int get rentalDays {
@@ -123,6 +126,27 @@ class OrderanSewa {
     return null;
   }
 
+  /// Check if the order is cancelled by status.
+  bool get isCancelled {
+    final s = (statusOrderan ?? '').trim().toLowerCase();
+    return s == 'batal' || s == 'cancelled';
+  }
+
+  /// Cancellation reason extracted from metadata tag `[BATAL:...]` in [catatanOrderan].
+  String? get cancellationReason {
+    final note = catatanOrderan ?? '';
+    final match = _cancellationPattern.firstMatch(note);
+    if (match != null) {
+      final reason = match.group(1)?.trim();
+      if (reason != null && reason.isNotEmpty) return reason;
+    }
+    return null;
+  }
+
+  /// Allocated blower units parsed from [catatanOrderan].
+  List<AllocatedUnit> get allocatedUnits =>
+      UnitAllocationParser.parse(catatanOrderan, totalUnits: jumlahUnit);
+
   /// Check if the order is completed or cancelled by status.
   bool get isCompletedOrCancelled {
     final s = (statusOrderan ?? '').trim().toLowerCase();
@@ -146,12 +170,14 @@ class OrderanSewa {
   /// Whether this order is past/completed.
   bool get isPast => isCompletedOrCancelled || isDatePassed;
 
-  /// Clean user note without `[SEWA_HARI:...]` and `[TGL_EVENT:...]` tags.
+  /// Clean user note without `[SEWA_HARI:...]`, `[TGL_EVENT:...]`, `[BATAL:...]`, and `[UNIT_ALOKASI:...]` tags.
   String get cleanNote {
     final note = catatanOrderan ?? '';
     return note
         .replaceAll(_rentalDaysPattern, '')
         .replaceAll(_eventDatePattern, '')
+        .replaceAll(_cancellationPattern, '')
+        .replaceAll(_unitAllocationPattern, '')
         .trim();
   }
 
