@@ -114,8 +114,11 @@ class AppFailure implements Exception {
 }
 
 String failureMessage(Object? error) {
-  if (kDebugMode && error != null) {
+  if (error != null) {
     debugPrint('[MGRS Failure] $error');
+  }
+  if (error is PostgrestException) {
+    return error.message;
   }
   return error is AppFailure ? error.message : const AppFailure('unknown').message;
 }
@@ -691,19 +694,15 @@ class SupabaseGateway extends MaintenanceGateway {
 
   @override
   Future<void> updateOrderStatus(String orderanId, String status) async {
-    final isDone = status.toLowerCase() == 'selesai';
-    final isCancelled = status.toLowerCase() == 'batal' || status.toLowerCase() == 'cancelled';
-    final updatePayload = {
+    final updatePayload = <String, Object?>{
       'status_orderan': status,
-      if (isDone || isCancelled)
-        'closed_at': DateTime.now().toUtc().toIso8601String(),
     };
 
     if (_isUuid(orderanId)) {
       await client
           .from('orderan_sewa')
           .update(updatePayload)
-          .or('id.eq.$orderanId,orderan_id.eq.$orderanId');
+          .eq('id', orderanId);
     } else {
       await client
           .from('orderan_sewa')
@@ -713,7 +712,7 @@ class SupabaseGateway extends MaintenanceGateway {
 
     invalidateCache('upcoming_orders');
     invalidateCache('order_detail:$orderanId');
-    if (isCancelled) {
+    if (status.toLowerCase() == 'batal' || status.toLowerCase() == 'cancelled') {
       invalidateCache('invoices');
     }
   }
@@ -729,9 +728,20 @@ class SupabaseGateway extends MaintenanceGateway {
     String? dbUuid;
     try {
       final noteQuery = client.from('orderan_sewa').select('id,orderan_id,catatan_orderan');
-      final res = _isUuid(orderanId)
-          ? await noteQuery.or('id.eq.$orderanId,orderan_id.eq.$orderanId').maybeSingle()
+      var res = _isUuid(orderanId)
+          ? await noteQuery.eq('id', orderanId).maybeSingle()
           : await noteQuery.eq('orderan_id', orderanId).maybeSingle();
+
+      if (res == null) {
+        if (!_isUuid(orderanId)) {
+          try {
+            res = await noteQuery.eq('id', orderanId).maybeSingle();
+          } catch (_) {}
+        } else {
+          res = await noteQuery.eq('orderan_id', orderanId).maybeSingle();
+        }
+      }
+
       if (res != null) {
         currentNote = res['catatan_orderan']?.toString();
         businessOrderId = res['orderan_id']?.toString();
@@ -747,17 +757,26 @@ class SupabaseGateway extends MaintenanceGateway {
         ? '$currentNote\n$cancellationTag'
         : cancellationTag;
 
-    final updatePayload = {
+    final updatePayload = <String, Object?>{
       'status_orderan': 'Batal',
       'catatan_orderan': updatedNote,
-      'closed_at': DateTime.now().toUtc().toIso8601String(),
     };
 
-    if (_isUuid(orderanId)) {
+    if (dbUuid != null && dbUuid.isNotEmpty) {
       await client
           .from('orderan_sewa')
           .update(updatePayload)
-          .or('id.eq.$orderanId,orderan_id.eq.$orderanId');
+          .eq('id', dbUuid);
+    } else if (businessOrderId != null && businessOrderId.isNotEmpty) {
+      await client
+          .from('orderan_sewa')
+          .update(updatePayload)
+          .eq('orderan_id', businessOrderId);
+    } else if (_isUuid(orderanId)) {
+      await client
+          .from('orderan_sewa')
+          .update(updatePayload)
+          .eq('id', orderanId);
     } else {
       await client
           .from('orderan_sewa')
@@ -807,6 +826,12 @@ class SupabaseGateway extends MaintenanceGateway {
     invalidateCache('upcoming_orders');
     invalidateCache('invoices');
     invalidateCache('order_detail:$orderanId');
+    if (businessOrderId != null && businessOrderId != orderanId) {
+      invalidateCache('order_detail:$businessOrderId');
+    }
+    if (dbUuid != null && dbUuid != orderanId) {
+      invalidateCache('order_detail:$dbUuid');
+    }
   }
 
   @override
@@ -860,7 +885,7 @@ class SupabaseGateway extends MaintenanceGateway {
     try {
       final noteQuery = client.from('orderan_sewa').select('catatan_orderan');
       final res = _isUuid(orderanId)
-          ? await noteQuery.or('id.eq.$orderanId,orderan_id.eq.$orderanId').maybeSingle()
+          ? await noteQuery.eq('id', orderanId).maybeSingle()
           : await noteQuery.eq('orderan_id', orderanId).maybeSingle();
       if (res != null) {
         currentNote = res['catatan_orderan']?.toString();
@@ -875,7 +900,7 @@ class SupabaseGateway extends MaintenanceGateway {
       await client
           .from('orderan_sewa')
           .update({'catatan_orderan': updatedNote})
-          .or('id.eq.$orderanId,orderan_id.eq.$orderanId');
+          .eq('id', orderanId);
     } else {
       await client
           .from('orderan_sewa')

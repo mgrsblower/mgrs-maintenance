@@ -1099,7 +1099,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
     if (confirmed == true && mounted) {
       final reason = reasonController.text.trim();
-      final orderanIdStr = order.id;
+      final orderanIdStr = order.id.isNotEmpty
+          ? order.id
+          : (order.orderanId ?? widget.orderId ?? '');
 
       try {
         await widget.gateway?.cancelOrder(
