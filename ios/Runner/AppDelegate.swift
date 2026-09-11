@@ -37,19 +37,25 @@ class PdfPreviewDelegate: NSObject, QLPreviewControllerDataSource, QLPreviewCont
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
     private var activePreviewDelegate: PdfPreviewDelegate?
     private var isChannelConfigured = false
+    private weak var flutterViewController: FlutterViewController?
 
     override func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
+        let appLaunched = super.application(application, didFinishLaunchingWithOptions: launchOptions)
         if let controller = window?.rootViewController as? FlutterViewController {
+            self.flutterViewController = controller
             configurePdfChannels(messenger: controller.binaryMessenger)
         }
-        return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+        return appLaunched
     }
 
     func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
         GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+        if let controller = window?.rootViewController as? FlutterViewController {
+            self.flutterViewController = controller
+        }
         if let messenger = engineBridge.pluginRegistry.registrar(forPlugin: "InvoicePdfPlugin")?.messenger() {
             configurePdfChannels(messenger: messenger)
         }
@@ -123,97 +129,143 @@ class PdfPreviewDelegate: NSObject, QLPreviewControllerDataSource, QLPreviewCont
     }
 
     private func getTopViewController(base: UIViewController? = nil) -> UIViewController? {
-        let root = base ?? window?.rootViewController
-        if let nav = root as? UINavigationController {
-            return getTopViewController(base: nav.visibleViewController)
+        var root = base
+        if root == nil {
+            // 1. Try window attached to AppDelegate
+            if let windowRoot = self.window?.rootViewController {
+                root = windowRoot
+            }
+            // 2. Try foregroundActive window scene (iOS 13+)
+            if root == nil {
+                let activeScene = UIApplication.shared.connectedScenes
+                    .filter { $0.activationState == .foregroundActive }
+                    .compactMap { $0 as? UIWindowScene }
+                    .first
+                let keyWindow = activeScene?.windows.first(where: { $0.isKeyWindow })
+                    ?? activeScene?.windows.first
+                root = keyWindow?.rootViewController
+            }
+            // 3. Try any connected scene window
+            if root == nil {
+                let anyScene = UIApplication.shared.connectedScenes
+                    .compactMap { $0 as? UIWindowScene }
+                    .first
+                let anySceneWindow = anyScene?.windows.first(where: { $0.isKeyWindow })
+                    ?? anyScene?.windows.first
+                root = anySceneWindow?.rootViewController
+            }
+            // 4. Try legacy windows
+            if root == nil {
+                root = UIApplication.shared.windows.first(where: { $0.isKeyWindow })?.rootViewController
+                    ?? UIApplication.shared.windows.first?.rootViewController
+                    ?? UIApplication.shared.keyWindow?.rootViewController
+            }
+            // 5. Fallback to captured FlutterViewController
+            if root == nil {
+                root = self.flutterViewController
+            }
         }
-        if let tab = root as? UITabBarController {
-            return getTopViewController(base: tab.selectedViewController)
-        }
-        if let presented = root?.presentedViewController {
+
+        guard let currentRoot = root else { return nil }
+
+        if let presented = currentRoot.presentedViewController, !presented.isBeingDismissed {
             return getTopViewController(base: presented)
         }
-        return root
+        if let nav = currentRoot as? UINavigationController {
+            return getTopViewController(base: nav.visibleViewController ?? nav.topViewController)
+        }
+        if let tab = currentRoot as? UITabBarController {
+            return getTopViewController(base: tab.selectedViewController)
+        }
+        return currentRoot
     }
 
     private func previewPdf(path: String?, result: @escaping FlutterResult) {
-        guard let cleanPath = path?.trimmingCharacters(in: .whitespacesAndNewlines), !cleanPath.isEmpty else {
-            result(FlutterError(code: "EMPTY_PATH", message: "Path file PDF tidak boleh kosong.", details: nil))
-            return
-        }
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
 
-        let fileUrl = URL(fileURLWithPath: cleanPath)
-        let fileManager = FileManager.default
+            guard let cleanPath = path?.trimmingCharacters(in: .whitespacesAndNewlines), !cleanPath.isEmpty else {
+                result(FlutterError(code: "EMPTY_PATH", message: "Path file PDF tidak boleh kosong.", details: nil))
+                return
+            }
 
-        guard fileManager.fileExists(atPath: fileUrl.path) else {
-            result(FlutterError(code: "FILE_NOT_FOUND", message: "File PDF tidak ditemukan: \(cleanPath)", details: nil))
-            return
-        }
+            let fileUrl = URL(fileURLWithPath: cleanPath)
+            let fileManager = FileManager.default
 
-        guard fileUrl.pathExtension.lowercased() == "pdf" else {
-            result(FlutterError(code: "NOT_A_PDF", message: "Format file bukan dokumen PDF yang valid.", details: nil))
-            return
-        }
+            guard fileManager.fileExists(atPath: fileUrl.path) else {
+                result(FlutterError(code: "FILE_NOT_FOUND", message: "File PDF tidak ditemukan: \(cleanPath)", details: nil))
+                return
+            }
 
-        guard let topVC = getTopViewController() else {
-            result(FlutterError(code: "PREVIEW_FAILED", message: "Tidak dapat menemukan UIViewController aktif.", details: nil))
-            return
-        }
+            guard fileUrl.pathExtension.lowercased() == "pdf" else {
+                result(FlutterError(code: "NOT_A_PDF", message: "Format file bukan dokumen PDF yang valid.", details: nil))
+                return
+            }
 
-        if topVC is QLPreviewController || topVC.presentedViewController is QLPreviewController {
-            result(FlutterError(code: "ALREADY_PRESENTING", message: "Preview sedang ditampilkan.", details: nil))
-            return
-        }
+            guard let topVC = self.getTopViewController() else {
+                result(FlutterError(code: "PREVIEW_FAILED", message: "Tidak dapat menemukan UIViewController aktif.", details: nil))
+                return
+            }
 
-        let previewItem = PdfPreviewItem(url: fileUrl)
-        let delegate = PdfPreviewDelegate(item: previewItem)
-        delegate.onDismiss = { [weak self] in
-            self?.activePreviewDelegate = nil
-        }
-        self.activePreviewDelegate = delegate
+            if topVC is QLPreviewController || topVC.presentedViewController is QLPreviewController {
+                result(FlutterError(code: "ALREADY_PRESENTING", message: "Preview sedang ditampilkan.", details: nil))
+                return
+            }
 
-        let previewVC = QLPreviewController()
-        previewVC.dataSource = delegate
-        previewVC.delegate = delegate
+            let previewItem = PdfPreviewItem(url: fileUrl)
+            let delegate = PdfPreviewDelegate(item: previewItem)
+            delegate.onDismiss = { [weak self] in
+                self?.activePreviewDelegate = nil
+            }
+            self.activePreviewDelegate = delegate
 
-        topVC.present(previewVC, animated: true) {
-            result(nil)
+            let previewVC = QLPreviewController()
+            previewVC.dataSource = delegate
+            previewVC.delegate = delegate
+
+            topVC.present(previewVC, animated: true) {
+                result(nil)
+            }
         }
     }
 
     private func sharePdf(path: String?, title: String?, result: @escaping FlutterResult) {
-        guard let cleanPath = path?.trimmingCharacters(in: .whitespacesAndNewlines), !cleanPath.isEmpty else {
-            result(FlutterError(code: "EMPTY_PATH", message: "Path file PDF tidak boleh kosong.", details: nil))
-            return
-        }
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
 
-        let fileUrl = URL(fileURLWithPath: cleanPath)
-        let fileManager = FileManager.default
+            guard let cleanPath = path?.trimmingCharacters(in: .whitespacesAndNewlines), !cleanPath.isEmpty else {
+                result(FlutterError(code: "EMPTY_PATH", message: "Path file PDF tidak boleh kosong.", details: nil))
+                return
+            }
 
-        guard fileManager.fileExists(atPath: fileUrl.path) else {
-            result(FlutterError(code: "FILE_NOT_FOUND", message: "File PDF tidak ditemukan: \(cleanPath)", details: nil))
-            return
-        }
+            let fileUrl = URL(fileURLWithPath: cleanPath)
+            let fileManager = FileManager.default
 
-        guard let topVC = getTopViewController() else {
-            result(FlutterError(code: "SHARE_FAILED", message: "Tidak dapat menemukan UIViewController aktif.", details: nil))
-            return
-        }
+            guard fileManager.fileExists(atPath: fileUrl.path) else {
+                result(FlutterError(code: "FILE_NOT_FOUND", message: "File PDF tidak ditemukan: \(cleanPath)", details: nil))
+                return
+            }
 
-        if topVC is UIActivityViewController || topVC.presentedViewController is UIActivityViewController {
-            result(FlutterError(code: "ALREADY_PRESENTING", message: "Share sheet sedang ditampilkan.", details: nil))
-            return
-        }
+            guard let topVC = self.getTopViewController() else {
+                result(FlutterError(code: "SHARE_FAILED", message: "Tidak dapat menemukan UIViewController aktif.", details: nil))
+                return
+            }
 
-        let activityVC = UIActivityViewController(activityItems: [fileUrl], applicationActivities: nil)
-        if let popover = activityVC.popoverPresentationController {
-            popover.sourceView = topVC.view
-            popover.sourceRect = CGRect(x: topVC.view.bounds.midX, y: topVC.view.bounds.midY, width: 0, height: 0)
-            popover.permittedArrowDirections = []
-        }
+            if topVC is UIActivityViewController || topVC.presentedViewController is UIActivityViewController {
+                result(FlutterError(code: "ALREADY_PRESENTING", message: "Share sheet sedang ditampilkan.", details: nil))
+                return
+            }
 
-        topVC.present(activityVC, animated: true) {
-            result(nil)
+            let activityVC = UIActivityViewController(activityItems: [fileUrl], applicationActivities: nil)
+            if let popover = activityVC.popoverPresentationController {
+                popover.sourceView = topVC.view
+                popover.sourceRect = CGRect(x: topVC.view.bounds.midX, y: topVC.view.bounds.midY, width: 0, height: 0)
+                popover.permittedArrowDirections = []
+            }
+
+            topVC.present(activityVC, animated: true) {
+                result(nil)
+            }
         }
     }
 
