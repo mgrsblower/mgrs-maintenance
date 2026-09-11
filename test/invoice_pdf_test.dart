@@ -5,6 +5,7 @@ import 'package:mgrs_maintenance/features/invoices/pdf/invoice_pdf_dialogs.dart'
 import 'package:mgrs_maintenance/features/invoices/pdf/invoice_pdf_download.dart';
 import 'package:mgrs_maintenance/features/invoices/pdf/invoice_pdf_export_service.dart';
 import 'package:mgrs_maintenance/features/schedule/order_model.dart';
+import 'package:mgrs_maintenance/services/native_pdf_service.dart';
 
 void main() {
   group('InvoicePdfPayload & Service', () {
@@ -150,6 +151,96 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('invoice-pdf-success-dialog')), findsNothing);
     });
+
+    testWidgets('invoice-pdf-success-dialog triggers previewPdf and sharePdf on NativePdfService', (tester) async {
+      final invoice = const InvoiceRecord(
+        id: 'inv-1',
+        orderanId: 'ord-100',
+        invoiceReference: 'INV/2026/09/001',
+        productName: 'Sewa Blower',
+        quantity: 2,
+        rentalDays: 1,
+        unitPrice: 300000,
+        subtotal: 600000,
+        totalAmount: 600000,
+        paidAmount: 0,
+        paymentStatus: InvoicePaymentStatus.unpaid,
+        invoiceDate: '11/09/2026',
+        dueDate: '11/09/2026',
+        customerName: 'Budi',
+        customerPhone: '08123456789',
+      );
+
+      final calls = <String>[];
+      final mockService = _MockNativePdfService(
+        onPreview: (path) => calls.add('preview:$path'),
+        onShare: (path, title) => calls.add('share:$path:$title'),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () {
+                    InvoicePdfExportHelper.showInvoicePdfSuccessDialog(
+                      context: context,
+                      invoice: invoice,
+                      fileLocation: '/storage/emulated/0/Download/MGRS/INV-2026-09-001.pdf',
+                      fileName: 'INV-2026-09-001.pdf',
+                      nativePdfService: mockService,
+                    );
+                  },
+                  child: const Text('Open Dialog'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      // Tap Buka File
+      await tester.tap(find.byKey(const Key('invoice-pdf-open-action')));
+      await tester.pump();
+      expect(calls, contains('preview:/storage/emulated/0/Download/MGRS/INV-2026-09-001.pdf'));
+
+      // Tap Share
+      await tester.tap(find.byKey(const Key('invoice-pdf-share-action')));
+      await tester.pump();
+      expect(calls, contains('share:/storage/emulated/0/Download/MGRS/INV-2026-09-001.pdf:INV-2026-09-001.pdf'));
+
+      // Dialog is still visible after preview and share (not closed prematurely)
+      expect(find.byKey(const Key('invoice-pdf-success-dialog')), findsOneWidget);
+
+      // Tap Close
+      await tester.tap(find.byKey(const Key('invoice-pdf-close-action')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('invoice-pdf-success-dialog')), findsNothing);
+    });
   });
+}
+
+class _MockNativePdfService extends NativePdfService {
+  _MockNativePdfService({
+    required this.onPreview,
+    required this.onShare,
+  });
+
+  final void Function(String path) onPreview;
+  final void Function(String path, String? title) onShare;
+
+  @override
+  Future<void> previewPdf(String filePath) async {
+    onPreview(filePath);
+  }
+
+  @override
+  Future<void> sharePdf(String filePath, {String? title}) async {
+    onShare(filePath, title);
+  }
 }
 

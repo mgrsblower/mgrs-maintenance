@@ -6,6 +6,7 @@ import '../../schedule/order_model.dart';
 import '../invoice_model.dart';
 import 'invoice_pdf_download.dart';
 import 'invoice_pdf_export_service.dart';
+import '../../../services/native_pdf_service.dart';
 
 class InvoicePdfExportHelper {
   static Future<void> exportWithModalProgress({
@@ -184,7 +185,9 @@ class InvoicePdfExportHelper {
     required InvoiceRecord invoice,
     String? fileLocation,
     String? fileName,
+    NativePdfService? nativePdfService,
   }) async {
+    final pdfService = nativePdfService ?? NativePdfService.instance;
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -290,7 +293,18 @@ class InvoicePdfExportHelper {
                           onPressed: fileLocation == null
                               ? null
                               : () async {
-                                  await openInvoicePdf(fileLocation);
+                                  try {
+                                    await pdfService.previewPdf(fileLocation);
+                                  } catch (e) {
+                                    if (!dialogContext.mounted) return;
+                                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                      SnackBar(
+                                        content: Text(e.toString()),
+                                        backgroundColor: const Color(0xFF9F2F2D),
+                                        duration: const Duration(seconds: 4),
+                                      ),
+                                    );
+                                  }
                                 },
                           style: FilledButton.styleFrom(
                             minimumSize: const Size.fromHeight(42),
@@ -317,10 +331,21 @@ class InvoicePdfExportHelper {
                         onPressed: fileLocation == null
                             ? null
                             : () async {
-                                await shareInvoicePdf(
-                                  fileLocation,
-                                  fileName ?? invoice.invoiceReference,
-                                );
+                                try {
+                                  await pdfService.sharePdf(
+                                    fileLocation,
+                                    title: fileName ?? invoice.invoiceReference,
+                                  );
+                                } catch (e) {
+                                  if (!dialogContext.mounted) return;
+                                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                    SnackBar(
+                                      content: Text(e.toString()),
+                                      backgroundColor: const Color(0xFF9F2F2D),
+                                      duration: const Duration(seconds: 4),
+                                    ),
+                                  );
+                                }
                               },
                       ),
                       const SizedBox(width: 8),

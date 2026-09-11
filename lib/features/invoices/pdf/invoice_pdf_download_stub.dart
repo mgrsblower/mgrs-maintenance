@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/services.dart';
+import '../../../services/native_pdf_service.dart';
 
 const _invoicePdfChannel = MethodChannel(
   'com.mgrs.mgrs_maintenance/invoice_pdf',
@@ -51,43 +52,15 @@ Future<String> _saveDirectToFile(Uint8List bytes, String fileName) async {
 
 Future<void> openInvoicePdf(String? location) async {
   if (location == null || location.isEmpty) return;
-
-  if (Platform.isAndroid || Platform.isIOS) {
-    try {
-      await _invoicePdfChannel.invokeMethod<void>('openInvoicePdf', {
-        'location': location,
-      });
-      return;
-    } catch (_) {}
-  }
-
-  if (Platform.isWindows) {
-    await Process.run('cmd', ['/c', 'start', '', location], runInShell: true);
-    return;
-  }
-  if (Platform.isMacOS) {
-    await Process.run('open', [location]);
-    return;
-  }
-  if (Platform.isLinux) {
-    await Process.run('xdg-open', [location]);
-    return;
-  }
+  try {
+    await NativePdfService.instance.previewPdf(location);
+  } catch (_) {}
 }
 
 Future<void> shareInvoicePdf(String? location, String fileName) async {
   if (location == null || location.isEmpty) return;
-
-  if (Platform.isAndroid || Platform.isIOS) {
-    try {
-      await _invoicePdfChannel.invokeMethod<void>('shareInvoicePdf', {
-        'location': location,
-        'fileName': fileName,
-      });
-      return;
-    } catch (_) {}
-  }
-
-  await openInvoicePdf(location);
+  try {
+    await NativePdfService.instance.sharePdf(location, title: fileName);
+  } catch (_) {}
 }
 
