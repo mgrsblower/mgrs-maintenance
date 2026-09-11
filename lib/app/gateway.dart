@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../features/invoices/invoice_model.dart';
 import '../features/schedule/order_model.dart';
+import '../features/schedule/unit_allocation_model.dart';
 
 Map<String, Object?> jsonObject(Object? value) {
   if (value is! Map) throw const FormatException('Expected object');
@@ -189,6 +190,21 @@ abstract class MaintenanceGateway {
   Future<void> updateOrderStatus(
     String orderanId,
     String status,
+  ) async {}
+
+  Future<void> cancelOrder(
+    String orderanId, {
+    required String reason,
+    bool cancelInvoice = true,
+  }) async {}
+
+  Future<Map<String, int>> fetchComponentUsageCounts({
+    bool forceRefresh = false,
+  }) async => {};
+
+  Future<void> saveOrderUnitAllocation(
+    String orderanId,
+    List<AllocatedUnit> units,
   ) async {}
 }
 
@@ -643,15 +659,161 @@ class SupabaseGateway extends MaintenanceGateway {
 
   @override
   Future<void> updateOrderStatus(String orderanId, String status) async {
+    final isDone = status.toLowerCase() == 'selesai';
+    final isCancelled = status.toLowerCase() == 'batal' || status.toLowerCase() == 'cancelled';
     await client
         .from('orderan_sewa')
         .update({
           'status_orderan': status,
-          if (status.toLowerCase() == 'selesai')
+          if (isDone || isCancelled)
             'closed_at': DateTime.now().toUtc().toIso8601String(),
         })
         .or('orderan_id.eq.$orderanId,id.eq.$orderanId');
     invalidateCache('upcoming_orders');
     invalidateCache('order_detail:$orderanId');
+    if (isCancelled) {
+      invalidateCache('invoices');
+    }
+  }
+
+  @override
+  Future<void> cancelOrder(
+    String orderanId, {
+    required String reason,
+    bool cancelInvoice = true,
+  }) async {
+    String? currentNote;
+    try {
+      final res = await client
+          .from('orderan_sewa')
+          .select('catatan_orderan')
+          .or('orderan_id.eq.$orderanId,id.eq.$orderanId')
+          .maybeSingle();
+      if (res != null) {
+        currentNote = res['catatan_orderan']?.toString();
+      }
+    } catch (e) {
+      debugPrint('[Cancel Order] Note fetch error: $e');
+    }
+
+    final trimmedReason = reason.trim();
+    final cancellationTag = '[BATAL: $trimmedReason]';
+    final updatedNote = currentNote != null && currentNote.trim().isNotEmpty
+        ? '$currentNote\n$cancellationTag'
+        : cancellationTag;
+
+    await client
+        .from('orderan_sewa')
+        .update({
+          'status_orderan': 'Batal',
+          'catatan_orderan': updatedNote,
+          'closed_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .or('orderan_id.eq.$orderanId,id.eq.$orderanId');
+
+    if (cancelInvoice) {
+      try {
+        final invRes = await client
+            .from('invoices')
+            .select()
+            .eq('orderan_id', orderanId)
+            .maybeSingle();
+        if (invRes != null) {
+          final currentStatus = invRes['payment_status']?.toString().toLowerCase();
+          final paidAmount = num.tryParse(invRes['paid_amount']?.toString() ?? '0') ?? 0;
+          if (currentStatus == 'unpaid' || paidAmount <= 0) {
+            await client
+                .from('invoices')
+                .update({
+                  'payment_status': 'cancelled',
+                  'updated_at': DateTime.now().toUtc().toIso8601String(),
+                })
+                .eq('id', invRes['id']);
+          }
+        }
+      } catch (e) {
+        debugPrint('[Cancel Order] Invoice update note: $e');
+      }
+    }
+
+    invalidateCache('upcoming_orders');
+    invalidateCache('invoices');
+    invalidateCache('order_detail:$orderanId');
+  }
+
+  @override
+  Future<Map<String, int>> fetchComponentUsageCounts({
+    bool forceRefresh = false,
+  }) async {
+    const cacheKey = 'component_usage_counts';
+    if (!forceRefresh) {
+      final cached = _getFromCache<Map<String, int>>(cacheKey);
+      if (cached != null) return cached;
+    }
+
+    try {
+      final res = await client
+          .from('orderan_sewa')
+          .select('catatan_orderan');
+
+      final counts = <String, int>{};
+      for (final item in res) {
+        final note = item['catatan_orderan']?.toString();
+        if (note != null && note.contains('[UNIT_ALOKASI:')) {
+          final units = UnitAllocationParser.parse(note);
+          for (final u in units) {
+            if (u.kepalaSticker != null && u.kepalaSticker!.trim().isNotEmpty) {
+              final k = u.kepalaSticker!.trim();
+              counts[k] = (counts[k] ?? 0) + 1;
+            }
+            if (u.batangSticker != null && u.batangSticker!.trim().isNotEmpty) {
+              final b = u.batangSticker!.trim();
+              counts[b] = (counts[b] ?? 0) + 1;
+            }
+            if (u.tabungSticker != null && u.tabungSticker!.trim().isNotEmpty) {
+              final t = u.tabungSticker!.trim();
+              counts[t] = (counts[t] ?? 0) + 1;
+            }
+          }
+        }
+      }
+
+      _saveToCache(cacheKey, counts);
+      return counts;
+    } catch (e) {
+      debugPrint('[Fetch Usage Counts Error] $e');
+      return const {};
+    }
+  }
+
+  @override
+  Future<void> saveOrderUnitAllocation(
+    String orderanId,
+    List<AllocatedUnit> units,
+  ) async {
+    String? currentNote;
+    try {
+      final res = await client
+          .from('orderan_sewa')
+          .select('catatan_orderan')
+          .or('orderan_id.eq.$orderanId,id.eq.$orderanId')
+          .maybeSingle();
+      if (res != null) {
+        currentNote = res['catatan_orderan']?.toString();
+      }
+    } catch (e) {
+      debugPrint('[Save Allocation Note Fetch Error] $e');
+    }
+
+    final updatedNote = UnitAllocationParser.updateNoteWithAllocation(currentNote, units);
+
+    await client
+        .from('orderan_sewa')
+        .update({'catatan_orderan': updatedNote})
+        .or('orderan_id.eq.$orderanId,id.eq.$orderanId');
+
+    invalidateCache('upcoming_orders');
+    invalidateCache('order_detail:$orderanId');
+    invalidateCache('component_usage_counts');
   }
 }
