@@ -129,7 +129,7 @@ class OrderanSewa {
   /// Check if the order is cancelled by status.
   bool get isCancelled {
     final s = (statusOrderan ?? '').trim().toLowerCase();
-    return s == 'batal' || s == 'cancelled';
+    return s == 'batal' || s == 'cancelled' || s == 'dibatalkan';
   }
 
   /// Cancellation reason extracted from metadata tag `[BATAL:...]` in [catatanOrderan].
@@ -150,7 +150,7 @@ class OrderanSewa {
   /// Check if the order is completed or cancelled by status.
   bool get isCompletedOrCancelled {
     final s = (statusOrderan ?? '').trim().toLowerCase();
-    return s == 'selesai' || s == 'batal' || s == 'cancelled' || s == 'completed';
+    return s == 'selesai' || s == 'batal' || s == 'cancelled' || s == 'completed' || s == 'dibatalkan';
   }
 
   /// Check if the event or installation date has passed today.

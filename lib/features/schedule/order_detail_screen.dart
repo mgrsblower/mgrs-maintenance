@@ -1117,7 +1117,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
         setState(() {
           _order = order.copyWith(
-            statusOrderan: 'Batal',
+            statusOrderan: 'Dibatalkan',
             catatanOrderan: updatedNote,
           );
           if (_invoice != null && (!_invoice!.isPaid || _invoice!.paidAmount <= 0)) {

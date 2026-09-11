@@ -63,7 +63,7 @@ class MockCancellationGateway extends MaintenanceGateway {
     final updatedNote = currentNote.isNotEmpty ? '$currentNote\n$cancelTag' : cancelTag;
 
     order = order.copyWith(
-      statusOrderan: 'Batal',
+      statusOrderan: 'Dibatalkan',
       catatanOrderan: updatedNote,
     );
 
@@ -82,12 +82,12 @@ class MockCancellationGateway extends MaintenanceGateway {
 
 void main() {
   group('Order Model Cancellation Tests', () {
-    test('isCancelled and isCompletedOrCancelled recognize Batal status', () {
+    test('isCancelled and isCompletedOrCancelled recognize Dibatalkan status', () {
       final order = OrderanSewa(
-        id: 'ord-1',
-        orderanId: 'ORD-2026-001',
+        id: 'ord-1b',
+        orderanId: 'ORD-2026-001b',
         namaEvent: 'Konser Musik',
-        statusOrderan: 'Batal',
+        statusOrderan: 'Dibatalkan',
         catatanOrderan: '[SEWA_HARI:2] [BATAL: Cuaca buruk badai]',
       );
 

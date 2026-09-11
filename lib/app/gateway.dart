@@ -694,8 +694,12 @@ class SupabaseGateway extends MaintenanceGateway {
 
   @override
   Future<void> updateOrderStatus(String orderanId, String status) async {
+    final normalizedStatus =
+        (status.toLowerCase() == 'batal' || status.toLowerCase() == 'cancelled')
+            ? 'Dibatalkan'
+            : status;
     final updatePayload = <String, Object?>{
-      'status_orderan': status,
+      'status_orderan': normalizedStatus,
     };
 
     if (_isUuid(orderanId)) {
@@ -712,7 +716,9 @@ class SupabaseGateway extends MaintenanceGateway {
 
     invalidateCache('upcoming_orders');
     invalidateCache('order_detail:$orderanId');
-    if (status.toLowerCase() == 'batal' || status.toLowerCase() == 'cancelled') {
+    if (status.toLowerCase() == 'batal' ||
+        status.toLowerCase() == 'cancelled' ||
+        status.toLowerCase() == 'dibatalkan') {
       invalidateCache('invoices');
     }
   }
@@ -758,7 +764,7 @@ class SupabaseGateway extends MaintenanceGateway {
         : cancellationTag;
 
     final updatePayload = <String, Object?>{
-      'status_orderan': 'Batal',
+      'status_orderan': 'Dibatalkan',
       'catatan_orderan': updatedNote,
     };
 
