@@ -57,7 +57,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Future<void> _loadInvoice() async {
-    final orderanId = _order?.orderanId ?? _order?.id ?? widget.orderId;
+    final orderanId = _order?.id ?? widget.orderId;
     if (orderanId == null || widget.gateway == null) return;
     try {
       final inv = await widget.gateway!.fetchInvoiceByOrderanId(orderanId);
@@ -1092,7 +1092,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
     if (confirmed == true && mounted) {
       final reason = reasonController.text.trim();
-      final orderanIdStr = order.orderanId ?? order.id;
+      final orderanIdStr = order.id;
 
       try {
         await widget.gateway?.cancelOrder(

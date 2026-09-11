@@ -9,6 +9,7 @@ class MockCancellationGateway extends MaintenanceGateway {
   OrderanSewa order;
   InvoiceRecord? invoice;
   bool cancelOrderCalled = false;
+  String? lastInvoiceOrderId;
   String? lastCancelledId;
   String? lastReason;
   bool? lastCancelInvoice;
@@ -41,7 +42,10 @@ class MockCancellationGateway extends MaintenanceGateway {
   }) async => order;
 
   @override
-  Future<InvoiceRecord?> fetchInvoiceByOrderanId(String orderanId) async => invoice;
+  Future<InvoiceRecord?> fetchInvoiceByOrderanId(String orderanId) async {
+    lastInvoiceOrderId = orderanId;
+    return invoice;
+  }
 
   @override
   Future<void> cancelOrder(
@@ -150,7 +154,7 @@ void main() {
       addTearDown(tester.view.reset);
 
       final initialOrder = OrderanSewa(
-        id: 'ord-10',
+        id: '00000000-0000-0000-0000-000000000010',
         orderanId: 'ORD-20260911-010',
         namaEvent: 'Festival Kuliner Nusantara',
         namaClient: 'PT Rasa Kuliner',
@@ -237,6 +241,14 @@ void main() {
 
       // Verify gateway call
       expect(mockGateway.cancelOrderCalled, isTrue);
+      expect(
+        mockGateway.lastInvoiceOrderId,
+        equals('00000000-0000-0000-0000-000000000010'),
+      );
+      expect(
+        mockGateway.lastCancelledId,
+        equals('00000000-0000-0000-0000-000000000010'),
+      );
       expect(mockGateway.lastReason, equals('Penyelenggara membatalkan karena kendala teknis'));
       expect(mockGateway.lastCancelInvoice, isTrue);
 
