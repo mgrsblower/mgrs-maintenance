@@ -888,34 +888,66 @@ class SupabaseGateway extends MaintenanceGateway {
     List<AllocatedUnit> units,
   ) async {
     String? currentNote;
+    String? businessOrderId;
+    String? dbUuid;
     try {
-      final noteQuery = client.from('orderan_sewa').select('catatan_orderan');
-      final res = _isUuid(orderanId)
+      final noteQuery = client.from('orderan_sewa').select('id,orderan_id,catatan_orderan');
+      var res = _isUuid(orderanId)
           ? await noteQuery.eq('id', orderanId).maybeSingle()
           : await noteQuery.eq('orderan_id', orderanId).maybeSingle();
+
+      if (res == null) {
+        if (!_isUuid(orderanId)) {
+          try {
+            res = await noteQuery.eq('id', orderanId).maybeSingle();
+          } catch (_) {}
+        } else {
+          res = await noteQuery.eq('orderan_id', orderanId).maybeSingle();
+        }
+      }
+
       if (res != null) {
         currentNote = res['catatan_orderan']?.toString();
+        businessOrderId = res['orderan_id']?.toString();
+        dbUuid = res['id']?.toString();
       }
     } catch (e) {
       debugPrint('[Save Allocation Note Fetch Error] $e');
     }
 
     final updatedNote = UnitAllocationParser.updateNoteWithAllocation(currentNote, units);
+    final updatePayload = {'catatan_orderan': updatedNote};
 
-    if (_isUuid(orderanId)) {
+    if (dbUuid != null && dbUuid.isNotEmpty) {
       await client
           .from('orderan_sewa')
-          .update({'catatan_orderan': updatedNote})
+          .update(updatePayload)
+          .eq('id', dbUuid);
+    } else if (businessOrderId != null && businessOrderId.isNotEmpty) {
+      await client
+          .from('orderan_sewa')
+          .update(updatePayload)
+          .eq('orderan_id', businessOrderId);
+    } else if (_isUuid(orderanId)) {
+      await client
+          .from('orderan_sewa')
+          .update(updatePayload)
           .eq('id', orderanId);
     } else {
       await client
           .from('orderan_sewa')
-          .update({'catatan_orderan': updatedNote})
+          .update(updatePayload)
           .eq('orderan_id', orderanId);
     }
 
     invalidateCache('upcoming_orders');
     invalidateCache('order_detail:$orderanId');
+    if (businessOrderId != null && businessOrderId != orderanId) {
+      invalidateCache('order_detail:$businessOrderId');
+    }
+    if (dbUuid != null && dbUuid != orderanId) {
+      invalidateCache('order_detail:$dbUuid');
+    }
     invalidateCache('component_usage_counts');
   }
 }
