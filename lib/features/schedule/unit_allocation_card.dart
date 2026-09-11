@@ -684,17 +684,19 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
       onTap: widget.isEditable ? () => _pickComponent(unitIndex, kind) : null,
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        height: 72,
+        padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 8),
         decoration: BoxDecoration(
           color: isAssigned ? Colors.white : const Color(0xFFF1F5F9),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isAssigned ? const Color(0xFFCBD5E1) : const Color(0xFFE2E8F0),
-            style: isAssigned ? BorderStyle.solid : BorderStyle.solid,
+            style: BorderStyle.solid,
           ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             // Kind label
             Text(
@@ -705,7 +707,6 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
                 color: Color(0xFF64748B),
               ),
             ),
-            const SizedBox(height: 4),
 
             // Sticker code or placeholder
             if (isAssigned) ...[
@@ -733,7 +734,6 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
                 ],
               ),
               if (count != null && !_isLoadingUsage) ...[
-                const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                   decoration: BoxDecoration(
@@ -749,6 +749,8 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
                     ),
                   ),
                 ),
+              ] else ...[
+                const SizedBox(height: 16),
               ],
             ] else ...[
               Row(
@@ -772,6 +774,7 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
                   ],
                 ],
               ),
+              const SizedBox(height: 16),
             ],
           ],
         ),

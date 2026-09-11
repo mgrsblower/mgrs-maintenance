@@ -32,6 +32,8 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
   bool get isReadOnly => widget.readOnly || (widget.user?.isPic ?? false);
   late Future<Component> future;
   late Future<List<Map<String, Object?>>> futureHistory;
+  Future<List<Map<String, Object?>>>? _orderUsageFuture;
+  String? _loadedCode;
 
   @override
   void initState() {
@@ -43,6 +45,8 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
   void reload() => setState(() {
         future = Component.load(widget.gateway, widget.id);
         futureHistory = widget.gateway.fetchComponentHistory(widget.id);
+        _orderUsageFuture = null;
+        _loadedCode = null;
       });
 
   @override
@@ -123,6 +127,10 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
         }
 
         final comp = snapshot.data!;
+        if (_loadedCode != comp.code) {
+          _loadedCode = comp.code;
+          _orderUsageFuture = widget.gateway.fetchComponentOrderUsageHistory(comp.code);
+        }
 
         return Scaffold(
           backgroundColor: AppTokens.canvas,
@@ -139,6 +147,8 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                   _buildIdentityCard(context, comp),
                   const SizedBox(height: 16),
                   _buildCurrentConditionCard(context, comp),
+                  const SizedBox(height: 16),
+                  _buildOrderUsageCard(context, comp),
                   const SizedBox(height: 16),
                   _buildHistoryCard(context),
                   const SizedBox(height: 24),
@@ -396,6 +406,70 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
               ],
             ),
           ),
+          const SizedBox(height: 14),
+          FutureBuilder<List<Map<String, Object?>>>(
+            future: _orderUsageFuture,
+            builder: (context, usageSnap) {
+              final usageList = usageSnap.data ?? [];
+              final usageCount = usageList.length;
+              final isZero = usageCount == 0;
+              final badgeBg = isZero
+                  ? const Color(0xFFF1F5F9)
+                  : (usageCount <= 5
+                      ? const Color(0xFFDCFCE7)
+                      : (usageCount <= 15 ? const Color(0xFFFEF3C7) : const Color(0xFFF1F5F9)));
+              final badgeText = isZero
+                  ? const Color(0xFF475569)
+                  : (usageCount <= 5
+                      ? const Color(0xFF166534)
+                      : (usageCount <= 15 ? const Color(0xFF92400E) : const Color(0xFF334155)));
+
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.repeat_rounded, size: 16, color: Color(0xFF2563EB)),
+                        SizedBox(width: 6),
+                        Text(
+                          'Total Pemakaian di Orderan',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF334155),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: badgeBg,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '$usageCount kali pakai',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: badgeText,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -500,6 +574,247 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Card: Riwayat Pemakaian di Orderan Sewa
+  Widget _buildOrderUsageCard(BuildContext context, Component comp) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.event_note_rounded, size: 16, color: Color(0xFF2563EB)),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Riwayat Pemakaian di Orderan',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                ],
+              ),
+              FutureBuilder<List<Map<String, Object?>>>(
+                future: _orderUsageFuture,
+                builder: (context, snap) {
+                  final count = snap.data?.length ?? 0;
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '$count orderan',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF475569),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          FutureBuilder<List<Map<String, Object?>>>(
+            future: _orderUsageFuture,
+            builder: (context, snap) {
+              if (snap.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF2563EB)),
+                    ),
+                  ),
+                );
+              }
+
+              final items = snap.data ?? [];
+              if (items.isEmpty) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFF1F5F9)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.info_outline_rounded, size: 18, color: Color(0xFF94A3B8)),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Komponen ini belum pernah dipakai pada orderan sewa.',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return Column(
+                children: items.map((item) {
+                  final namaEvent = item['nama_event']?.toString() ?? 'Sewa Blower';
+                  final namaClient = item['nama_client']?.toString() ?? '-';
+                  final tanggal = item['tanggal']?.toString() ?? '';
+                  final dateStr = tanggal.length >= 10 ? tanggal.substring(0, 10) : tanggal;
+                  final status = item['status_orderan']?.toString() ?? '-';
+                  final unitIdx = item['unit_index'];
+                  final roleSlot = item['role_slot']?.toString() ?? '';
+                  final isDone = status.toLowerCase() == 'selesai';
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                namaEvent,
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF0F172A),
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isDone ? const Color(0xFFDCFCE7) : const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                status,
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDone ? const Color(0xFF166534) : const Color(0xFF1D4ED8),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(Icons.person_outline_rounded, size: 12, color: Color(0xFF64748B)),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                namaClient,
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 12,
+                                  color: Color(0xFF475569),
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE2E8F0),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'Unit $unitIdx • $roleSlot',
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF334155),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.calendar_today_rounded, size: 11, color: Color(0xFF94A3B8)),
+                            const SizedBox(width: 4),
+                            Text(
+                              dateStr,
+                              style: const TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 11,
+                                color: Color(0xFF94A3B8),
+                              ),
+                            ),
+                            if (item['orderan_id'] != null) ...[
+                              const Text(' • ', style: TextStyle(color: Color(0xFF94A3B8))),
+                              Text(
+                                '#${item['orderan_id']}',
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 11,
+                                  color: Color(0xFF94A3B8),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              );
+            },
           ),
         ],
       ),

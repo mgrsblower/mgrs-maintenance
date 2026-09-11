@@ -37,6 +37,19 @@ void main() {
       expect(units[2].isEmpty, isTrue);
     });
 
+    test('UnitAllocationParser parses all units when totalUnits is omitted', () {
+      const rawTag = '[UNIT_ALOKASI: K-19+B-08+T-15 | K-07+B-14+T-05]';
+      final units = UnitAllocationParser.parse(rawTag);
+
+      expect(units.length, equals(2));
+      expect(units[0].kepalaSticker, equals('K-19'));
+      expect(units[0].batangSticker, equals('B-08'));
+      expect(units[0].tabungSticker, equals('T-15'));
+      expect(units[1].kepalaSticker, equals('K-07'));
+      expect(units[1].batangSticker, equals('B-14'));
+      expect(units[1].tabungSticker, equals('T-05'));
+    });
+
     test('UnitAllocationParser serializes units into tag string', () {
       const units = [
         AllocatedUnit(unitIndex: 1, kepalaSticker: 'K-01', batangSticker: 'B-02', tabungSticker: 'T-03'),

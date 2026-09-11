@@ -49,10 +49,9 @@ abstract final class UnitAllocationParser {
   static final RegExp allocationPattern =
       RegExp(r'\[UNIT_ALOKASI:\s*([^\]]+)\]', caseSensitive: false);
 
-  static List<AllocatedUnit> parse(String? rawNote, {int totalUnits = 1}) {
+  static List<AllocatedUnit> parse(String? rawNote, {int? totalUnits}) {
     final note = rawNote ?? '';
     final match = allocationPattern.firstMatch(note);
-    final count = totalUnits > 0 ? totalUnits : 1;
 
     final parsedMap = <int, AllocatedUnit>{};
 
@@ -73,6 +72,13 @@ abstract final class UnitAllocationParser {
         );
       }
     }
+
+    final maxParsed = parsedMap.keys.isEmpty
+        ? 0
+        : parsedMap.keys.reduce((a, b) => a > b ? a : b);
+    final count = totalUnits != null && totalUnits > 0
+        ? (totalUnits > maxParsed ? totalUnits : maxParsed)
+        : (maxParsed > 0 ? maxParsed : 1);
 
     final result = <AllocatedUnit>[];
     for (var i = 1; i <= count; i++) {

@@ -211,6 +211,11 @@ abstract class MaintenanceGateway {
     String orderanId,
     List<AllocatedUnit> units,
   ) async {}
+
+  Future<List<Map<String, Object?>>> fetchComponentOrderUsageHistory(
+    String sticker, {
+    bool forceRefresh = false,
+  }) async => const [];
 }
 
 class SupabaseGateway extends MaintenanceGateway {
@@ -996,5 +1001,68 @@ class SupabaseGateway extends MaintenanceGateway {
       invalidateCache('order_detail:$dbUuid');
     }
     invalidateCache('component_usage_counts');
+    _cache.removeWhere((k, _) => k.startsWith('component_order_history:'));
+  }
+
+  @override
+  Future<List<Map<String, Object?>>> fetchComponentOrderUsageHistory(
+    String sticker, {
+    bool forceRefresh = false,
+  }) async {
+    final cleanSticker = sticker.trim();
+    if (cleanSticker.isEmpty) return const [];
+    final cacheKey = 'component_order_history:$cleanSticker';
+    if (!forceRefresh) {
+      final cached = _getFromCache<List<Map<String, Object?>>>(cacheKey);
+      if (cached != null) return cached;
+    }
+
+    try {
+      final res = await client
+          .from('orderan_sewa')
+          .select(
+            'id,orderan_id,tanggal_pemasangan,nama_event,nama_client,alamat,status_orderan,catatan_orderan,created_at',
+          )
+          .ilike('catatan_orderan', '%$cleanSticker%');
+
+      final history = <Map<String, Object?>>[];
+      for (final item in (res as List).cast<Map<String, Object?>>()) {
+        final note = item['catatan_orderan']?.toString();
+        if (note != null && note.contains('[UNIT_ALOKASI:')) {
+          final units = UnitAllocationParser.parse(note);
+          for (final u in units) {
+            String? matchedKind;
+            if (u.kepalaSticker?.trim() == cleanSticker) matchedKind = 'Kepala';
+            if (u.batangSticker?.trim() == cleanSticker) matchedKind = 'Batang';
+            if (u.tabungSticker?.trim() == cleanSticker) matchedKind = 'Tabung';
+
+            if (matchedKind != null) {
+              history.add({
+                'orderan_id': item['orderan_id']?.toString() ?? item['id']?.toString(),
+                'nama_event': item['nama_event']?.toString() ?? 'Sewa Blower',
+                'nama_client': item['nama_client']?.toString() ?? '-',
+                'tanggal': item['tanggal_pemasangan']?.toString() ?? item['created_at']?.toString(),
+                'alamat': item['alamat']?.toString() ?? '-',
+                'status_orderan': item['status_orderan']?.toString() ?? '-',
+                'unit_index': u.unitIndex,
+                'role_slot': matchedKind,
+              });
+            }
+          }
+        }
+      }
+
+      history.sort((a, b) {
+        final dateA = a['tanggal']?.toString() ?? '';
+        final dateB = b['tanggal']?.toString() ?? '';
+        return dateB.compareTo(dateA);
+      });
+
+      _saveToCache(cacheKey, history);
+      return history;
+    } catch (e) {
+      debugPrint('[Fetch Component Order Usage History Error] $e');
+      return const [];
+    }
   }
 }
