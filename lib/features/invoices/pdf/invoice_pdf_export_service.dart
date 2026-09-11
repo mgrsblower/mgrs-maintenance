@@ -212,13 +212,14 @@ class InvoicePdfExportService {
     required InvoicePdfPayload payload,
     required String fileName,
   }) async {
+    final cleanBaseName = stripPdfExtension(fileName);
     try {
       final response = await _client
           .post(
             exportUrl,
             headers: const <String, String>{'Content-Type': 'application/json'},
             body: jsonEncode(<String, Object?>{
-              'fileName': fileName,
+              'fileName': cleanBaseName.isEmpty ? 'invoice' : cleanBaseName,
               'invoice': payload.toJson(),
             }),
           )

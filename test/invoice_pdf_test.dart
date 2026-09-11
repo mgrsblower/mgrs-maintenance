@@ -91,8 +91,19 @@ void main() {
 
     test('sanitizes PDF file name', () {
       expect(sanitizeInvoicePdfFileName('INV/2026/09/001.pdf'), 'INV-2026-09-001.pdf');
+      expect(sanitizeInvoicePdfFileName('INV-2026-09-001.pdf.pdf'), 'INV-2026-09-001.pdf');
+      expect(sanitizeInvoicePdfFileName('INV/2026/09/001.PDF.pdf'), 'INV-2026-09-001.pdf');
       expect(sanitizeInvoicePdfFileName('Invoice Test #123!'), 'Invoice-Test-123.pdf');
       expect(sanitizeInvoicePdfFileName(''), 'invoice.pdf');
+      expect(sanitizeInvoicePdfFileName('.pdf.pdf'), 'invoice.pdf');
+    });
+
+    test('strips trailing .pdf extensions', () {
+      expect(stripPdfExtension('INV-2026-09-001.pdf'), 'INV-2026-09-001');
+      expect(stripPdfExtension('INV-2026-09-001.pdf.pdf'), 'INV-2026-09-001');
+      expect(stripPdfExtension('INV-2026-09-001.PDF'), 'INV-2026-09-001');
+      expect(stripPdfExtension('INV-2026-09-001'), 'INV-2026-09-001');
+      expect(stripPdfExtension('.pdf'), '');
     });
 
     testWidgets('renders invoice-pdf-success-dialog properly', (tester) async {

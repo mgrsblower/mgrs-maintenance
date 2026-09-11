@@ -16,12 +16,19 @@ Future<void> openInvoicePdf(String? location) =>
 Future<void> shareInvoicePdf(String? location, String fileName) =>
     platform.shareInvoicePdf(location, sanitizeInvoicePdfFileName(fileName));
 
+String stripPdfExtension(String value) {
+  var name = value.trim();
+  while (name.toLowerCase().endsWith('.pdf')) {
+    name = name.substring(0, name.length - 4).trim();
+  }
+  return name;
+}
+
 String sanitizeInvoicePdfFileName(String value) {
-  final baseName = value
-      .trim()
-      .replaceAll(RegExp(r'\.pdf$', caseSensitive: false), '')
+  var baseName = stripPdfExtension(value)
       .replaceAll(RegExp(r'[^a-zA-Z0-9._-]+'), '-')
       .replaceAll(RegExp(r'-+'), '-')
       .replaceAll(RegExp(r'^-|-$'), '');
+  baseName = stripPdfExtension(baseName);
   return '${baseName.isEmpty ? 'invoice' : baseName}.pdf';
 }
