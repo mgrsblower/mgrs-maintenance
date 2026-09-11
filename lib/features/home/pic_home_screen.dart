@@ -1197,7 +1197,13 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
     final Color statusColor;
     final Color dotColor;
 
-    if (isPast) {
+    if (order.isCancelled) {
+      statusText = 'Dibatalkan';
+      statusBg = const Color(0xFFFEF2F2);
+      statusBorder = const Color(0xFFFECACA);
+      statusColor = const Color(0xFFDC2626);
+      dotColor = const Color(0xFFEF4444);
+    } else if (isPast) {
       statusText = order.isCompletedOrCancelled
           ? (order.statusOrderan ?? 'Selesai')
           : 'Selesai / Lewat';

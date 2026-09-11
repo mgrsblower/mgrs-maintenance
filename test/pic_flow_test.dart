@@ -6,6 +6,7 @@ import 'package:mgrs_maintenance/features/components/component.dart';
 import 'package:mgrs_maintenance/features/components/component_detail_screen.dart';
 import 'package:mgrs_maintenance/features/home/pic_home_screen.dart';
 import 'package:mgrs_maintenance/features/invoices/invoice_list_screen.dart';
+import 'package:mgrs_maintenance/features/invoices/invoice_builder_dialog.dart';
 import 'package:mgrs_maintenance/features/invoices/invoice_model.dart';
 import 'package:mgrs_maintenance/features/scan/scan_screen.dart';
 import 'package:mgrs_maintenance/features/schedule/order_model.dart';
@@ -106,8 +107,7 @@ class MockPicGateway extends MaintenanceGateway {
     String componentId, {
     int limit = 20,
     bool forceRefresh = false,
-  }) async =>
-      [];
+  }) async => [];
 
   @override
   Future<List<Map<String, Object?>>> fetchComponents({
@@ -130,8 +130,9 @@ class MockPicGateway extends MaintenanceGateway {
   }) async => orders;
 
   @override
-  Future<List<InvoiceRecord>> fetchInvoices({bool forceRefresh = false}) async =>
-      invoices;
+  Future<List<InvoiceRecord>> fetchInvoices({
+    bool forceRefresh = false,
+  }) async => invoices;
 
   @override
   Future<void> updateOrderStatus(String orderanId, String status) async {
@@ -282,17 +283,70 @@ void main() {
   });
 
   group('PIC Navigation & UI integration', () {
-    testWidgets('renders PIC Dashboard with Beranda, Orderan, Invoice tabs',
-        (tester) async {
+    testWidgets('invoice footer actions stay inside the constrained dialog', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(600, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final gateway = MockPicGateway();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => Center(
+                child: ElevatedButton(
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => InvoiceBuilderDialog(
+                      invoice: gateway.invoices.first,
+                      gateway: gateway,
+                      onSaved: (_) {},
+                    ),
+                  ),
+                  child: const Text('Buka invoice'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Buka invoice'));
+      await tester.pumpAndSettle();
+
+      while (tester.takeException() != null) {}
+      expect(find.byKey(const Key('btn-export-pdf')), findsOneWidget);
+      expect(find.byKey(const Key('btn-share-whatsapp')), findsOneWidget);
+      expect(find.byKey(const Key('btn-quick-payment')), findsOneWidget);
+      expect(find.byKey(const Key('btn-close-dialog')), findsOneWidget);
+      expect(find.byTooltip('Unduh PDF'), findsOneWidget);
+      expect(find.byTooltip('Bagikan melalui WhatsApp'), findsOneWidget);
+
+      final dialogRect = tester.getRect(find.byType(Dialog));
+      for (final key in const [
+        Key('btn-export-pdf'),
+        Key('btn-share-whatsapp'),
+        Key('btn-quick-payment'),
+        Key('btn-close-dialog'),
+      ]) {
+        final buttonRect = tester.getRect(find.byKey(key));
+        expect(buttonRect.left, greaterThanOrEqualTo(dialogRect.left));
+        expect(buttonRect.right, lessThanOrEqualTo(dialogRect.right));
+      }
+    });
+
+    testWidgets('renders PIC Dashboard with Beranda, Orderan, Invoice tabs', (
+      tester,
+    ) async {
       final gateway = MockPicGateway();
       const picUser = UserProfile('pic-1', 'PIC Pemasangan', fullName: 'Budi');
 
       await tester.pumpWidget(
         MaterialApp(
-          home: MaintenanceHome(
-            gateway: gateway,
-            user: picUser,
-          ),
+          home: MaintenanceHome(gateway: gateway, user: picUser),
         ),
       );
       await tester.pumpAndSettle();
@@ -306,8 +360,9 @@ void main() {
       expect(find.byIcon(Icons.qr_code_scanner_rounded), findsOneWidget);
     });
 
-    testWidgets('PicHomeScreen shows event summary and quick action button',
-        (tester) async {
+    testWidgets('PicHomeScreen shows event summary and quick action button', (
+      tester,
+    ) async {
       final gateway = MockPicGateway();
       const picUser = UserProfile('pic-1', 'PIC Pemasangan', fullName: 'Budi');
 
@@ -332,18 +387,14 @@ void main() {
       expect(find.text('Pameran Otomotif Akbar'), findsOneWidget);
     });
 
-    testWidgets('InvoiceListScreen filters invoices by status',
-        (tester) async {
+    testWidgets('InvoiceListScreen filters invoices by status', (tester) async {
       final gateway = MockPicGateway();
       const picUser = UserProfile('pic-1', 'PIC Pemasangan', fullName: 'Budi');
 
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: InvoiceListScreen(
-              gateway: gateway,
-              user: picUser,
-            ),
+            body: InvoiceListScreen(gateway: gateway, user: picUser),
           ),
         ),
       );
@@ -361,18 +412,16 @@ void main() {
       expect(find.text('INV/2026/09/05-002'), findsNothing);
     });
 
-    testWidgets('UpcomingOrdersScreen shows FAB to create order for PIC',
-        (tester) async {
+    testWidgets('UpcomingOrdersScreen shows FAB to create order for PIC', (
+      tester,
+    ) async {
       final gateway = MockPicGateway();
       const picUser = UserProfile('pic-1', 'PIC Pemasangan', fullName: 'Budi');
 
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: UpcomingOrdersScreen(
-              gateway: gateway,
-              user: picUser,
-            ),
+            body: UpcomingOrdersScreen(gateway: gateway, user: picUser),
           ),
         ),
       );
@@ -381,8 +430,9 @@ void main() {
       expect(find.text('Orderan Baru'), findsOneWidget);
     });
 
-    testWidgets('ScanScreen in read-only mode for PIC hides action buttons',
-        (tester) async {
+    testWidgets('ScanScreen in read-only mode for PIC hides action buttons', (
+      tester,
+    ) async {
       final gateway = MockPicGateway();
       const picUser = UserProfile('pic-1', 'PIC Pemasangan', fullName: 'Budi');
       final comp = Component.fromMap({
@@ -415,8 +465,9 @@ void main() {
       expect(find.text('Buka Detail'), findsOneWidget);
     });
 
-    testWidgets('ComponentDetailScreen in read-only mode hides edit buttons',
-        (tester) async {
+    testWidgets('ComponentDetailScreen in read-only mode hides edit buttons', (
+      tester,
+    ) async {
       final gateway = MockPicGateway();
       const picUser = UserProfile('pic-1', 'PIC Pemasangan', fullName: 'Budi');
 

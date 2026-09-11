@@ -29,6 +29,17 @@ class InvoiceBuilderDialog extends StatefulWidget {
 }
 
 class _InvoiceBuilderDialogState extends State<InvoiceBuilderDialog> {
+  static const _footerActionHeight = 48.0;
+  static const _footerActionRadius = 8.0;
+  static const _footerActionGap = 6.0;
+  static const _footerLabelSize = 11.5;
+  static const _footerInk = Color(0xFF18181B);
+  static const _footerMutedSurface = Color(0xFFF4F4F5);
+  static const _footerBorder = Color(0xFFE4E4E7);
+  static const _footerShareSurface = Color(0xFFEDF3EC);
+  static const _footerShareBorder = Color(0xFFCDE2CF);
+  static const _footerShareInk = Color(0xFF346538);
+
   final _formKey = GlobalKey<FormState>();
   late bool _isEditing;
   bool _isSaving = false;
@@ -53,41 +64,53 @@ class _InvoiceBuilderDialogState extends State<InvoiceBuilderDialog> {
     super.initState();
     _isEditing = widget.initiallyEditing;
 
-    _refController =
-        TextEditingController(text: widget.invoice.invoiceReference);
-    _orderIdController =
-        TextEditingController(text: widget.invoice.orderanId ?? '');
-    _productController =
-        TextEditingController(text: widget.invoice.productName);
-    _customerNameController =
-        TextEditingController(text: widget.invoice.customerName);
-    _customerPhoneController =
-        TextEditingController(text: widget.invoice.customerPhone);
-    _invoiceDateController =
-        TextEditingController(text: widget.invoice.invoiceDate);
+    _refController = TextEditingController(
+      text: widget.invoice.invoiceReference,
+    );
+    _orderIdController = TextEditingController(
+      text: widget.invoice.orderanId ?? '',
+    );
+    _productController = TextEditingController(
+      text: widget.invoice.productName,
+    );
+    _customerNameController = TextEditingController(
+      text: widget.invoice.customerName,
+    );
+    _customerPhoneController = TextEditingController(
+      text: widget.invoice.customerPhone,
+    );
+    _invoiceDateController = TextEditingController(
+      text: widget.invoice.invoiceDate,
+    );
     _dueDateController = TextEditingController(text: widget.invoice.dueDate);
-    _qtyController =
-        TextEditingController(text: widget.invoice.quantity.toString());
-    _daysController =
-        TextEditingController(text: widget.invoice.rentalDays.toString());
-    _unitPriceController =
-        TextEditingController(text: widget.invoice.unitPrice.toString());
-    _paidAmountController =
-        TextEditingController(text: widget.invoice.paidAmount.toString());
+    _qtyController = TextEditingController(
+      text: widget.invoice.quantity.toString(),
+    );
+    _daysController = TextEditingController(
+      text: widget.invoice.rentalDays.toString(),
+    );
+    _unitPriceController = TextEditingController(
+      text: widget.invoice.unitPrice.toString(),
+    );
+    _paidAmountController = TextEditingController(
+      text: widget.invoice.paidAmount.toString(),
+    );
     _paymentStatus = widget.invoice.paymentStatus;
 
     for (final adj in widget.invoice.adjustments) {
-      _adjustments.add(_AdjustmentItem(
-        descCtrl: TextEditingController(text: adj.description),
-        amountCtrl: TextEditingController(text: adj.amount.toString()),
-      ));
+      _adjustments.add(
+        _AdjustmentItem(
+          descCtrl: TextEditingController(text: adj.description),
+          amountCtrl: TextEditingController(text: adj.amount.toString()),
+        ),
+      );
     }
 
     for (final c in [
       _qtyController,
       _daysController,
       _unitPriceController,
-      _paidAmountController
+      _paidAmountController,
     ]) {
       c.addListener(() => setState(() {}));
     }
@@ -139,8 +162,10 @@ class _InvoiceBuilderDialogState extends State<InvoiceBuilderDialog> {
 
   Future<void> _shareToWhatsApp() async {
     final calc = _calculation;
-    final cleanPhone =
-        _customerPhoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
+    final cleanPhone = _customerPhoneController.text.replaceAll(
+      RegExp(r'[^0-9]'),
+      '',
+    );
     var targetPhone = cleanPhone;
     if (targetPhone.startsWith('0')) {
       targetPhone = '62${targetPhone.substring(1)}';
@@ -334,20 +359,25 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
   Widget _buildDialogHeader() {
     final (statusBg, statusBorder, statusText) = switch (_paymentStatus) {
       InvoicePaymentStatus.paid => (
-          const Color(0xFFEDF3EC),
-          const Color(0xFFCDE2CF),
-          const Color(0xFF346538),
-        ),
+        const Color(0xFFEDF3EC),
+        const Color(0xFFCDE2CF),
+        const Color(0xFF346538),
+      ),
       InvoicePaymentStatus.partial => (
-          const Color(0xFFFBF3DB),
-          const Color(0xFFEEDDAA),
-          const Color(0xFF956400),
-        ),
+        const Color(0xFFFBF3DB),
+        const Color(0xFFEEDDAA),
+        const Color(0xFF956400),
+      ),
       InvoicePaymentStatus.unpaid => (
-          const Color(0xFFFDEBEC),
-          const Color(0xFFF5C5C7),
-          const Color(0xFF9F2F2D),
-        ),
+        const Color(0xFFFDEBEC),
+        const Color(0xFFF5C5C7),
+        const Color(0xFF9F2F2D),
+      ),
+      InvoicePaymentStatus.cancelled => (
+        const Color(0xFFF1F5F9),
+        const Color(0xFFCBD5E1),
+        const Color(0xFF64748B),
+      ),
     };
 
     return Row(
@@ -374,8 +404,10 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 2.5,
+                    ),
                     decoration: BoxDecoration(
                       color: statusBg,
                       borderRadius: BorderRadius.circular(6),
@@ -424,7 +456,9 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      _isEditing ? Icons.visibility_outlined : Icons.edit_outlined,
+                      _isEditing
+                          ? Icons.visibility_outlined
+                          : Icons.edit_outlined,
                       size: 13,
                       color: const Color(0xFF18181B),
                     ),
@@ -591,7 +625,8 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                       ),
                       Text(
                         InvoiceRecord.formatRupiah(
-                            num.tryParse(adj.amountCtrl.text) ?? 0),
+                          num.tryParse(adj.amountCtrl.text) ?? 0,
+                        ),
                         style: const TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
                           fontSize: 12,
@@ -607,15 +642,29 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
           const Divider(height: 1, color: Color(0xFFF4F4F5)),
           const SizedBox(height: 12),
           // Summary Rows
-          _receiptRow('Subtotal Tagihan', InvoiceRecord.formatRupiah(calc.subtotal)),
+          _receiptRow(
+            'Subtotal Tagihan',
+            InvoiceRecord.formatRupiah(calc.subtotal),
+          ),
           if (calc.adjustmentTotal != 0) ...[
             const SizedBox(height: 4),
-            _receiptRow('Penyesuaian', InvoiceRecord.formatRupiah(calc.adjustmentTotal)),
+            _receiptRow(
+              'Penyesuaian',
+              InvoiceRecord.formatRupiah(calc.adjustmentTotal),
+            ),
           ],
           const SizedBox(height: 6),
-          _receiptRow('Total Tagihan', InvoiceRecord.formatRupiah(calc.totalAmount), isBold: true),
+          _receiptRow(
+            'Total Tagihan',
+            InvoiceRecord.formatRupiah(calc.totalAmount),
+            isBold: true,
+          ),
           const SizedBox(height: 4),
-          _receiptRow('Terbayar', InvoiceRecord.formatRupiah(calc.paidAmount), valueColor: const Color(0xFF346538)),
+          _receiptRow(
+            'Terbayar',
+            InvoiceRecord.formatRupiah(calc.paidAmount),
+            valueColor: const Color(0xFF346538),
+          ),
           const SizedBox(height: 6),
           _receiptRow(
             calc.remainingAmount > 0 ? 'Sisa Pembayaran' : 'Status Tagihan',
@@ -637,8 +686,11 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
             ),
             child: const Row(
               children: [
-                Icon(Icons.account_balance_outlined,
-                    size: 16, color: Color(0xFF71717A)),
+                Icon(
+                  Icons.account_balance_outlined,
+                  size: 16,
+                  color: Color(0xFF71717A),
+                ),
                 SizedBox(width: 8),
                 Text(
                   'BCA 2302619141 a/n MADNUR',
@@ -657,8 +709,12 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
     );
   }
 
-  Widget _receiptRow(String label, String value,
-      {bool isBold = false, Color? valueColor}) {
+  Widget _receiptRow(
+    String label,
+    String value, {
+    bool isBold = false,
+    Color? valueColor,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -708,7 +764,9 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
             TextFormField(
               controller: _customerNameController,
               style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 13,
+              ),
               decoration: _inputDecoration('Nama Klien'),
             ),
             const SizedBox(height: 8),
@@ -716,14 +774,18 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
               controller: _customerPhoneController,
               keyboardType: TextInputType.phone,
               style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 13,
+              ),
               decoration: _inputDecoration('No. WhatsApp Klien'),
             ),
             const SizedBox(height: 8),
             TextFormField(
               controller: _productController,
               style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 13,
+              ),
               decoration: _inputDecoration('Nama Acara / Keterangan'),
             ),
             const SizedBox(height: 14),
@@ -734,7 +796,9 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                   child: TextFormField(
                     controller: _invoiceDateController,
                     style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans', fontSize: 12.5),
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 12.5,
+                    ),
                     decoration: _inputDecoration('Tanggal Invoice'),
                   ),
                 ),
@@ -743,7 +807,9 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                   child: TextFormField(
                     controller: _dueDateController,
                     style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans', fontSize: 12.5),
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 12.5,
+                    ),
                     decoration: _inputDecoration('Jatuh Tempo'),
                   ),
                 ),
@@ -769,7 +835,9 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                     controller: _qtyController,
                     keyboardType: TextInputType.number,
                     style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 13,
+                    ),
                     decoration: _inputDecoration('Unit'),
                   ),
                 ),
@@ -779,7 +847,9 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                     controller: _daysController,
                     keyboardType: TextInputType.number,
                     style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 13,
+                    ),
                     decoration: _inputDecoration('Durasi (Hari)'),
                   ),
                 ),
@@ -790,7 +860,9 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                     controller: _unitPriceController,
                     keyboardType: TextInputType.number,
                     style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 13,
+                    ),
                     decoration: _inputDecoration('Harga Satuan', prefix: 'Rp '),
                   ),
                 ),
@@ -814,10 +886,12 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                 TextButton.icon(
                   onPressed: () {
                     setState(() {
-                      _adjustments.add(_AdjustmentItem(
-                        descCtrl: TextEditingController(),
-                        amountCtrl: TextEditingController(text: '0'),
-                      ));
+                      _adjustments.add(
+                        _AdjustmentItem(
+                          descCtrl: TextEditingController(),
+                          amountCtrl: TextEditingController(text: '0'),
+                        ),
+                      );
                     });
                   },
                   icon: const Icon(Icons.add_rounded, size: 14),
@@ -869,7 +943,12 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                     decoration: _inputDecoration('Status'),
                     items: InvoicePaymentStatus.values.map((s) {
                       return DropdownMenuItem(
-                          value: s, child: Text(s.label, style: const TextStyle(fontSize: 12)));
+                        value: s,
+                        child: Text(
+                          s.label,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      );
                     }).toList(),
                     onChanged: (val) {
                       if (val != null) {
@@ -878,8 +957,8 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                           if (val == InvoicePaymentStatus.unpaid) {
                             _paidAmountController.text = '0';
                           } else if (val == InvoicePaymentStatus.paid) {
-                            _paidAmountController.text =
-                                calc.totalAmount.toString();
+                            _paidAmountController.text = calc.totalAmount
+                                .toString();
                           }
                         });
                       }
@@ -892,7 +971,9 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                     controller: _paidAmountController,
                     keyboardType: TextInputType.number,
                     style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 13,
+                    ),
                     decoration: _inputDecoration('Terbayar', prefix: 'Rp '),
                   ),
                 ),
@@ -927,14 +1008,13 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
         borderRadius: BorderRadius.circular(8),
         borderSide: const BorderSide(color: Color(0xFF18181B)),
       ),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
     );
   }
 
   Widget _buildActionButton({
     required VoidCallback? onTap,
-    required Widget icon,
+    Widget? icon,
     required String label,
     required Color bg,
     required Color border,
@@ -945,29 +1025,103 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
       onTap: onTap,
       child: Container(
         key: key,
-        height: 36,
+        height: _footerActionHeight,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(_footerActionRadius),
           border: Border.all(color: border),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            icon,
-            const SizedBox(width: 5),
+            if (icon != null) ...[icon, const SizedBox(width: 5)],
             Text(
               label,
               style: TextStyle(
                 fontFamily: 'Plus Jakarta Sans',
-                fontSize: 11.5,
+                fontSize: _footerLabelSize,
                 fontWeight: FontWeight.w700,
                 color: textColor,
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIconActionButton({
+    required Key key,
+    required VoidCallback? onTap,
+    required String tooltip,
+    required Widget icon,
+    required Color backgroundColor,
+    required Color borderColor,
+    required Color iconColor,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        button: true,
+        label: tooltip,
+        child: PressableScale(
+          onTap: onTap,
+          child: Container(
+            key: key,
+            width: _footerActionHeight,
+            height: _footerActionHeight,
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(_footerActionRadius),
+              border: Border.all(color: borderColor),
+            ),
+            alignment: Alignment.center,
+            child: IconTheme(
+              data: IconThemeData(size: 20, color: iconColor),
+              child: icon,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFooterTextButton({
+    required Key key,
+    required VoidCallback onTap,
+    required String label,
+    required Color backgroundColor,
+    required Color borderColor,
+    required Color textColor,
+  }) {
+    return PressableScale(
+      onTap: onTap,
+      child: Container(
+        key: key,
+        height: _footerActionHeight,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(_footerActionRadius),
+          border: Border.all(color: borderColor),
+        ),
+        alignment: Alignment.center,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              label,
+              maxLines: 1,
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: _footerLabelSize,
+                fontWeight: FontWeight.w700,
+                color: textColor,
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -980,8 +1134,10 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
         children: [
           TextButton(
             onPressed: () => setState(() => _isEditing = false),
-            child: const Text('Batal Ubah',
-                style: TextStyle(color: Color(0xFF71717A), fontSize: 12)),
+            child: const Text(
+              'Batal Ubah',
+              style: TextStyle(color: Color(0xFF71717A), fontSize: 12),
+            ),
           ),
           const SizedBox(width: 6),
           _buildActionButton(
@@ -992,8 +1148,11 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                     height: 13,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(Icons.download_rounded,
-                    size: 14, color: Color(0xFF18181B)),
+                : const Icon(
+                    Icons.download_rounded,
+                    size: 14,
+                    color: Color(0xFF18181B),
+                  ),
             label: _isExporting ? 'Mengunduh...' : 'Unduh PDF',
             bg: const Color(0xFFF4F4F5),
             border: const Color(0xFFE4E4E7),
@@ -1007,9 +1166,15 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                     width: 13,
                     height: 13,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
-                : const Icon(Icons.save_outlined, size: 14, color: Colors.white),
+                : const Icon(
+                    Icons.save_outlined,
+                    size: 14,
+                    color: Colors.white,
+                  ),
             label: 'Simpan',
             bg: const Color(0xFF18181B),
             border: const Color(0xFF18181B),
@@ -1021,70 +1186,70 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
 
     return Row(
       children: [
-        _buildActionButton(
+        _buildIconActionButton(
           key: const Key('btn-export-pdf'),
           onTap: _isExporting ? null : _exportPdf,
+          tooltip: _isExporting ? 'Mengunduh PDF' : 'Unduh PDF',
           icon: _isExporting
-              ? const SizedBox(
-                  width: 13,
-                  height: 13,
+              ? const SizedBox.square(
+                  dimension: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Color(0xFF18181B),
+                    color: _footerInk,
                   ),
                 )
-              : const Icon(Icons.download_rounded,
-                  size: 14, color: Color(0xFF18181B)),
-          label: _isExporting ? 'Mengunduh...' : 'Unduh PDF',
-          bg: const Color(0xFFF4F4F5),
-          border: const Color(0xFFE4E4E7),
-          textColor: const Color(0xFF18181B),
+              : const Icon(Icons.file_download_outlined),
+          backgroundColor: _footerMutedSurface,
+          borderColor: _footerBorder,
+          iconColor: _footerInk,
         ),
-        const SizedBox(width: 6),
-        _buildActionButton(
+        const SizedBox(width: _footerActionGap),
+        _buildIconActionButton(
           key: const Key('btn-share-whatsapp'),
           onTap: _shareToWhatsApp,
-          icon: const Icon(Icons.share_rounded,
-              size: 13.5, color: Color(0xFF346538)),
-          label: 'Kirim WA',
-          bg: const Color(0xFFEDF3EC),
-          border: const Color(0xFFCDE2CF),
-          textColor: const Color(0xFF346538),
+          tooltip: 'Bagikan melalui WhatsApp',
+          icon: const Icon(Icons.share_rounded),
+          backgroundColor: _footerShareSurface,
+          borderColor: _footerShareBorder,
+          iconColor: _footerShareInk,
         ),
-        const Spacer(),
-        _buildActionButton(
-          key: const Key('btn-quick-payment'),
-          onTap: () {
-            showDialog<void>(
-              context: context,
-              builder: (ctx) => QuickPaymentDialog(
-                invoice: widget.invoice,
-                gateway: widget.gateway,
-                onPaymentUpdated: (updated) {
-                  _paidAmountController.text = updated.paidAmount.toString();
-                  _paymentStatus = updated.paymentStatus;
-                  widget.onSaved(updated);
-                  setState(() {});
-                },
-              ),
-            );
-          },
-          icon: const Icon(Icons.payments_outlined,
-              size: 14, color: Color(0xFF18181B)),
-          label: 'Atur Bayar',
-          bg: Colors.white,
-          border: const Color(0xFFE4E4E7),
-          textColor: const Color(0xFF18181B),
+        const SizedBox(width: _footerActionGap),
+        Expanded(
+          flex: 3,
+          child: _buildFooterTextButton(
+            key: const Key('btn-quick-payment'),
+            onTap: () {
+              showDialog<void>(
+                context: context,
+                builder: (ctx) => QuickPaymentDialog(
+                  invoice: widget.invoice,
+                  gateway: widget.gateway,
+                  onPaymentUpdated: (updated) {
+                    _paidAmountController.text = updated.paidAmount.toString();
+                    _paymentStatus = updated.paymentStatus;
+                    widget.onSaved(updated);
+                    setState(() {});
+                  },
+                ),
+              );
+            },
+            label: 'Atur Bayar',
+            backgroundColor: Colors.white,
+            borderColor: _footerBorder,
+            textColor: _footerInk,
+          ),
         ),
-        const SizedBox(width: 6),
-        _buildActionButton(
-          key: const Key('btn-close-dialog'),
-          onTap: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.check_rounded, size: 14, color: Colors.white),
-          label: 'Selesai',
-          bg: const Color(0xFF18181B),
-          border: const Color(0xFF18181B),
-          textColor: Colors.white,
+        const SizedBox(width: _footerActionGap),
+        Expanded(
+          flex: 2,
+          child: _buildFooterTextButton(
+            key: const Key('btn-close-dialog'),
+            onTap: () => Navigator.of(context).pop(),
+            label: 'Selesai',
+            backgroundColor: _footerInk,
+            borderColor: _footerInk,
+            textColor: Colors.white,
+          ),
         ),
       ],
     );

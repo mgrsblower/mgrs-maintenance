@@ -3,12 +3,14 @@ import 'package:flutter/foundation.dart';
 enum InvoicePaymentStatus {
   unpaid,
   partial,
-  paid;
+  paid,
+  cancelled;
 
   String toJson() => switch (this) {
         InvoicePaymentStatus.unpaid => 'unpaid',
         InvoicePaymentStatus.partial => 'partial',
         InvoicePaymentStatus.paid => 'paid',
+        InvoicePaymentStatus.cancelled => 'cancelled',
       };
 
   static InvoicePaymentStatus fromJson(Object? value) {
@@ -17,6 +19,7 @@ enum InvoicePaymentStatus {
     return switch (str) {
       'paid' || 'lunas' => InvoicePaymentStatus.paid,
       'partial' || 'dp' || 'sebagian' => InvoicePaymentStatus.partial,
+      'cancelled' || 'batal' || 'dibatalkan' => InvoicePaymentStatus.cancelled,
       _ => InvoicePaymentStatus.unpaid,
     };
   }
@@ -25,6 +28,7 @@ enum InvoicePaymentStatus {
         InvoicePaymentStatus.unpaid => 'Belum Bayar',
         InvoicePaymentStatus.partial => 'Sebagian',
         InvoicePaymentStatus.paid => 'Lunas',
+        InvoicePaymentStatus.cancelled => 'Dibatalkan',
       };
 }
 
@@ -82,7 +86,7 @@ abstract final class InvoiceCalculator {
     );
     final totalAmount = _nonNegative(subtotal + adjustmentTotal);
     final resolvedPaidAmount = switch (paymentStatus) {
-      InvoicePaymentStatus.unpaid => 0,
+      InvoicePaymentStatus.unpaid || InvoicePaymentStatus.cancelled => 0,
       InvoicePaymentStatus.partial => paidAmount.clamp(0, totalAmount),
       InvoicePaymentStatus.paid => totalAmount,
     };
@@ -218,7 +222,56 @@ class InvoiceRecord {
       paymentStatus == InvoicePaymentStatus.partial ||
       (paidAmount > 0 && paidAmount < totalAmount);
 
-  bool get isUnpaid => !isPaid && !isDp;
+  bool get isCancelled =>
+      paymentStatus == InvoicePaymentStatus.cancelled;
+
+  bool get isUnpaid => !isPaid && !isDp && !isCancelled;
+
+  InvoiceRecord copyWith({
+    String? id,
+    String? orderanId,
+    String? invoiceReference,
+    String? invoiceDate,
+    String? dueDate,
+    String? productName,
+    num? quantity,
+    num? rentalDays,
+    num? unitPrice,
+    num? subtotal,
+    num? totalAmount,
+    num? paidAmount,
+    InvoicePaymentStatus? paymentStatus,
+    String? invoiceSource,
+    String? customerName,
+    String? customerPhone,
+    List<InvoiceAdjustment>? adjustments,
+    String? printedAt,
+    String? createdAt,
+    String? updatedAt,
+  }) {
+    return InvoiceRecord(
+      id: id ?? this.id,
+      orderanId: orderanId ?? this.orderanId,
+      invoiceReference: invoiceReference ?? this.invoiceReference,
+      invoiceDate: invoiceDate ?? this.invoiceDate,
+      dueDate: dueDate ?? this.dueDate,
+      productName: productName ?? this.productName,
+      quantity: quantity ?? this.quantity,
+      rentalDays: rentalDays ?? this.rentalDays,
+      unitPrice: unitPrice ?? this.unitPrice,
+      subtotal: subtotal ?? this.subtotal,
+      totalAmount: totalAmount ?? this.totalAmount,
+      paidAmount: paidAmount ?? this.paidAmount,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      invoiceSource: invoiceSource ?? this.invoiceSource,
+      customerName: customerName ?? this.customerName,
+      customerPhone: customerPhone ?? this.customerPhone,
+      adjustments: adjustments ?? this.adjustments,
+      printedAt: printedAt ?? this.printedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 
   String get paymentStatusDisplay => paymentStatus.label;
 

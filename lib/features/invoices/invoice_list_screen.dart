@@ -533,6 +533,7 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
       InvoicePaymentStatus.paid => (const Color(0xFFEDF3EC), const Color(0xFF346538)),
       InvoicePaymentStatus.partial => (const Color(0xFFFBF3DB), const Color(0xFF956400)),
       InvoicePaymentStatus.unpaid => (const Color(0xFFFDEBEC), const Color(0xFF9F2F2D)),
+      InvoicePaymentStatus.cancelled => (const Color(0xFFF1F5F9), const Color(0xFF64748B)),
     };
 
     return Container(

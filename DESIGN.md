@@ -20,6 +20,8 @@ Scan / Berkala / Riwayat navigation remains visible on home tabs. Details and fo
 
 Material filled and outlined buttons; outlined text fields; bordered panels; text-labelled condition chips. MGRS icon uses a standard tool symbol with product text, not a copied logo. Primary action is blue; destructive errors are red. Every icon-only control has a tooltip.
 
+Invoice dialog footer uses one 48-unit action row with 6-unit gaps and 8-unit radii. Download and share are fixed 48-unit icon controls; payment and completion share the remaining width at a 3:2 ratio. Footer neutrals use ink `#18181B`, muted surface `#F4F4F5`, and subtle border `#E4E4E7`; share uses surface `#EDF3EC`, border `#CDE2CF`, and icon `#346538`. Text actions use the compact 11.5 label treatment.
+
 ## 5. States
 
 Async content has loading, loaded, empty and failure states with retry. Form has idle, validation, saving, uncertain, conflict and success. All condition labels are textual. Error copy never exposes SQL or exception details. Loading never claims no records.

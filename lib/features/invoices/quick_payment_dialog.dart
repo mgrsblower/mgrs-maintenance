@@ -45,6 +45,7 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
   num get _currentPaidAmount {
     switch (_status) {
       case InvoicePaymentStatus.unpaid:
+      case InvoicePaymentStatus.cancelled:
         return 0;
       case InvoicePaymentStatus.paid:
         return widget.invoice.totalAmount;
