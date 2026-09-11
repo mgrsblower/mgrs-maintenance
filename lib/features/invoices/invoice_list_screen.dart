@@ -738,10 +738,86 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
+              IconButton(
+                key: Key('btn-delete-invoice-${item.id}'),
+                onPressed: () => _confirmDeleteInvoice(item),
+                icon: const Icon(Icons.delete_outline_rounded, size: 20, color: Color(0xFFDC2626)),
+                tooltip: 'Hapus Invoice',
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _confirmDeleteInvoice(InvoiceRecord item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.delete_outline_rounded, color: Color(0xFFDC2626), size: 22),
+            SizedBox(width: 8),
+            Text(
+              'Hapus Invoice?',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Invoice ${item.invoiceReference} (${item.customerName}) akan dihapus secara permanen.',
+          style: const TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 13,
+            color: Color(0xFF475569),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
+            child: const Text('Ya, Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        await widget.gateway.deleteInvoice(item.id);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Invoice ${item.invoiceReference} berhasil dihapus.'),
+            backgroundColor: const Color(0xFF059669),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        _loadInvoices(forceRefresh: true);
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(failureMessage(e)),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 }

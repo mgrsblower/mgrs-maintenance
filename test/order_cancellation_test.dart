@@ -69,7 +69,7 @@ class MockCancellationGateway extends MaintenanceGateway {
 
     if (cancelInvoice && invoice != null) {
       if (invoice!.paymentStatus == InvoicePaymentStatus.unpaid || invoice!.paidAmount <= 0) {
-        invoice = invoice!.copyWith(paymentStatus: InvoicePaymentStatus.cancelled);
+        invoice = null;
       }
     }
   }

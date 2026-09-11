@@ -186,6 +186,8 @@ abstract class MaintenanceGateway {
   Future<InvoiceRecord?> fetchInvoiceByOrderanId(String orderanId) async =>
       null;
 
+  Future<void> deleteInvoice(String invoiceId) async {}
+
   Future<OrderanSewa> createOrderWithInvoice(
     Map<String, Object?> orderData,
   ) async => throw UnimplementedError();
@@ -534,12 +536,60 @@ class SupabaseGateway extends MaintenanceGateway {
           .order('invoice_date', ascending: false);
       final list =
           (res as List).map((item) => InvoiceRecord.fromJson(jsonObject(item))).toList();
+
+      // Clean up orphaned unpaid invoices from cancelled orders
+      final orderIds = list
+          .map((inv) => inv.orderanId)
+          .where((id) => id != null && id.isNotEmpty)
+          .cast<String>()
+          .toSet()
+          .toList();
+
+      if (orderIds.isNotEmpty) {
+        try {
+          final cancelledRes = await client
+              .from('orderan_sewa')
+              .select('id,orderan_id')
+              .eq('status_orderan', 'Dibatalkan');
+
+          final cancelledIds = <String>{};
+          for (final row in (cancelledRes as List).cast<Map<String, Object?>>()) {
+            if (row['id'] != null) cancelledIds.add(row['id'].toString());
+            if (row['orderan_id'] != null) cancelledIds.add(row['orderan_id'].toString());
+          }
+
+          if (cancelledIds.isNotEmpty) {
+            final validList = <InvoiceRecord>[];
+            for (final inv in list) {
+              if (inv.orderanId != null && cancelledIds.contains(inv.orderanId)) {
+                if (inv.paidAmount <= 0) {
+                  // Asynchronously delete from Supabase so it won't persist
+                  client.from('invoices').delete().eq('id', inv.id).catchError((_) {});
+                  continue; // Exclude from display
+                }
+              }
+              validList.add(inv);
+            }
+            _saveToCache(cacheKey, validList);
+            return validList;
+          }
+        } catch (e) {
+          debugPrint('[Fetch Invoices Cleanup Error] $e');
+        }
+      }
+
       _saveToCache(cacheKey, list);
       return list;
     } catch (e) {
       debugPrint('[Fetch Invoices Error] $e');
       return const [];
     }
+  }
+
+  @override
+  Future<void> deleteInvoice(String invoiceId) async {
+    await client.from('invoices').delete().eq('id', invoiceId);
+    invalidateCache('invoices');
   }
 
   @override
@@ -792,40 +842,37 @@ class SupabaseGateway extends MaintenanceGateway {
 
     if (cancelInvoice) {
       try {
-        var invRes = await client
-            .from('invoices')
-            .select()
-            .eq('orderan_id', orderanId)
-            .maybeSingle();
-        if (invRes == null && businessOrderId != null && businessOrderId.isNotEmpty) {
-          invRes = await client
+        final idsToDelete = <String>{};
+        Future<void> findInvoices(String id) async {
+          final res = await client
               .from('invoices')
-              .select()
-              .eq('orderan_id', businessOrderId)
-              .maybeSingle();
-        }
-        if (invRes == null && dbUuid != null && dbUuid.isNotEmpty) {
-          invRes = await client
-              .from('invoices')
-              .select()
-              .eq('orderan_id', dbUuid)
-              .maybeSingle();
-        }
-        if (invRes != null) {
-          final currentStatus = invRes['payment_status']?.toString().toLowerCase();
-          final paidAmount = num.tryParse(invRes['paid_amount']?.toString() ?? '0') ?? 0;
-          if (currentStatus == 'unpaid' || paidAmount <= 0) {
-            await client
-                .from('invoices')
-                .update({
-                  'payment_status': 'cancelled',
-                  'updated_at': DateTime.now().toUtc().toIso8601String(),
-                })
-                .eq('id', invRes['id']);
+              .select('id,payment_status,paid_amount')
+              .eq('orderan_id', id);
+          for (final row in (res as List).cast<Map<String, Object?>>()) {
+            final paid = num.tryParse(row['paid_amount']?.toString() ?? '0') ?? 0;
+            final status = row['payment_status']?.toString().toLowerCase();
+            if (paid <= 0 || status == 'unpaid') {
+              final invId = row['id']?.toString();
+              if (invId != null && invId.isNotEmpty) {
+                idsToDelete.add(invId);
+              }
+            }
           }
         }
+
+        await findInvoices(orderanId);
+        if (businessOrderId != null && businessOrderId.isNotEmpty && businessOrderId != orderanId) {
+          await findInvoices(businessOrderId);
+        }
+        if (dbUuid != null && dbUuid.isNotEmpty && dbUuid != orderanId) {
+          await findInvoices(dbUuid);
+        }
+
+        for (final invId in idsToDelete) {
+          await client.from('invoices').delete().eq('id', invId);
+        }
       } catch (e) {
-        debugPrint('[Cancel Order] Invoice update note: $e');
+        debugPrint('[Cancel Order] Invoice delete error: $e');
       }
     }
 

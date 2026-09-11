@@ -1121,14 +1121,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             catatanOrderan: updatedNote,
           );
           if (_invoice != null && (!_invoice!.isPaid || _invoice!.paidAmount <= 0)) {
-            _invoice = _invoice!.copyWith(paymentStatus: InvoicePaymentStatus.cancelled);
+            _invoice = null;
           }
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Orderan berhasil dibatalkan.',
+              'Orderan berhasil dibatalkan dan invoice terkait telah dihapus.',
               style: TextStyle(fontFamily: 'Plus Jakarta Sans'),
             ),
             backgroundColor: Color(0xFFDC2626),
