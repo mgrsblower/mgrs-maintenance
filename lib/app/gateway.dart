@@ -599,8 +599,34 @@ class SupabaseGateway extends MaintenanceGateway {
           .select()
           .eq('orderan_id', orderanId)
           .maybeSingle();
-      if (res == null) return null;
-      return InvoiceRecord.fromJson(jsonObject(res));
+      if (res != null) {
+        return InvoiceRecord.fromJson(jsonObject(res));
+      }
+
+      // If not found directly, orderanId might be UUID while invoices.orderan_id has "ORD-..."
+      // or vice-versa. Look up counterpart in orderan_sewa:
+      final orderQuery = client.from('orderan_sewa').select('id,orderan_id');
+      final orderRes = _isUuid(orderanId)
+          ? await orderQuery.eq('id', orderanId).maybeSingle()
+          : await orderQuery.eq('orderan_id', orderanId).maybeSingle();
+
+      if (orderRes != null) {
+        final counterpart = _isUuid(orderanId)
+            ? orderRes['orderan_id']?.toString()
+            : orderRes['id']?.toString();
+        if (counterpart != null && counterpart.isNotEmpty && counterpart != orderanId) {
+          final fallbackRes = await client
+              .from('invoices')
+              .select()
+              .eq('orderan_id', counterpart)
+              .maybeSingle();
+          if (fallbackRes != null) {
+            return InvoiceRecord.fromJson(jsonObject(fallbackRes));
+          }
+        }
+      }
+
+      return null;
     } catch (_) {
       return null;
     }
@@ -699,13 +725,17 @@ class SupabaseGateway extends MaintenanceGateway {
     bool cancelInvoice = true,
   }) async {
     String? currentNote;
+    String? businessOrderId;
+    String? dbUuid;
     try {
-      final noteQuery = client.from('orderan_sewa').select('catatan_orderan');
+      final noteQuery = client.from('orderan_sewa').select('id,orderan_id,catatan_orderan');
       final res = _isUuid(orderanId)
           ? await noteQuery.or('id.eq.$orderanId,orderan_id.eq.$orderanId').maybeSingle()
           : await noteQuery.eq('orderan_id', orderanId).maybeSingle();
       if (res != null) {
         currentNote = res['catatan_orderan']?.toString();
+        businessOrderId = res['orderan_id']?.toString();
+        dbUuid = res['id']?.toString();
       }
     } catch (e) {
       debugPrint('[Cancel Order] Note fetch error: $e');
@@ -737,11 +767,25 @@ class SupabaseGateway extends MaintenanceGateway {
 
     if (cancelInvoice) {
       try {
-        final invRes = await client
+        var invRes = await client
             .from('invoices')
             .select()
             .eq('orderan_id', orderanId)
             .maybeSingle();
+        if (invRes == null && businessOrderId != null && businessOrderId.isNotEmpty) {
+          invRes = await client
+              .from('invoices')
+              .select()
+              .eq('orderan_id', businessOrderId)
+              .maybeSingle();
+        }
+        if (invRes == null && dbUuid != null && dbUuid.isNotEmpty) {
+          invRes = await client
+              .from('invoices')
+              .select()
+              .eq('orderan_id', dbUuid)
+              .maybeSingle();
+        }
         if (invRes != null) {
           final currentStatus = invRes['payment_status']?.toString().toLowerCase();
           final paidAmount = num.tryParse(invRes['paid_amount']?.toString() ?? '0') ?? 0;

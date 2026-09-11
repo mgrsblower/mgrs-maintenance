@@ -57,10 +57,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Future<void> _loadInvoice() async {
-    final orderanId = _order?.id ?? widget.orderId;
-    if (orderanId == null || widget.gateway == null) return;
+    if (widget.gateway == null) return;
+    final primaryId = _order?.id ?? widget.orderId;
+    final businessId = _order?.orderanId;
+    if (primaryId == null && businessId == null) return;
     try {
-      final inv = await widget.gateway!.fetchInvoiceByOrderanId(orderanId);
+      var inv = primaryId != null
+          ? await widget.gateway!.fetchInvoiceByOrderanId(primaryId)
+          : null;
+      if (inv == null && businessId != null && businessId != primaryId) {
+        inv = await widget.gateway!.fetchInvoiceByOrderanId(businessId);
+      }
       if (mounted && inv != null) {
         setState(() => _invoice = inv);
       }
