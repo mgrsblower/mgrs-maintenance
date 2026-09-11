@@ -480,6 +480,13 @@ class SupabaseGateway extends MaintenanceGateway {
     }
   }
 
+  bool _isUuid(String str) {
+    final uuidRegex = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    );
+    return uuidRegex.hasMatch(str.trim());
+  }
+
   @override
   Future<OrderanSewa?> fetchOrderDetail(
     String id, {
@@ -491,13 +498,12 @@ class SupabaseGateway extends MaintenanceGateway {
       if (cached != null) return cached;
     }
     try {
-      final res = await client
-          .from('orderan_sewa')
-          .select(
-            'id,orderan_id,tanggal_pemasangan,nama_event,nama_client,alamat,nomor_whatsapp,link_gmaps,nama_pic,jumlah_unit,status_orderan,catatan_orderan,created_at',
-          )
-          .eq('id', id)
-          .maybeSingle();
+      final query = client.from('orderan_sewa').select(
+        'id,orderan_id,tanggal_pemasangan,nama_event,nama_client,alamat,nomor_whatsapp,link_gmaps,nama_pic,jumlah_unit,status_orderan,catatan_orderan,created_at',
+      );
+      final res = _isUuid(id)
+          ? await query.or('id.eq.$id,orderan_id.eq.$id').maybeSingle()
+          : await query.eq('orderan_id', id).maybeSingle();
       if (res != null) {
         final order = OrderanSewa.fromJson(jsonObject(res));
         _saveToCache(cacheKey, order);
@@ -661,14 +667,24 @@ class SupabaseGateway extends MaintenanceGateway {
   Future<void> updateOrderStatus(String orderanId, String status) async {
     final isDone = status.toLowerCase() == 'selesai';
     final isCancelled = status.toLowerCase() == 'batal' || status.toLowerCase() == 'cancelled';
-    await client
-        .from('orderan_sewa')
-        .update({
-          'status_orderan': status,
-          if (isDone || isCancelled)
-            'closed_at': DateTime.now().toUtc().toIso8601String(),
-        })
-        .or('orderan_id.eq.$orderanId,id.eq.$orderanId');
+    final updatePayload = {
+      'status_orderan': status,
+      if (isDone || isCancelled)
+        'closed_at': DateTime.now().toUtc().toIso8601String(),
+    };
+
+    if (_isUuid(orderanId)) {
+      await client
+          .from('orderan_sewa')
+          .update(updatePayload)
+          .or('id.eq.$orderanId,orderan_id.eq.$orderanId');
+    } else {
+      await client
+          .from('orderan_sewa')
+          .update(updatePayload)
+          .eq('orderan_id', orderanId);
+    }
+
     invalidateCache('upcoming_orders');
     invalidateCache('order_detail:$orderanId');
     if (isCancelled) {
@@ -684,11 +700,10 @@ class SupabaseGateway extends MaintenanceGateway {
   }) async {
     String? currentNote;
     try {
-      final res = await client
-          .from('orderan_sewa')
-          .select('catatan_orderan')
-          .or('orderan_id.eq.$orderanId,id.eq.$orderanId')
-          .maybeSingle();
+      final noteQuery = client.from('orderan_sewa').select('catatan_orderan');
+      final res = _isUuid(orderanId)
+          ? await noteQuery.or('id.eq.$orderanId,orderan_id.eq.$orderanId').maybeSingle()
+          : await noteQuery.eq('orderan_id', orderanId).maybeSingle();
       if (res != null) {
         currentNote = res['catatan_orderan']?.toString();
       }
@@ -702,14 +717,23 @@ class SupabaseGateway extends MaintenanceGateway {
         ? '$currentNote\n$cancellationTag'
         : cancellationTag;
 
-    await client
-        .from('orderan_sewa')
-        .update({
-          'status_orderan': 'Batal',
-          'catatan_orderan': updatedNote,
-          'closed_at': DateTime.now().toUtc().toIso8601String(),
-        })
-        .or('orderan_id.eq.$orderanId,id.eq.$orderanId');
+    final updatePayload = {
+      'status_orderan': 'Batal',
+      'catatan_orderan': updatedNote,
+      'closed_at': DateTime.now().toUtc().toIso8601String(),
+    };
+
+    if (_isUuid(orderanId)) {
+      await client
+          .from('orderan_sewa')
+          .update(updatePayload)
+          .or('id.eq.$orderanId,orderan_id.eq.$orderanId');
+    } else {
+      await client
+          .from('orderan_sewa')
+          .update(updatePayload)
+          .eq('orderan_id', orderanId);
+    }
 
     if (cancelInvoice) {
       try {
@@ -750,14 +774,12 @@ class SupabaseGateway extends MaintenanceGateway {
       final cached = _getFromCache<Map<String, int>>(cacheKey);
       if (cached != null) return cached;
     }
-
     try {
       final res = await client
           .from('orderan_sewa')
           .select('catatan_orderan');
-
       final counts = <String, int>{};
-      for (final item in res) {
+      for (final item in (res as List).cast<Map<String, Object?>>()) {
         final note = item['catatan_orderan']?.toString();
         if (note != null && note.contains('[UNIT_ALOKASI:')) {
           final units = UnitAllocationParser.parse(note);
@@ -777,7 +799,6 @@ class SupabaseGateway extends MaintenanceGateway {
           }
         }
       }
-
       _saveToCache(cacheKey, counts);
       return counts;
     } catch (e) {
@@ -793,11 +814,10 @@ class SupabaseGateway extends MaintenanceGateway {
   ) async {
     String? currentNote;
     try {
-      final res = await client
-          .from('orderan_sewa')
-          .select('catatan_orderan')
-          .or('orderan_id.eq.$orderanId,id.eq.$orderanId')
-          .maybeSingle();
+      final noteQuery = client.from('orderan_sewa').select('catatan_orderan');
+      final res = _isUuid(orderanId)
+          ? await noteQuery.or('id.eq.$orderanId,orderan_id.eq.$orderanId').maybeSingle()
+          : await noteQuery.eq('orderan_id', orderanId).maybeSingle();
       if (res != null) {
         currentNote = res['catatan_orderan']?.toString();
       }
@@ -807,10 +827,17 @@ class SupabaseGateway extends MaintenanceGateway {
 
     final updatedNote = UnitAllocationParser.updateNoteWithAllocation(currentNote, units);
 
-    await client
-        .from('orderan_sewa')
-        .update({'catatan_orderan': updatedNote})
-        .or('orderan_id.eq.$orderanId,id.eq.$orderanId');
+    if (_isUuid(orderanId)) {
+      await client
+          .from('orderan_sewa')
+          .update({'catatan_orderan': updatedNote})
+          .or('id.eq.$orderanId,orderan_id.eq.$orderanId');
+    } else {
+      await client
+          .from('orderan_sewa')
+          .update({'catatan_orderan': updatedNote})
+          .eq('orderan_id', orderanId);
+    }
 
     invalidateCache('upcoming_orders');
     invalidateCache('order_detail:$orderanId');
