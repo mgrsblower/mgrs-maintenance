@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mgrs_maintenance/app/app.dart';
 import 'package:mgrs_maintenance/app/gateway.dart';
 import 'package:mgrs_maintenance/features/components/asset_catalog_screen.dart';
 import 'package:mgrs_maintenance/features/components/component.dart';
@@ -149,6 +148,7 @@ void main() {
           gateway: gateway,
           onNavigateToTab: (_) {},
           onOpenScanner: () {},
+          showBottomNav: false,
         ),
       ),
     );
@@ -319,6 +319,7 @@ void main() {
           user: fieldUser,
           onNavigateToTab: (_) {},
           onOpenScanner: () {},
+          showBottomNav: false,
         ),
       ),
     );
@@ -492,8 +493,11 @@ void main() {
     });
     await tester.pumpWidget(
       MaterialApp(
-        home: ScanScreen(gateway: gateway, initialComponent: testComp),
+        home: ScanScreen(
+          gateway: gateway,
           user: fieldUser,
+          initialComponent: testComp,
+        ),
       ),
     );
     await tester.pump();
@@ -510,8 +514,10 @@ void main() {
     final gateway = MockGateway();
     await tester.pumpWidget(
       MaterialApp(
-        home: ScanScreen(gateway: gateway),
+        home: ScanScreen(
+          gateway: gateway,
           user: fieldUser,
+        ),
       ),
     );
     await tester.pump();

@@ -132,7 +132,7 @@ void main() {
     final scanScreen = tester.widget<ScanScreen>(find.byType(ScanScreen));
     expect(identical(scanScreen.gateway, gateway), isTrue);
     expect(scanScreen.user, same(user));
-    await tester.pageBack();
+    await tester.tap(find.byIcon(Icons.close_rounded));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Berkala'));

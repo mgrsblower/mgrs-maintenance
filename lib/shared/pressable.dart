@@ -107,21 +107,19 @@ class _PressableScaleState extends State<PressableScale>
       constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
       child: Center(child: visual),
     );
-    final material = Material(
-      type: MaterialType.transparency,
-      child: InkWell(
-        onTap: _isInteractive ? widget.onTap : null,
-        onLongPress: _isInteractive ? widget.onLongPress : null,
-        onTapDown: _isInteractive ? _handleTapDown : null,
-        onTapUp: _isInteractive ? _handleTapUp : null,
-        onTapCancel: _isInteractive ? _handleTapCancel : null,
-        child: interactiveSurface,
-      ),
+    final gesture = GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _isInteractive ? widget.onTap : null,
+      onLongPress: _isInteractive ? widget.onLongPress : null,
+      onTapDown: _isInteractive ? _handleTapDown : null,
+      onTapUp: _isInteractive ? _handleTapUp : null,
+      onTapCancel: _isInteractive ? _handleTapCancel : null,
+      child: interactiveSurface,
     );
     final semantics = Semantics(
       button: true,
       enabled: _isInteractive,
-      child: material,
+      child: gesture,
     );
     return widget.tooltip == null
         ? semantics
