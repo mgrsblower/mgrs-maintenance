@@ -1,35 +1,157 @@
-# MGRS-Maintenance design contract
+# Porcelain Service Ledger
 
-## 0. Reference and scope
+## Purpose and scope
 
-Adapt the local MGRS operational design vocabulary from ../mgrs-release/DESIGN.md: cobalt actions, pale canvas, white bordered surfaces, compact readable mobile information. This is a functional maintenance app using the existing product identity, not a Paper screen clone. No downloaded assets, concept art or screenshots are embedded in product screens. Native Material controls retain accessible behavior.
+Porcelain Service Ledger is the shipped visual system for the **MGRS-Maintenance Android app**. It is an Android-native Flutter/Material 3 system for workshop, warehouse, and customer-site work—not a marketing site.
 
-## 1. Atmosphere
+The interface stays in Indonesian and preserves the product workflow:
 
-A calm field-work utility. The main action is scanning a component; the component code and last condition are prominent. No dashboard charts, invented metrics or decorative hero.
+- **Tim Service** and **Tim Pemasangan** identify Kepala, Batang, or Tabung by QR/barcode or unique code, inspect condition, record routine checks or service, and review history.
+- **PIC Pemasangan** manages orderan, component allocation, invoice, payment status, and PDF sharing/export.
+- **Admin** switches explicitly between Mode Servis and Mode PIC; the two workspaces retain their separate destinations and permissions.
 
-## 2. Tokens
+The visual source of truth is the shipped Dart implementation, especially [`lib/app/app_theme.dart`](lib/app/app_theme.dart). The copied web reference is not a runtime contract.
 
-Canvas #F4F8FC, surface #FFFFFF, primary #147CC1, text #141820, secondary #667085, border #DDE2E8, success #137333, warning #9A6700, danger #B42318. Spacing 4/8/12/16/24/32; corner radius 12; minimum control height 48; content maximum width 640. Native platform typography: title 24, section 18, body 16, label 14. Camera background dark only while scanning.
+## Visual foundation
 
-## 3. Layout
+The app is light and flat by default. Porcelain is the canvas, white is the work surface, and Ink supplies structure. Cards are separated by surface contrast and Mist outlines rather than decorative shadows.
 
-Scan / Berkala / Riwayat navigation remains visible on home tabs. Details and forms have a back button. Single scroll column, 16px outer spacing and safe-area handling. Form actions scroll above the keyboard; no fixed overlay on inputs.
+### Color tokens
 
-## 4. Components
+| Token | Value | Role and restrictions |
+| --- | --- | --- |
+| `porcelain` | `#F4F5F6` | Screen canvas and light app-bar background. |
+| `white` | `#FFFFFF` | Cards, form surfaces, dialogs, sheets, navigation surface, and primary-on-color text. |
+| `ink` | `#131517` | Primary text, structural controls, selected navigation, icons, and neutral emphasis. |
+| `graphite` | `#333537` | Tertiary text and neutral high-contrast details. |
+| `stone` | `#737577` | Supporting text, hints, inactive icons, and metadata. |
+| `mist` | `#B3B5B7` | Borders, outlines, disabled dividers, and control boundaries. |
+| `mistLight` | `#E3E4E6` | Tonal containers, navigation indicators, tracks, and quiet separators. |
+| `magenta` | `#CC62D5` | Brand action, focused field outline, progress indicator, and selection only when no competing primary action is visible. |
+| `success` / `successSurface` | `#23663A` / `#E9F6EE` | Confirmed, healthy, complete, or paid state. |
+| `warning` / `warningSurface` | `#8A5A00` / `#FFF3D6` | Attention, partial, pending, or degraded state. |
+| `danger` / `dangerSurface` | `#B42318` / `#FDEBEC` | Error, invalid, destructive, cancelled, or unsafe state. |
 
-Material filled and outlined buttons; outlined text fields; bordered panels; text-labelled condition chips. MGRS icon uses a standard tool symbol with product text, not a copied logo. Primary action is blue; destructive errors are red. Every icon-only control has a tooltip.
+`ColorScheme` owns general Material roles. `OperationalColors` is the semantic `ThemeExtension` for success, warning, and danger surface/foreground pairs.
 
-Invoice dialog footer uses one 48-unit action row with 6-unit gaps and 8-unit radii. Download and share are fixed 48-unit icon controls; payment and completion share the remaining width at a 3:2 ratio. Footer neutrals use ink `#18181B`, muted surface `#F4F4F5`, and subtle border `#E4E4E7`; share uses surface `#EDF3EC`, border `#CDE2CF`, and icon `#346538`. Text actions use the compact 11.5 label treatment.
+A screen or modal has at most one filled magenta action. When that action is visible, navigation and selection use Ink or Ink-tonal treatment. Magenta **never** means success, warning, danger, payment, component condition, connectivity, or completion. Every operational state also has text and/or an icon; color is never the only signal.
 
-## 5. States
+There is no dark theme. The scanner is the sole permanently dark surface (see [Scanner exception](#scanner-exception)).
 
-Async content has loading, loaded, empty and failure states with retry. Form has idle, validation, saving, uncertain, conflict and success. All condition labels are textual. Error copy never exposes SQL or exception details. Loading never claims no records.
+## Typography
 
-## 6. Motion and accessibility
+`maintenanceTheme()` uses Android Material 2021 typography (`Typography.material2021(platform: TargetPlatform.android)`), which resolves to the Android system Roboto family. Do not add remote or web fonts.
 
-Use native Material feedback. No continuous decorative animation. Text scaling follows the OS. Buttons at least 48 units, semantic labels, keyboard submit, scrollable forms, disabled busy state. Scanner stops on result, navigation, app pause and logout.
+| Material role | Shipped use |
+| --- | --- |
+| `headlineSmall` | Screen titles and primary section headings. |
+| `titleLarge`, `titleMedium` | Record identifiers, card headings, and section titles. |
+| `bodyLarge`, `bodyMedium` | Operational content, instructions, form copy, and supporting text. |
+| `bodySmall` | Secondary explanations and compact detail. |
+| `labelLarge`, `labelMedium`, `labelSmall` | Buttons, chips, badges, filters, navigation labels, and compact metadata. |
 
-## 7. Verification and debt
+Text must remain readable at Android font scales. Tight tracking is limited to large headings where already defined by the theme; body text, codes, names, and identifiers do not use decorative tracking. New screens consume `Theme.of(context).textTheme` instead of declaring a font family, arbitrary type scale, or per-screen typographic system.
 
-Verify native screens and interaction states on Android emulator; actual physical barcode/camera testing remains a release requirement. Desktop/web are not distribution targets. The schema is not deployed by UI verification. Production labels never present fixture data as real data.
+## Spacing, shapes, and elevation
+
+- Base rhythm: **8dp**. `4dp` is reserved for compact icon/label alignment.
+- Shared spacing tokens: `4`, `8`, `12`, `16`, `24`, and `32dp`.
+- Screen content: normally `16dp` outer padding, expanding to `24dp` for focused forms and dialogs.
+- Shared content width: `640dp` maximum on wider Android windows; content remains a single readable column.
+- Card radius: **22dp** (`20–24dp` family).
+- Control/button radius: **18dp** (`16–20dp` family).
+- Badge/chip radius: **6dp** (`4–8dp` family).
+- Independent targets are at least **48×48dp**, with at least **8dp** separation.
+- Cards and controls are elevation 0 with a Mist border. Transient Material surfaces may elevate: navigation surface around 3, dialogs/sheets around 6, and floating snackbars around 6.
+
+Avoid nested decorative cards. A white record card should carry the identifier, status, metadata, and one clear action hierarchy.
+
+## Components and screen patterns
+
+### App shell and navigation
+
+`lib/app/app.dart` keeps authentication, role routing, mode switching, and destinations intact. The compact Android shell uses a Material `NavigationBar` with a white surface, 72dp height, MistLight selected indicator, and Ink selected icon/label. Technician destinations are **Beranda**, **Aset**, and **Servis**; PIC destinations are **Beranda**, **Orderan**, and **Invoice**. The scanner is a separate 56dp floating action with the only magenta scanner entry action.
+
+The shell uses `SafeArea`, preserves system/predictive Back, and leaves space for the navigation surface. Page content is scrollable and bounded rather than arranged as a web marketing grid. Forms and dialogs use `LayoutBuilder` to stack fields when a phone width is constrained.
+
+### Cards, lists, and status badges
+
+Cards use the themed white surface, 22dp radius, Mist outline, and 16dp internal padding as the common starting point. Lists and record details keep long codes, customer names, invoice references, and locations wrapped or deliberately scrollable without pushing actions out of reach.
+
+`ConditionBadge` and feature status treatments use semantic pairs:
+
+- `OK`, healthy, complete, or paid → success green on success surface.
+- `Rusak Ringan`, partial, pending, or attention → warning amber on warning surface.
+- `Rusak Berat`, `Perlu Servis`, cancelled, invalid, or unsafe → danger red on danger surface.
+- Unpaid, neutral history, and unselected data use Ink/Stone/MistLight neutrals rather than pretending to be successful.
+
+Invoice payment mapping is explicit: **Lunas** is success, **Sebagian** is warning, **Dibatalkan** is danger, and **Belum Bayar** is neutral. Labels and icons accompany each color treatment.
+
+### Buttons and controls
+
+The Material themes in `app_theme.dart` are authoritative:
+
+- Filled buttons are the single filled magenta action when a primary action exists; they are at least 48dp high, use white text, 18dp radius, and no decorative elevation.
+- Outlined buttons use Ink text and a Mist outline for secondary/recovery actions.
+- Text buttons are tertiary actions.
+- Icon buttons are at least 48dp with Ink foreground and a tooltip/semantic label when icon-only.
+- Checkboxes, radios, switches, segmented controls, chips, and progress indicators use Material roles and the semantic palette; they do not introduce another visual language.
+
+### Forms and feedback
+
+Inputs are white, themed outlined fields with 18dp radius, 16dp horizontal/vertical content padding, Stone hints, a 2dp magenta focus outline, and danger error borders/text. Forms remain scrollable above the IME (`resizeToAvoidBottomInset`, insets, and keyboard dismissal are preserved). Validation appears beside the relevant field and submission is blocked until required input is valid.
+
+Loading preserves the surrounding task with a bounded progress indicator or skeleton. `AsyncStateView` maps progress to the primary theme role and failure to danger, announces failures as a live region, preserves truthful Indonesian error text, and offers **Coba lagi** when retry is safe. Empty states explain what is absent and expose the next relevant action.
+
+Dialogs are white Material surfaces with 16–24dp insets, 24dp content padding, a Mist outline/22dp card shape, and elevation reserved for interruption. Destructive confirmation remains red and requires confirmation. Bottom sheets are white, modal, SafeArea-aware, show a drag handle, and use the 22dp top radius for contextual selection or detail. Snackbars are floating Ink surfaces with readable white content and recovery actions.
+
+### Motion and press feedback
+
+Motion is short, interruptible, and limited to opacity or small transforms:
+
+- role/page changes use a brief fade with up to 4dp vertical travel;
+- navigation transitions use a short Material fade;
+- `PressableScale` provides visible pressed feedback (subtle scale toward `0.975`) and light haptic feedback;
+- reduced-motion settings are read through `MediaQuery.disableAnimationsOf(context)` and switch transitions to an immediate state or zero duration.
+
+No layout animation should interfere with data entry. Scanner lifecycle behavior is unchanged: the camera stops after a result, when the scanner is left, when the app pauses, and on logout.
+
+## Scanner exception
+
+`ScanScreen` is intentionally different because it is a camera tool rather than a record surface. It is the only permanently dark screen: a black edge-to-edge camera preview, white viewfinder corners/laser, translucent black top controls, and a docked result sheet. Touch-to-focus and torch feedback may use bounded amber accents. Close, torch, and lens controls retain 48dp targets, Indonesian tooltips, and semantic labels; SafeArea protects the top controls and bottom inset.
+
+The scanner's translucent camera vignette is an exception to the otherwise flat, no-gradient product surfaces. Do not reuse its dark overlays, camera gradient, laser, or amber focus treatment in home, forms, cards, invoices, or navigation.
+
+## Accessibility and Android guarantees
+
+- Use Material semantics and visual focus order. Icon-only actions keep a `Tooltip` and a spoken label.
+- Keep minimum 48×48dp targets and 8dp separation, including scanner controls and navigation destinations.
+- Respect status/navigation bars, display cutouts, SafeArea, predictive/system Back, and IME insets.
+- Keep normal text contrast at least 4.5:1 and large text/essential boundaries at least 3:1.
+- Never communicate a state by color alone; pair semantic color with a label, icon, or supporting text.
+- Honor Android font scaling, including the 1.3 review target, without clipping or overlap.
+- Announce asynchronous failures and submission results; keep focus and error copy associated with the relevant field.
+
+## Implementation map and explicit bans
+
+- Theme and tokens: [`lib/app/app_theme.dart`](lib/app/app_theme.dart)
+- Role shell and transitions: [`lib/app/app.dart`](lib/app/app.dart)
+- Shared navigation, async feedback, press feedback, and condition semantics: [`lib/shared/`](lib/shared/)
+- Representative shipped surfaces: `lib/features/auth/`, `home/`, `maintenance/`, `components/`, `scan/`, `schedule/`, `history/`, and `invoices/`.
+
+Do not reintroduce:
+
+- copied web CSS, web font loading, responsive marketing/landing-page language, or a second token system;
+- crypto, Solana, wallet, iPhone mockup, product-hero, conversion, or other unrelated reference language;
+- gradients or dark surfaces outside the scanner exception;
+- magenta as a status, payment, connectivity, condition, success, warning, or danger signal;
+- raw per-screen font families, arbitrary typography scales, or duplicated visual constants when a Material role/token exists;
+- unverified production, deployment, benchmark, testimonial, or device-coverage claims.
+
+Indonesian product copy, gateway calls, data behavior, role permissions, and navigation destinations remain product truth and must not be changed to satisfy visual styling.
+
+## Verification and known visual limitation
+
+This document records the shipped Flutter code, not an unverified design intention. Code-level review covered the theme contract, shared components, role shell, feature screen families, status mappings, scanner lifecycle, Indonesian workflows, and accessibility hooks.
+
+The bounded Android visual review could not be completed: launching the Flutter app on Windows failed in the PTY with **error 193**. Consequently, no Android emulator screenshots were captured, no claim is made about device pixels or physical camera/barcode behavior, and the expected `.impeccable/review/android-phone*.png` evidence is absent. Emulator launch, normal/font-scale review, physical camera/barcode testing, production deployment/signing, real QA accounts, and cross-application interoperability remain release gates.
