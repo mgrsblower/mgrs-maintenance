@@ -80,14 +80,17 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
       final filtered = items.where((item) {
         final usable = item['boleh_dipakai']?.toString().trim().toLowerCase();
         final condition = item['kondisi']?.toString().trim().toLowerCase();
-        return (usable == 'ya' || usable == 'true') && condition != 'rusak berat';
+        return (usable == 'ya' || usable == 'true') &&
+            condition != 'rusak berat';
       }).toList();
       filtered.sort((a, b) {
         final stickerA = a['nomor_stiker']?.toString() ?? '';
         final stickerB = b['nomor_stiker']?.toString() ?? '';
         final countA = widget.usageCounts[stickerA] ?? 0;
         final countB = widget.usageCounts[stickerB] ?? 0;
-        return countA != countB ? countA.compareTo(countB) : stickerA.compareTo(stickerB);
+        return countA != countB
+            ? countA.compareTo(countB)
+            : stickerA.compareTo(stickerB);
       });
       if (mounted) {
         setState(() {
@@ -108,8 +111,12 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
   ({Color surface, Color ink}) _usageTone(BuildContext context, int count) {
     final operational = _operationalColors(context);
     final colors = Theme.of(context).colorScheme;
-    if (count <= 5) return (surface: operational.success, ink: operational.onSuccess);
-    if (count <= 15) return (surface: operational.warning, ink: operational.onWarning);
+    if (count <= 5) {
+      return (surface: operational.success, ink: operational.onSuccess);
+    }
+    if (count <= 15) {
+      return (surface: operational.warning, ink: operational.onWarning);
+    }
     return (surface: colors.surfaceContainer, ink: colors.onSurfaceVariant);
   }
 
@@ -119,9 +126,9 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
     final colors = theme.colorScheme;
     final displayedItems = _allComponents.where((item) {
       if (_searchQuery.isEmpty) return true;
-      return (item['nomor_stiker']?.toString() ?? '')
-          .toLowerCase()
-          .contains(_searchQuery.toLowerCase());
+      return (item['nomor_stiker']?.toString() ?? '').toLowerCase().contains(
+        _searchQuery.toLowerCase(),
+      );
     }).toList();
 
     return SafeArea(
@@ -143,7 +150,10 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Pilih ${widget.kind} Blower', style: theme.textTheme.titleLarge),
+                        Text(
+                          'Pilih ${widget.kind} Blower',
+                          style: theme.textTheme.titleLarge,
+                        ),
                         Text(
                           'Urutan atas adalah unit tersegar / paling jarang dipakai',
                           style: theme.textTheme.labelMedium,
@@ -160,7 +170,9 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppTokens.space16),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTokens.space16,
+              ),
               child: TextField(
                 controller: _searchCtrl,
                 decoration: InputDecoration(
@@ -177,7 +189,8 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
                           icon: const Icon(Icons.clear),
                         ),
                 ),
-                onChanged: (value) => setState(() => _searchQuery = value.trim()),
+                onChanged: (value) =>
+                    setState(() => _searchQuery = value.trim()),
               ),
             ),
             const SizedBox(height: AppTokens.space12),
@@ -186,93 +199,130 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _error != null
-                      ? _errorView(context)
-                      : displayedItems.isEmpty
-                          ? Center(
-                              child: Text(
-                                _searchQuery.isNotEmpty
-                                    ? 'Tidak ada ${widget.kind} dengan kode "$_searchQuery"'
-                                    : 'Belum ada data ${widget.kind} yang siap pakai',
-                                style: theme.textTheme.bodyMedium,
+                  ? _errorView(context)
+                  : displayedItems.isEmpty
+                  ? Center(
+                      child: Text(
+                        _searchQuery.isNotEmpty
+                            ? 'Tidak ada ${widget.kind} dengan kode "$_searchQuery"'
+                            : 'Belum ada data ${widget.kind} yang siap pakai',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppTokens.space16,
+                        vertical: AppTokens.space8,
+                      ),
+                      itemCount:
+                          displayedItems.length +
+                          (widget.currentSticker != null ? 1 : 0),
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(height: AppTokens.space8),
+                      itemBuilder: (context, index) {
+                        if (widget.currentSticker != null && index == 0) {
+                          return OutlinedButton.icon(
+                            onPressed: () => Navigator.of(context).pop(''),
+                            icon: Icon(
+                              Icons.remove_circle_outline,
+                              color: colors.error,
+                            ),
+                            label: const Text('Kosongkan Pilihan'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: colors.error,
+                              side: BorderSide(color: colors.error),
+                              alignment: Alignment.centerLeft,
+                            ),
+                          );
+                        }
+                        final item =
+                            displayedItems[widget.currentSticker != null
+                                ? index - 1
+                                : index];
+                        final sticker = item['nomor_stiker']?.toString() ?? '-';
+                        final condition = item['kondisi']?.toString() ?? 'OK';
+                        final count = widget.usageCounts[sticker] ?? 0;
+                        final selected = sticker == widget.currentSticker;
+                        final tone = _usageTone(context, count);
+                        return Material(
+                          color: colors.surface,
+                          child: InkWell(
+                            onTap: () => Navigator.of(context).pop(sticker),
+                            child: Container(
+                              constraints: const BoxConstraints(
+                                minHeight: AppTokens.minTouchTarget,
                               ),
-                            )
-                          : ListView.separated(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: AppTokens.space16,
-                                vertical: AppTokens.space8,
+                                horizontal: AppTokens.space12,
                               ),
-                              itemCount: displayedItems.length +
-                                  (widget.currentSticker != null ? 1 : 0),
-                              separatorBuilder: (_, _) => const SizedBox(height: AppTokens.space8),
-                              itemBuilder: (context, index) {
-                                if (widget.currentSticker != null && index == 0) {
-                                  return OutlinedButton.icon(
-                                    onPressed: () => Navigator.of(context).pop(''),
-                                    icon: Icon(Icons.remove_circle_outline, color: colors.error),
-                                    label: const Text('Kosongkan Pilihan'),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: colors.error,
-                                      side: BorderSide(color: colors.error),
-                                      alignment: Alignment.centerLeft,
-                                    ),
-                                  );
-                                }
-                                final item = displayedItems[
-                                  widget.currentSticker != null ? index - 1 : index
-                                ];
-                                final sticker = item['nomor_stiker']?.toString() ?? '-';
-                                final condition = item['kondisi']?.toString() ?? 'OK';
-                                final count = widget.usageCounts[sticker] ?? 0;
-                                final selected = sticker == widget.currentSticker;
-                                final tone = _usageTone(context, count);
-                                return Material(
-                                  color: colors.surface,
-                                  child: InkWell(
-                                    onTap: () => Navigator.of(context).pop(sticker),
-                                    child: Container(
-                                      constraints: const BoxConstraints(minHeight: AppTokens.minTouchTarget),
-                                      padding: const EdgeInsets.symmetric(horizontal: AppTokens.space12),
-                                      decoration: BoxDecoration(
-                                        color: selected ? colors.primaryContainer : colors.surface,
-                                        border: Border.all(
-                                          color: selected ? colors.primary : colors.outline,
+                              decoration: BoxDecoration(
+                                color: selected
+                                    ? colors.primaryContainer
+                                    : colors.surface,
+                                border: Border.all(
+                                  color: selected
+                                      ? colors.primary
+                                      : colors.outline,
+                                ),
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(AppTokens.controlRadius),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.qr_code_2,
+                                    color: selected
+                                        ? colors.primary
+                                        : colors.onSurfaceVariant,
+                                  ),
+                                  const SizedBox(width: AppTokens.space12),
+                                  Expanded(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          sticker,
+                                          style: theme.textTheme.titleMedium,
                                         ),
-                                        borderRadius: const BorderRadius.all(
-                                          Radius.circular(AppTokens.controlRadius),
+                                        Text(
+                                          'Kondisi: $condition',
+                                          style: theme.textTheme.labelMedium,
                                         ),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.qr_code_2, color: selected ? colors.primary : colors.onSurfaceVariant),
-                                          const SizedBox(width: AppTokens.space12),
-                                          Expanded(
-                                            child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(sticker, style: theme.textTheme.titleMedium),
-                                                Text('Kondisi: $condition', style: theme.textTheme.labelMedium),
-                                              ],
-                                            ),
-                                          ),
-                                          Chip(
-                                            label: Text('${count}x pakai'),
-                                            avatar: count <= 5 ? Icon(Icons.eco, size: AppTokens.space16, color: tone.ink) : null,
-                                            backgroundColor: tone.surface,
-                                            labelStyle: theme.textTheme.labelMedium?.copyWith(color: tone.ink),
-                                            side: BorderSide(color: tone.ink),
-                                          ),
-                                          if (selected) ...[
-                                            const SizedBox(width: AppTokens.space8),
-                                            Icon(Icons.check_circle, color: colors.primary),
-                                          ],
-                                        ],
-                                      ),
+                                      ],
                                     ),
                                   ),
-                                );
-                              },
+                                  Chip(
+                                    label: Text('${count}x pakai'),
+                                    avatar: count <= 5
+                                        ? Icon(
+                                            Icons.eco,
+                                            size: AppTokens.space16,
+                                            color: tone.ink,
+                                          )
+                                        : null,
+                                    backgroundColor: tone.surface,
+                                    labelStyle: theme.textTheme.labelMedium
+                                        ?.copyWith(color: tone.ink),
+                                    side: BorderSide(color: tone.ink),
+                                  ),
+                                  if (selected) ...[
+                                    const SizedBox(width: AppTokens.space8),
+                                    Icon(
+                                      Icons.check_circle,
+                                      color: colors.primary,
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ),
+                          ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -295,7 +345,10 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
               style: theme.textTheme.bodyMedium?.copyWith(color: colors.error),
             ),
             const SizedBox(height: AppTokens.space12),
-            OutlinedButton(onPressed: _loadComponents, child: const Text('Coba Lagi')),
+            OutlinedButton(
+              onPressed: _loadComponents,
+              child: const Text('Coba Lagi'),
+            ),
           ],
         ),
       ),

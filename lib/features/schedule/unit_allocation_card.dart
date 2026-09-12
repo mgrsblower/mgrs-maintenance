@@ -60,7 +60,9 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
 
   void _initUnits() {
     final existing = List<AllocatedUnit>.from(widget.order.allocatedUnits);
-    final targetCount = widget.order.jumlahUnit > 0 ? widget.order.jumlahUnit : 1;
+    final targetCount = widget.order.jumlahUnit > 0
+        ? widget.order.jumlahUnit
+        : 1;
     while (existing.length < targetCount) {
       existing.add(AllocatedUnit(unitIndex: existing.length + 1));
     }
@@ -89,9 +91,9 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
       widget.onAllocationChanged?.call(_units);
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal menyimpan unit: $error')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal menyimpan unit: $error')));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -119,17 +121,17 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
       final oldUnit = _units[unitIndex];
       _units[unitIndex] = switch (kind) {
         'Kepala' => oldUnit.copyWith(
-            kepalaSticker: cleanSelected,
-            clearKepala: cleanSelected == null,
-          ),
+          kepalaSticker: cleanSelected,
+          clearKepala: cleanSelected == null,
+        ),
         'Batang' => oldUnit.copyWith(
-            batangSticker: cleanSelected,
-            clearBatang: cleanSelected == null,
-          ),
+          batangSticker: cleanSelected,
+          clearBatang: cleanSelected == null,
+        ),
         'Tabung' => oldUnit.copyWith(
-            tabungSticker: cleanSelected,
-            clearTabung: cleanSelected == null,
-          ),
+          tabungSticker: cleanSelected,
+          clearTabung: cleanSelected == null,
+        ),
         _ => oldUnit,
       };
     });
@@ -159,9 +161,15 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
       final tabungList = await _fetchAvailableComponents('Tabung');
       final assignedStickers = <String>{};
       for (final unit in _units) {
-        if (unit.kepalaSticker != null) assignedStickers.add(unit.kepalaSticker!);
-        if (unit.batangSticker != null) assignedStickers.add(unit.batangSticker!);
-        if (unit.tabungSticker != null) assignedStickers.add(unit.tabungSticker!);
+        if (unit.kepalaSticker != null) {
+          assignedStickers.add(unit.kepalaSticker!);
+        }
+        if (unit.batangSticker != null) {
+          assignedStickers.add(unit.batangSticker!);
+        }
+        if (unit.tabungSticker != null) {
+          assignedStickers.add(unit.tabungSticker!);
+        }
       }
       final newUnits = List<AllocatedUnit>.from(_units);
       for (var index = 0; index < newUnits.length; index++) {
@@ -202,7 +210,9 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
       await _saveCurrentAllocation();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Berhasil mengisi unit dengan komponen tersegar!')),
+          const SnackBar(
+            content: Text('Berhasil mengisi unit dengan komponen tersegar!'),
+          ),
         );
       }
     } catch (error) {
@@ -221,14 +231,17 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
     final usable = raw.where((item) {
       final allowed = item['boleh_dipakai']?.toString().trim().toLowerCase();
       final condition = item['kondisi']?.toString().trim().toLowerCase();
-      return (allowed == 'ya' || allowed == 'true') && condition != 'rusak berat';
+      return (allowed == 'ya' || allowed == 'true') &&
+          condition != 'rusak berat';
     }).toList();
     usable.sort((a, b) {
       final stickerA = a['nomor_stiker']?.toString() ?? '';
       final stickerB = b['nomor_stiker']?.toString() ?? '';
       final countA = _usageCounts[stickerA] ?? 0;
       final countB = _usageCounts[stickerB] ?? 0;
-      return countA != countB ? countA.compareTo(countB) : stickerA.compareTo(stickerB);
+      return countA != countB
+          ? countA.compareTo(countB)
+          : stickerA.compareTo(stickerB);
     });
     return usable
         .map((item) => item['nomor_stiker']?.toString().trim() ?? '')
@@ -267,12 +280,17 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
                 ),
               ),
               const SizedBox(height: AppTokens.space12),
-              Text('Atau ketik kode stiker:', style: Theme.of(context).textTheme.labelMedium),
+              Text(
+                'Atau ketik kode stiker:',
+                style: Theme.of(context).textTheme.labelMedium,
+              ),
               const SizedBox(height: AppTokens.space8),
               TextField(
                 controller: textController,
                 textCapitalization: TextCapitalization.characters,
-                decoration: const InputDecoration(hintText: 'Contoh: K-01, B-02, T-03'),
+                decoration: const InputDecoration(
+                  hintText: 'Contoh: K-01, B-02, T-03',
+                ),
                 onSubmitted: (value) {
                   if (value.trim().isNotEmpty) {
                     Navigator.of(dialogContext).pop(value.trim().toUpperCase());
@@ -290,7 +308,9 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
           FilledButton(
             onPressed: () {
               if (textController.text.trim().isNotEmpty) {
-                Navigator.of(dialogContext).pop(textController.text.trim().toUpperCase());
+                Navigator.of(
+                  dialogContext,
+                ).pop(textController.text.trim().toUpperCase());
               }
             },
             child: const Text('Gunakan'),
@@ -307,13 +327,17 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
     final kind = code.startsWith('K')
         ? 'Kepala'
         : code.startsWith('B')
-            ? 'Batang'
-            : code.startsWith('T')
-                ? 'Tabung'
-                : null;
+        ? 'Batang'
+        : code.startsWith('T')
+        ? 'Tabung'
+        : null;
     if (kind == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Kode "$code" tidak dikenali. Format harus K-xx, B-xx, atau T-xx.')),
+        SnackBar(
+          content: Text(
+            'Kode "$code" tidak dikenali. Format harus K-xx, B-xx, atau T-xx.',
+          ),
+        ),
       );
       return;
     }
@@ -332,7 +356,9 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
     }
     if (targetIndex == -1) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Semua unit sudah memiliki komponen $kind ($code)')),
+        SnackBar(
+          content: Text('Semua unit sudah memiliki komponen $kind ($code)'),
+        ),
       );
       return;
     }
@@ -354,8 +380,12 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
   ({Color surface, Color ink}) _usageTone(BuildContext context, int count) {
     final operational = _operationalColors(context);
     final colors = Theme.of(context).colorScheme;
-    if (count <= 5) return (surface: operational.success, ink: operational.onSuccess);
-    if (count <= 15) return (surface: operational.warning, ink: operational.onWarning);
+    if (count <= 5) {
+      return (surface: operational.success, ink: operational.onSuccess);
+    }
+    if (count <= 15) {
+      return (surface: operational.warning, ink: operational.onWarning);
+    }
     return (surface: colors.surfaceContainer, ink: colors.onSurfaceVariant);
   }
 
@@ -376,7 +406,10 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
           children: [
             Row(
               children: [
-                Icon(Icons.inventory_2_outlined, color: colors.onSurfaceVariant),
+                Icon(
+                  Icons.inventory_2_outlined,
+                  color: colors.onSurfaceVariant,
+                ),
                 const SizedBox(width: AppTokens.space12),
                 Expanded(
                   child: Column(
@@ -385,7 +418,10 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
                       Row(
                         children: [
                           Expanded(
-                            child: Text('Alokasi Unit Blower', style: theme.textTheme.titleMedium),
+                            child: Text(
+                              'Alokasi Unit Blower',
+                              style: theme.textTheme.titleMedium,
+                            ),
                           ),
                           const Chip(label: Text('Opsional')),
                         ],
@@ -396,14 +432,18 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
                           color: complete
                               ? operational.onSuccess
                               : partial
-                                  ? operational.onWarning
-                                  : colors.onSurfaceVariant,
+                              ? operational.onWarning
+                              : colors.onSurfaceVariant,
                         ),
                       ),
                     ],
                   ),
                 ),
-                if (_isSaving) const SizedBox.square(dimension: 20, child: CircularProgressIndicator()),
+                if (_isSaving)
+                  const SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(),
+                  ),
               ],
             ),
             if (widget.isEditable) ...[
@@ -414,7 +454,10 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
                     child: OutlinedButton.icon(
                       onPressed: _isRecommending ? null : _applyRecommendation,
                       icon: _isRecommending
-                          ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
                           : const Icon(Icons.auto_awesome_rounded),
                       label: const Text('Rekomendasi Tersegar'),
                     ),
@@ -437,8 +480,10 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: _units.length,
-              separatorBuilder: (_, _) => const SizedBox(height: AppTokens.space12),
-              itemBuilder: (context, index) => _buildUnitItem(context, index, _units[index]),
+              separatorBuilder: (_, _) =>
+                  const SizedBox(height: AppTokens.space12),
+              itemBuilder: (context, index) =>
+                  _buildUnitItem(context, index, _units[index]),
             ),
           ],
         ),
@@ -453,25 +498,40 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
     final tone = unit.isComplete
         ? (surface: operational.success, ink: operational.onSuccess)
         : !unit.isEmpty
-            ? (surface: operational.warning, ink: operational.onWarning)
-            : (surface: colors.surfaceContainer, ink: colors.onSurfaceVariant);
+        ? (surface: operational.warning, ink: operational.onWarning)
+        : (surface: colors.surfaceContainer, ink: colors.onSurfaceVariant);
     return Container(
       padding: const EdgeInsets.all(AppTokens.space12),
       decoration: BoxDecoration(
         color: colors.surface,
         border: Border.all(color: colors.outline),
-        borderRadius: const BorderRadius.all(Radius.circular(AppTokens.controlRadius)),
+        borderRadius: const BorderRadius.all(
+          Radius.circular(AppTokens.controlRadius),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Expanded(child: Text('Unit ${index + 1}', style: theme.textTheme.titleMedium)),
+              Expanded(
+                child: Text(
+                  'Unit ${index + 1}',
+                  style: theme.textTheme.titleMedium,
+                ),
+              ),
               Chip(
-                label: Text(unit.isComplete ? 'Lengkap' : unit.isEmpty ? 'Kosong' : 'Sebagian'),
+                label: Text(
+                  unit.isComplete
+                      ? 'Lengkap'
+                      : unit.isEmpty
+                      ? 'Kosong'
+                      : 'Sebagian',
+                ),
                 backgroundColor: tone.surface,
-                labelStyle: theme.textTheme.labelMedium?.copyWith(color: tone.ink),
+                labelStyle: theme.textTheme.labelMedium?.copyWith(
+                  color: tone.ink,
+                ),
                 side: BorderSide(color: tone.ink),
               ),
             ],
@@ -479,11 +539,32 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
           const SizedBox(height: AppTokens.space8),
           Row(
             children: [
-              Expanded(child: _buildComponentSlot(context, index, 'Kepala', unit.kepalaSticker)),
+              Expanded(
+                child: _buildComponentSlot(
+                  context,
+                  index,
+                  'Kepala',
+                  unit.kepalaSticker,
+                ),
+              ),
               const SizedBox(width: AppTokens.space8),
-              Expanded(child: _buildComponentSlot(context, index, 'Batang', unit.batangSticker)),
+              Expanded(
+                child: _buildComponentSlot(
+                  context,
+                  index,
+                  'Batang',
+                  unit.batangSticker,
+                ),
+              ),
               const SizedBox(width: AppTokens.space8),
-              Expanded(child: _buildComponentSlot(context, index, 'Tabung', unit.tabungSticker)),
+              Expanded(
+                child: _buildComponentSlot(
+                  context,
+                  index,
+                  'Tabung',
+                  unit.tabungSticker,
+                ),
+              ),
             ],
           ),
         ],
@@ -504,14 +585,20 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
     final tone = count == null ? null : _usageTone(context, count);
     return InkWell(
       onTap: widget.isEditable ? () => _pickComponent(unitIndex, kind) : null,
-      borderRadius: const BorderRadius.all(Radius.circular(AppTokens.badgeRadius)),
+      borderRadius: const BorderRadius.all(
+        Radius.circular(AppTokens.badgeRadius),
+      ),
       child: Container(
         constraints: const BoxConstraints(minHeight: 72),
         padding: const EdgeInsets.all(AppTokens.space8),
         decoration: BoxDecoration(
           color: assigned ? colors.surface : colors.surfaceContainer,
-          border: Border.all(color: assigned ? colors.outline : colors.outlineVariant),
-          borderRadius: const BorderRadius.all(Radius.circular(AppTokens.badgeRadius)),
+          border: Border.all(
+            color: assigned ? colors.outline : colors.outlineVariant,
+          ),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(AppTokens.badgeRadius),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -521,13 +608,22 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
             if (assigned) ...[
               Row(
                 children: [
-                  Expanded(child: Text(sticker!, style: theme.textTheme.titleMedium, overflow: TextOverflow.ellipsis)),
+                  Expanded(
+                    child: Text(
+                      sticker!,
+                      style: theme.textTheme.titleMedium,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                   if (widget.isEditable)
                     IconButton(
                       tooltip: 'Kosongkan $kind',
                       onPressed: () => _clearComponent(unitIndex, kind),
                       icon: const Icon(Icons.close),
-                      constraints: const BoxConstraints(minWidth: AppTokens.minTouchTarget, minHeight: AppTokens.minTouchTarget),
+                      constraints: const BoxConstraints(
+                        minWidth: AppTokens.minTouchTarget,
+                        minHeight: AppTokens.minTouchTarget,
+                      ),
                       padding: EdgeInsets.zero,
                     ),
                 ],
@@ -536,16 +632,27 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
                 Chip(
                   label: Text('${count}x pakai'),
                   backgroundColor: tone!.surface,
-                  labelStyle: theme.textTheme.labelMedium?.copyWith(color: tone.ink),
+                  labelStyle: theme.textTheme.labelMedium?.copyWith(
+                    color: tone.ink,
+                  ),
                   side: BorderSide(color: tone.ink),
                 ),
             ] else
               Row(
                 children: [
                   if (widget.isEditable) ...[
-                    Icon(Icons.add, size: AppTokens.space16, color: colors.primary),
+                    Icon(
+                      Icons.add,
+                      size: AppTokens.space16,
+                      color: colors.primary,
+                    ),
                     const SizedBox(width: AppTokens.space4),
-                    Text('Pilih', style: theme.textTheme.labelLarge?.copyWith(color: colors.primary)),
+                    Text(
+                      'Pilih',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: colors.primary,
+                      ),
+                    ),
                   ] else
                     Text('-', style: theme.textTheme.labelMedium),
                 ],

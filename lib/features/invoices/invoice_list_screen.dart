@@ -6,6 +6,19 @@ import 'invoice_builder_dialog.dart';
 import 'invoice_model.dart';
 import 'quick_payment_dialog.dart';
 
+const _fallbackOperationalColors = OperationalColors(
+  success: AppTokens.successSurface,
+  onSuccess: AppTokens.success,
+  warning: AppTokens.warningSurface,
+  onWarning: AppTokens.warning,
+  danger: AppTokens.dangerSurface,
+  onDanger: AppTokens.danger,
+);
+
+OperationalColors _operationalColors(BuildContext context) =>
+    Theme.of(context).extension<OperationalColors>() ??
+    _fallbackOperationalColors;
+
 enum InvoiceSourceFilter { automatic, manual }
 
 class InvoiceListScreen extends StatefulWidget {
@@ -50,7 +63,9 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
       _error = null;
     });
     try {
-      final list = await widget.gateway.fetchInvoices(forceRefresh: forceRefresh);
+      final list = await widget.gateway.fetchInvoices(
+        forceRefresh: forceRefresh,
+      );
       if (!mounted) return;
       setState(() {
         _allInvoices = list;
@@ -72,7 +87,8 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
           ? invoice.invoiceSource != 'manual_reimbursement'
           : invoice.invoiceSource == 'manual_reimbursement';
       if (!sourceMatches) return false;
-      if (widget.fromOrderanId != null && invoice.orderanId != widget.fromOrderanId) {
+      if (widget.fromOrderanId != null &&
+          invoice.orderanId != widget.fromOrderanId) {
         return false;
       }
       if (_paymentFilter != null && invoice.paymentStatus != _paymentFilter) {
@@ -127,19 +143,39 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(AppTokens.space16, AppTokens.space16, AppTokens.space16, AppTokens.space12),
+              padding: const EdgeInsets.fromLTRB(
+                AppTokens.space16,
+                AppTokens.space16,
+                AppTokens.space16,
+                AppTokens.space12,
+              ),
               child: _buildHeader(context),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(AppTokens.space16, 0, AppTokens.space16, AppTokens.space8),
+              padding: const EdgeInsets.fromLTRB(
+                AppTokens.space16,
+                0,
+                AppTokens.space16,
+                AppTokens.space8,
+              ),
               child: _buildSourceSwitch(context),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(AppTokens.space16, 0, AppTokens.space16, AppTokens.space8),
+              padding: const EdgeInsets.fromLTRB(
+                AppTokens.space16,
+                0,
+                AppTokens.space16,
+                AppTokens.space8,
+              ),
               child: _buildSearchBar(context),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(AppTokens.space16, 0, AppTokens.space16, AppTokens.space12),
+              padding: const EdgeInsets.fromLTRB(
+                AppTokens.space16,
+                0,
+                AppTokens.space16,
+                AppTokens.space12,
+              ),
               child: _buildStatusFilterTabs(context),
             ),
             Expanded(
@@ -165,13 +201,17 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.fromOrderanId != null ? 'Invoice #${widget.fromOrderanId}' : 'Daftar Invoice & Tagihan',
+                widget.fromOrderanId != null
+                    ? 'Invoice #${widget.fromOrderanId}'
+                    : 'Daftar Invoice & Tagihan',
                 style: theme.textTheme.headlineSmall,
               ),
               const SizedBox(height: AppTokens.space4),
               Text(
                 'Kelola penagihan sewa blower',
-                style: theme.textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -205,7 +245,8 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
         ],
         selected: {_sourceFilter},
         showSelectedIcon: false,
-        onSelectionChanged: (selection) => setState(() => _sourceFilter = selection.first),
+        onSelectionChanged: (selection) =>
+            setState(() => _sourceFilter = selection.first),
       ),
     );
   }
@@ -248,14 +289,22 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
             ChoiceChip(
               label: Text(filters[index].label),
               selected: _paymentFilter == filters[index].status,
-              onSelected: (_) => setState(() => _paymentFilter = filters[index].status),
+              onSelected: (_) =>
+                  setState(() => _paymentFilter = filters[index].status),
               selectedColor: colors.secondaryContainer,
               labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: _paymentFilter == filters[index].status ? colors.onSecondaryContainer : colors.onSurfaceVariant,
+                color: _paymentFilter == filters[index].status
+                    ? colors.onSecondaryContainer
+                    : colors.onSurfaceVariant,
               ),
-              side: BorderSide(color: _paymentFilter == filters[index].status ? colors.secondary : colors.outline),
+              side: BorderSide(
+                color: _paymentFilter == filters[index].status
+                    ? colors.secondary
+                    : colors.outline,
+              ),
             ),
-            if (index < filters.length - 1) const SizedBox(width: AppTokens.space8),
+            if (index < filters.length - 1)
+              const SizedBox(width: AppTokens.space8),
           ],
         ],
       ),
@@ -280,11 +329,24 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.error_outline_rounded, size: 40, color: colors.error),
+                    Icon(
+                      Icons.error_outline_rounded,
+                      size: 40,
+                      color: colors.error,
+                    ),
                     const SizedBox(height: AppTokens.space12),
-                    Text(_error!, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant)),
+                    Text(
+                      _error!,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
                     const SizedBox(height: AppTokens.space16),
-                    OutlinedButton(onPressed: () => _loadInvoices(forceRefresh: true), child: const Text('Coba Lagi')),
+                    OutlinedButton(
+                      onPressed: () => _loadInvoices(forceRefresh: true),
+                      child: const Text('Coba Lagi'),
+                    ),
                   ],
                 ),
               ),
@@ -305,9 +367,16 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.receipt_long_outlined, size: 40, color: colors.outline),
+                  Icon(
+                    Icons.receipt_long_outlined,
+                    size: 40,
+                    color: colors.outline,
+                  ),
                   const SizedBox(height: AppTokens.space12),
-                  Text('Tidak ada invoice yang sesuai.', style: theme.textTheme.titleSmall),
+                  Text(
+                    'Tidak ada invoice yang sesuai.',
+                    style: theme.textTheme.titleSmall,
+                  ),
                 ],
               ),
             ),
@@ -318,26 +387,49 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
 
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(AppTokens.space16, AppTokens.space4, AppTokens.space16, 110),
+      padding: const EdgeInsets.fromLTRB(
+        AppTokens.space16,
+        AppTokens.space4,
+        AppTokens.space16,
+        110,
+      ),
       itemCount: invoices.length,
       itemBuilder: (_, index) => _buildInvoiceCard(context, invoices[index]),
     );
   }
 
-  ({Color background, Color foreground, String label}) _paymentBadge(BuildContext context, InvoiceRecord invoice) {
+  ({Color background, Color foreground, String label}) _paymentBadge(
+    BuildContext context,
+    InvoiceRecord invoice,
+  ) {
     final colors = Theme.of(context).colorScheme;
     final operational = _operationalColors(context);
     if (invoice.paymentStatus == InvoicePaymentStatus.paid) {
-      return (background: operational.success, foreground: operational.onSuccess, label: invoice.paymentStatusDisplay);
+      return (
+        background: operational.success,
+        foreground: operational.onSuccess,
+        label: invoice.paymentStatusDisplay,
+      );
     }
     if (invoice.paymentStatus == InvoicePaymentStatus.partial) {
-      return (background: operational.warning, foreground: operational.onWarning, label: invoice.paymentStatusDisplay);
+      return (
+        background: operational.warning,
+        foreground: operational.onWarning,
+        label: invoice.paymentStatusDisplay,
+      );
     }
     if (invoice.paymentStatus == InvoicePaymentStatus.cancelled) {
-      return (background: operational.danger, foreground: operational.onDanger, label: invoice.paymentStatusDisplay);
+      return (
+        background: operational.danger,
+        foreground: operational.onDanger,
+        label: invoice.paymentStatusDisplay,
+      );
     }
     final dueDate = DateTime.tryParse(invoice.dueDate);
-    final overdue = dueDate != null && dueDate.isBefore(DateTime.now()) && invoice.remainingAmount > 0;
+    final overdue =
+        dueDate != null &&
+        dueDate.isBefore(DateTime.now()) &&
+        invoice.remainingAmount > 0;
     return (
       background: overdue ? operational.danger : colors.surfaceContainerHighest,
       foreground: overdue ? operational.onDanger : colors.onSurfaceVariant,
@@ -360,30 +452,56 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Text.rich(
-                    TextSpan(
-                      text: item.invoiceReference,
-                      children: [
-                        TextSpan(text: ' • ${item.quantity} Unit', style: TextStyle(color: colors.onSurfaceVariant)),
-                      ],
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelLarge,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.invoiceReference,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelLarge,
+                        ),
+                      ),
+                      const SizedBox(width: AppTokens.space8),
+                      Text(
+                        '• ${item.quantity} Unit',
+                        style: theme.textTheme.labelMedium,
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: AppTokens.space8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: AppTokens.space8, vertical: AppTokens.space4),
-                  decoration: BoxDecoration(color: badge.background, borderRadius: BorderRadius.circular(AppTokens.badgeRadius)),
-                  child: Text(badge.label, style: theme.textTheme.labelSmall?.copyWith(color: badge.foreground, fontWeight: FontWeight.w700)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTokens.space8,
+                    vertical: AppTokens.space4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: badge.background,
+                    borderRadius: BorderRadius.circular(AppTokens.badgeRadius),
+                  ),
+                  child: Text(
+                    badge.label,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: badge.foreground,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: AppTokens.space12),
-            Text(item.customerName.isNotEmpty ? item.customerName : 'Klien MGRS', style: theme.textTheme.titleMedium),
+            Text(
+              item.customerName.isNotEmpty ? item.customerName : 'Klien MGRS',
+              style: theme.textTheme.titleMedium,
+            ),
             const SizedBox(height: AppTokens.space4),
-            Text(item.productName, style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant)),
+            Text(
+              item.productName,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: AppTokens.space12),
             const Divider(),
             const SizedBox(height: AppTokens.space8),
@@ -393,9 +511,16 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
                   child: Text.rich(
                     TextSpan(
                       text: 'Total\n',
-                      children: [TextSpan(text: item.totalAmountFormatted, style: theme.textTheme.labelLarge)],
+                      children: [
+                        TextSpan(
+                          text: item.totalAmountFormatted,
+                          style: theme.textTheme.labelLarge,
+                        ),
+                      ],
                     ),
-                    style: theme.textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
                   ),
                 ),
                 Text.rich(
@@ -403,22 +528,30 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
                     text: item.remainingAmount > 0 ? 'Sisa\n' : 'Status\n',
                     children: [
                       TextSpan(
-                        text: item.remainingAmount > 0 ? item.remainingAmountFormatted : 'Lunas',
+                        text: item.remainingAmount > 0
+                            ? item.remainingAmountFormatted
+                            : 'Lunas',
                         style: theme.textTheme.labelLarge?.copyWith(
-                          color: item.remainingAmount > 0 ? badge.foreground : operationalOnSuccess(context),
+                          color: item.remainingAmount > 0
+                              ? badge.foreground
+                              : operationalOnSuccess(context),
                         ),
                       ),
                     ],
                   ),
                   textAlign: TextAlign.right,
-                  style: theme.textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: AppTokens.space8),
             Text(
               '${item.formattedInvoiceDate} (${item.rentalDays} Hari)${item.orderanId != null && item.orderanId!.isNotEmpty ? ' • #${item.orderanId}' : ''}',
-              style: theme.textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: AppTokens.space12),
             Wrap(
@@ -449,7 +582,8 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
     );
   }
 
-  Color operationalOnSuccess(BuildContext context) => _operationalColors(context).onSuccess;
+  Color operationalOnSuccess(BuildContext context) =>
+      _operationalColors(context).onSuccess;
 
   Future<void> _confirmDeleteInvoice(InvoiceRecord item) async {
     final colors = Theme.of(context).colorScheme;
@@ -457,9 +591,14 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Hapus Invoice?'),
-        content: Text('Invoice ${item.invoiceReference} (${item.customerName}) akan dihapus secara permanen.'),
+        content: Text(
+          'Invoice ${item.invoiceReference} (${item.customerName}) akan dihapus secara permanen.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Batal'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: FilledButton.styleFrom(backgroundColor: colors.error),
@@ -473,11 +612,17 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
     try {
       await widget.gateway.deleteInvoice(item.id);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Invoice ${item.invoiceReference} berhasil dihapus.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Invoice ${item.invoiceReference} berhasil dihapus.'),
+        ),
+      );
       _loadInvoices(forceRefresh: true);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(failureMessage(error))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(failureMessage(error))));
     }
   }
 }
