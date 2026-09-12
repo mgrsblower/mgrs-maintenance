@@ -294,19 +294,26 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             children: [
               PressableScale(
                 onTap: () => Navigator.of(context).pop(),
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.chevron_left_rounded,
-                      color: Color(0xFF0F172A),
-                      size: 22,
+                child: Semantics(
+                  button: true,
+                  label: 'Kembali',
+                  child: Tooltip(
+                    message: 'Kembali',
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.chevron_left_rounded,
+                          color: Color(0xFF0F172A),
+                          size: 24,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -565,22 +572,27 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               InkWell(
                 onTap: value > min ? () => onChanged(value - 1) : null,
                 borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: value > min ? Colors.white : const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: const Color(0xFFE2E8F0),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                  child: Center(
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: value > min ? Colors.white : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFFE2E8F0),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.remove_rounded,
+                        size: 18,
+                        color: value > min
+                            ? const Color(0xFF0F172A)
+                            : const Color(0xFF94A3B8),
+                      ),
                     ),
-                  ),
-                  child: Icon(
-                    Icons.remove_rounded,
-                    size: 18,
-                    color: value > min
-                        ? const Color(0xFF0F172A)
-                        : const Color(0xFF94A3B8),
                   ),
                 ),
               ),
@@ -596,22 +608,27 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               InkWell(
                 onTap: value < max ? () => onChanged(value + 1) : null,
                 borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: value < max ? Colors.white : const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: const Color(0xFFE2E8F0),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                  child: Center(
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: value < max ? Colors.white : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFFE2E8F0),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.add_rounded,
+                        size: 18,
+                        color: value < max
+                            ? const Color(0xFF0F172A)
+                            : const Color(0xFF94A3B8),
+                      ),
                     ),
-                  ),
-                  child: Icon(
-                    Icons.add_rounded,
-                    size: 18,
-                    color: value < max
-                        ? const Color(0xFF0F172A)
-                        : const Color(0xFF94A3B8),
                   ),
                 ),
               ),

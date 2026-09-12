@@ -191,26 +191,32 @@ class StatePanel extends StatelessWidget {
   final bool showProgress;
 
   @override
-  Widget build(BuildContext context) => PageBody(
-    children: [
-      const SizedBox(height: 32),
-      ExcludeSemantics(child: Icon(icon, size: 40)),
-      if (showProgress) ...[
-        const SizedBox(height: 16),
-        const Center(child: CircularProgressIndicator()),
-      ],
-      const SizedBox(height: 16),
-      Text(
-        title,
-        textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.titleMedium,
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: AppTokens.space),
+    child: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 16),
+          ExcludeSemantics(child: Icon(icon, size: 40)),
+          if (showProgress) ...[
+            const SizedBox(height: 16),
+            const Center(child: CircularProgressIndicator()),
+          ],
+          const SizedBox(height: 16),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          if (message != null) ...[
+            const SizedBox(height: 8),
+            Text(message!, textAlign: TextAlign.center),
+          ],
+          if (action != null) ...[const SizedBox(height: 16), action!],
+        ],
       ),
-      if (message != null) ...[
-        const SizedBox(height: 8),
-        Text(message!, textAlign: TextAlign.center),
-      ],
-      if (action != null) ...[const SizedBox(height: 16), action!],
-    ],
+    ),
   );
 }
 

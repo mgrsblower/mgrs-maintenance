@@ -190,20 +190,27 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        GestureDetector(
+        PressableScale(
           onTap: () => Navigator.pop(context),
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: const BoxDecoration(
-              color: Color(0xFFF1F5F9),
-              shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.chevron_left_rounded,
-                color: Color(0xFF0F172A),
-                size: 24,
+          child: Semantics(
+            button: true,
+            label: 'Kembali',
+            child: Tooltip(
+              message: 'Kembali',
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF1F5F9),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.chevron_left_rounded,
+                    color: Color(0xFF0F172A),
+                    size: 24,
+                  ),
+                ),
               ),
             ),
           ),
@@ -219,9 +226,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         ),
         if (canManage)
           PopupMenuButton<String>(
+            tooltip: 'Opsi order',
             icon: Container(
-              width: 40,
-              height: 40,
+              width: 48,
+              height: 48,
               decoration: const BoxDecoration(
                 color: Color(0xFFF1F5F9),
                 shape: BoxShape.circle,
@@ -1389,7 +1397,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       icon: const Icon(Icons.payments_outlined, size: 15),
                       label: const Text('Atur Bayar', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        minimumSize: const Size(0, 48),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                     ),
@@ -1414,7 +1422,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     label: const Text('Buka Invoice', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFF0F172A),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      minimumSize: const Size(0, 48),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
@@ -1473,6 +1481,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 icon: const Icon(Icons.add_rounded, size: 16),
                 label: const Text('Terbitkan Invoice untuk Order Ini', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                 style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 48),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),

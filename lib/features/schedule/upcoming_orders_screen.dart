@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../app/gateway.dart';
+import '../../shared/async_state_view.dart';
 import '../../shared/pressable.dart';
 import 'create_order_screen.dart';
 import 'order_detail_screen.dart';
@@ -24,7 +25,7 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
   List<OrderanSewa> orders = [];
   String activeFilter = 'Semua';
   bool isLoading = true;
-  String? error;
+  Object? error;
 
   @override
   void initState() {
@@ -52,10 +53,10 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
           isLoading = false;
         });
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         setState(() {
-          error = 'Daftar orderan belum dapat dimuat. Periksa koneksi internet lalu coba lagi.';
+          error = e;
           isLoading = false;
         });
       }
@@ -242,19 +243,26 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
               if (canPop) ...[
                 PressableScale(
                   onTap: () => Navigator.pop(context),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.chevron_left_rounded,
-                        color: Color(0xFF0F172A),
-                        size: 24,
+                  child: Semantics(
+                    button: true,
+                    label: 'Kembali',
+                    child: Tooltip(
+                      message: 'Kembali',
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.chevron_left_rounded,
+                            color: Color(0xFF0F172A),
+                            size: 24,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -292,11 +300,12 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
             PressableScale(
               onTap: _openCreateOrder,
               child: Container(
+                height: 48,
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
                   color: const Color(0xFF147CC1),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
                       color: const Color(0xFF147CC1).withValues(alpha: 0.25),
@@ -308,13 +317,13 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.add_rounded, size: 16, color: Colors.white),
+                    Icon(Icons.add_rounded, size: 18, color: Colors.white),
                     SizedBox(width: 4),
                     Text(
                       'Orderan Baru',
                       style: TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 12,
+                        fontSize: 12.5,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
@@ -326,19 +335,26 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
           else
             PressableScale(
               onTap: loadOrders,
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.refresh_rounded,
-                    color: Color(0xFF0F172A),
-                    size: 18,
+              child: Semantics(
+                button: true,
+                label: 'Muat ulang',
+                child: Tooltip(
+                  message: 'Muat ulang',
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.refresh_rounded,
+                        color: Color(0xFF0F172A),
+                        size: 20,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -725,38 +741,11 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       children: const [
-        SizedBox(height: 80),
-        Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.event_busy_rounded, size: 48, color: Color(0xFF94A3B8)),
-              SizedBox(height: 14),
-              Text(
-                'Belum Ada Orderan Mendatang',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              SizedBox(height: 6),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 40),
-                child: Text(
-                  'Daftar orderan sewa akan otomatis muncul saat jadwal pemasangan dibuat.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 12,
-                    color: Color(0xFF64748B),
-                    height: 1.4,
-                  ),
-                ),
-              ),
-            ],
-          ),
+        SizedBox(height: 60),
+        EmptyStateView(
+          title: 'Belum Ada Orderan Mendatang',
+          message:
+              'Daftar orderan sewa akan otomatis muncul saat jadwal pemasangan dibuat.',
         ),
       ],
     );
@@ -766,35 +755,10 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline_rounded,
-                size: 40, color: Color(0xFFDC2626)),
-            const SizedBox(height: 12),
-            Text(
-              error ?? 'Terjadi kesalahan saat memuat data',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF991B1B),
-              ),
-            ),
-            const SizedBox(height: 14),
-            ElevatedButton(
-              onPressed: loadOrders,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF147CC1),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: const Text('Coba Lagi'),
-            ),
-          ],
+        child: ErrorStateView(
+          error: error ??
+              'Daftar orderan belum dapat dimuat. Periksa koneksi internet lalu coba lagi.',
+          onRetry: loadOrders,
         ),
       ),
     );

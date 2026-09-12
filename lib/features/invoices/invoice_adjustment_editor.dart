@@ -26,6 +26,7 @@ class InvoiceAdjustmentEditor extends StatelessWidget {
       key: Key('invoice-adjustment-remove-$index'),
       onPressed: readOnly || !canRemove ? null : onRemove,
       tooltip: 'Hapus penyesuaian',
+      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
       icon: const Icon(Icons.remove_circle_outline_rounded, color: Color(0xFFDC2626)),
     );
 

@@ -152,8 +152,11 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
                   IconButton(
                     icon: const Icon(Icons.close_rounded,
                         size: 20, color: Color(0xFF71717A)),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                    tooltip: 'Tutup',
+                    constraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -296,7 +299,7 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
               // Save Button
               SizedBox(
                 width: double.infinity,
-                height: 38,
+                height: 48,
                 child: FilledButton(
                   onPressed: _isSaving ? null : _submit,
                   style: FilledButton.styleFrom(

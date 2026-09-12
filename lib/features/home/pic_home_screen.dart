@@ -80,34 +80,14 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
   }
 
   Widget _ordersState(BuildContext context) {
-    return FutureBuilder<List<OrderanSewa>>(
+    return AsyncStateView<List<OrderanSewa>>(
       future: _orders,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-        if (snapshot.hasError) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(failureMessage(snapshot.error)),
-              const SizedBox(height: 12),
-              OutlinedButton(
-                onPressed: _retry,
-                child: const Text('Coba lagi'),
-              ),
-            ],
-          );
-        }
-        final orders = snapshot.data ?? const <OrderanSewa>[];
-        if (orders.isEmpty) {
-          return const Text('Belum ada orderan yang perlu ditindaklanjuti.');
-        }
-        return _orderList(context, orders);
-      },
+      retry: _retry,
+      empty: () => const EmptyStateView(
+        title: 'Belum ada orderan',
+        message: 'Belum ada orderan yang perlu ditindaklanjuti.',
+      ),
+      builder: (orders) => _orderList(context, orders),
     );
   }
 

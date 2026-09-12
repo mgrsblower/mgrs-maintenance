@@ -190,6 +190,11 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                   IconButton(
                     icon: const Icon(Icons.close_rounded,
                         size: 20, color: Color(0xFF64748B)),
+                    tooltip: 'Tutup',
+                    constraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -505,7 +510,7 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
               // Submit Button
               SizedBox(
                 width: double.infinity,
-                height: 44,
+                height: 48,
                 child: FilledButton(
                   onPressed: _isSubmitting ? null : _submit,
                   style: FilledButton.styleFrom(
