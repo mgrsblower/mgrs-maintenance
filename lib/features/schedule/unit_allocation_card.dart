@@ -404,6 +404,33 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (widget.isEditable) ...[
+              const SizedBox(height: AppTokens.space12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _isRecommending ? null : _applyRecommendation,
+                      icon: _isRecommending
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.auto_awesome_rounded),
+                      label: const Text('Rekomendasi Tersegar'),
+                    ),
+                  ),
+                  const SizedBox(width: AppTokens.space8),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: _showScanDialog,
+                      icon: const Icon(Icons.qr_code_scanner_rounded),
+                      label: const Text('Scan Barcode'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             Row(
               children: [
                 Icon(
@@ -446,33 +473,6 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
                   ),
               ],
             ),
-            if (widget.isEditable) ...[
-              const SizedBox(height: AppTokens.space12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _isRecommending ? null : _applyRecommendation,
-                      icon: _isRecommending
-                          ? const SizedBox.square(
-                              dimension: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.auto_awesome_rounded),
-                      label: const Text('Rekomendasi Tersegar'),
-                    ),
-                  ),
-                  const SizedBox(width: AppTokens.space8),
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: _showScanDialog,
-                      icon: const Icon(Icons.qr_code_scanner_rounded),
-                      label: const Text('Scan Barcode'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
             const SizedBox(height: AppTokens.space12),
             const Divider(),
             const SizedBox(height: AppTokens.space12),
