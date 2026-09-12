@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../../app/gateway.dart';
-import '../../shared/pressable.dart';
+import '../../app/app_theme.dart';
 import '../components/component.dart';
 import 'submission_controller.dart';
 
@@ -214,7 +214,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
         if (!didPop) leave();
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
+        backgroundColor: AppTokens.porcelain,
         body: SafeArea(
           child: Column(
             children: [
@@ -290,7 +290,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                 Text(
                   widget.service ? 'Catat Servis' : 'Perbarui Kondisi',
                   style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFF0F172A),
@@ -302,7 +301,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                       ? 'Tindakan Perbaikan Fisik Unit'
                       : 'Pemeriksaan Rutin & Berkala',
                   style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: Color(0xFF64748B),
@@ -315,7 +313,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: widget.service ? const Color(0xFFEFF6FF) : const Color(0xFFF0FDF4),
+            color: widget.service ? AppTokens.mistLight : const Color(0xFFF0FDF4),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
@@ -324,16 +322,15 @@ class _CheckingScreenState extends State<CheckingScreen> {
               CircleAvatar(
                 radius: 3,
                 backgroundColor:
-                    widget.service ? const Color(0xFF2563EB) : const Color(0xFF16A34A),
+                    widget.service ? AppTokens.magenta : const Color(0xFF16A34A),
               ),
               const SizedBox(width: 5),
               Text(
                 widget.service ? 'Perbaikan' : 'Rutin',
                 style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: widget.service ? const Color(0xFF2563EB) : const Color(0xFF15803D),
+                  color: widget.service ? AppTokens.magenta : const Color(0xFF15803D),
                 ),
               ),
             ],
@@ -363,7 +360,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                 decoration: BoxDecoration(
                   color: widget.service
                       ? const Color(0xFFFEF2F2)
-                      : const Color(0xFFEFF6FF),
+                      : AppTokens.mistLight,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
@@ -373,7 +370,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                         : Icons.check_circle_outline,
                     color: widget.service
                         ? const Color(0xFFEF4444)
-                        : const Color(0xFF2563EB),
+                        : AppTokens.magenta,
                     size: 22,
                   ),
                 ),
@@ -385,7 +382,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   Text(
                     component.code,
                     style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF0F172A),
@@ -395,7 +391,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   Text(
                     'Komponen ${component.kind} Utama • MGRS',
                     style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       color: Color(0xFF64748B),
@@ -418,7 +413,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                 child: const Text(
                   'Ganti',
                   style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF475569),
@@ -436,7 +430,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
               child: const Text(
                 'Rusak',
                 style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFFDC2626),
@@ -466,7 +459,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
               Text(
                 'Status Kondisi Hasil Cek *',
                 style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                   color: Color(0xFF0F172A),
@@ -475,10 +467,8 @@ class _CheckingScreenState extends State<CheckingScreen> {
               Text(
                 'Wajib Diisi',
                 style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF2563EB),
+                  color: AppTokens.magenta,
                 ),
               ),
             ],
@@ -583,7 +573,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   Text(
                     title,
                     style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF0F172A),
@@ -593,7 +582,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   Text(
                     description,
                     style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                       color: Color(0xFF64748B),
@@ -624,7 +612,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
           const Text(
             'Catatan Pemeriksaan (Opsional)',
             style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
               fontSize: 14,
               fontWeight: FontWeight.w700,
               color: Color(0xFF0F172A),
@@ -634,7 +621,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
+              color: AppTokens.porcelain,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
@@ -642,7 +629,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
               controller: note,
               maxLines: 4,
               style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
                 fontSize: 13,
                 color: Color(0xFF334155),
                 height: 1.45,
@@ -651,7 +637,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                 hintText:
                     'Kondisi katup & konektor bersih, segel utuh tanpa indikasi keausan mekanis, siap digunakan.',
                 hintStyle: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
                   fontSize: 13,
                   color: Color(0xFF94A3B8),
                 ),
@@ -688,7 +673,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   Text(
                     'Masalah / Kendala Fisik *',
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF0F172A),
@@ -697,10 +681,9 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   Text(
                     'Wajib Diisi',
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF2563EB),
+                      color: AppTokens.magenta,
                     ),
                   ),
                 ],
@@ -709,7 +692,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: AppTokens.porcelain,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
@@ -717,7 +700,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   controller: problem,
                   maxLines: 3,
                   style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
                     fontSize: 13,
                     color: Color(0xFF334155),
                     height: 1.45,
@@ -752,7 +734,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   Text(
                     'Tindakan Perbaikan yang Dilakukan *',
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF0F172A),
@@ -761,10 +742,9 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   Text(
                     'Wajib Diisi',
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF2563EB),
+                      color: AppTokens.magenta,
                     ),
                   ),
                 ],
@@ -773,7 +753,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
+                  color: AppTokens.porcelain,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
@@ -781,7 +761,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   controller: action,
                   maxLines: 4,
                   style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
                     fontSize: 13,
                     color: Color(0xFF334155),
                     height: 1.45,
@@ -816,7 +795,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   Text(
                     'Kondisi Hasil Setelah Servis *',
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF0F172A),
@@ -825,10 +803,9 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   Text(
                     'Wajib Diisi',
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF2563EB),
+                      color: AppTokens.magenta,
                     ),
                   ),
                 ],
@@ -889,13 +866,13 @@ class _CheckingScreenState extends State<CheckingScreen> {
             decoration: BoxDecoration(
               color: blocked
                   ? const Color(0xFF94A3B8)
-                  : const Color(0xFF147CC1),
+              : AppTokens.magenta,
               borderRadius: BorderRadius.circular(14),
               boxShadow: blocked
                   ? null
                   : const [
                       BoxShadow(
-                        color: Color(0x25147CC1),
+                        color: AppTokens.magenta.withValues(alpha: 0.2),
                         blurRadius: 10,
                         offset: Offset(0, 3),
                       ),
@@ -927,7 +904,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                           ? 'Simpan & Selesaikan Servis'
                           : 'Simpan & Selesaikan Tugas',
                   style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -972,7 +948,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                           ? 'Koneksi Terputus / Tidak Stabil'
                           : 'Gagal Menyimpan Data',
                   style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
                     color: Color(0xFFB91C1C),
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
@@ -985,7 +960,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
           Text(
             failureMessage(err),
             style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
               color: Color(0xFF7F1D1D),
               fontSize: 12,
               height: 1.4,
@@ -1002,7 +976,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   label: const Text(
                     'Perbarui Data Unit',
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1025,7 +998,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   label: const Text(
                     'Coba Kirim Ulang',
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -1104,7 +1076,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                 : 'Pemeriksaan Berhasil!',
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
               fontSize: 19,
               fontWeight: FontWeight.w800,
               color: Color(0xFF0F172A),
@@ -1118,7 +1089,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                 : 'Pemeriksaan rutin telah berhasil disimpan ke sistem MGRS.',
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
               fontSize: 13,
               fontWeight: FontWeight.w500,
               color: Color(0xFF64748B),
@@ -1129,7 +1099,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
+              color: AppTokens.porcelain,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
@@ -1141,7 +1111,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                     const Text(
                       'Unit Komponen',
                       style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF64748B),
@@ -1150,7 +1119,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                     Text(
                       '${component.code} (${component.kind})',
                       style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF0F172A),
@@ -1168,7 +1136,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                     const Text(
                       'Status Kelayakan',
                       style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF64748B),
@@ -1194,7 +1161,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                                 ? 'Perlu Servis'
                                 : (condition ?? 'Perlu Tindakan')),
                         style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: isOk
@@ -1219,7 +1185,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                       const Text(
                         'Tindakan',
                         style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF64748B),
@@ -1233,7 +1198,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: Color(0xFF334155),
@@ -1253,7 +1217,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
             child: ElevatedButton(
               onPressed: () => Navigator.pop(ctx),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF147CC1),
+                backgroundColor: AppTokens.magenta,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -1262,7 +1226,6 @@ class _CheckingScreenState extends State<CheckingScreen> {
               child: const Text(
                 'Selesai & Kembali',
                 style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
