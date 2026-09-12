@@ -348,9 +348,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: widget.service
-                      ? AppTokens.magenta
-                      : AppTokens.success,
+                  color: widget.service ? AppTokens.magenta : AppTokens.success,
                 ),
               ),
             ],
@@ -1004,7 +1002,9 @@ class _CheckingScreenState extends State<CheckingScreen> {
                     foregroundColor: AppTokens.danger,
                     side: const BorderSide(color: AppTokens.dangerSurface),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTokens.badgeRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppTokens.badgeRadius,
+                      ),
                     ),
                   ),
                 )
@@ -1030,7 +1030,9 @@ class _CheckingScreenState extends State<CheckingScreen> {
                     backgroundColor: AppTokens.danger,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTokens.badgeRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppTokens.badgeRadius,
+                      ),
                     ),
                   ),
                 ),
@@ -1175,7 +1177,9 @@ class _CheckingScreenState extends State<CheckingScreen> {
                             : (condition == 'Rusak Ringan'
                                   ? AppTokens.warningSurface
                                   : AppTokens.dangerSurface),
-                        borderRadius: BorderRadius.circular(AppTokens.badgeRadius),
+                        borderRadius: BorderRadius.circular(
+                          AppTokens.badgeRadius,
+                        ),
                       ),
                       child: Text(
                         isOk

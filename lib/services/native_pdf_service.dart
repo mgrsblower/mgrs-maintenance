@@ -6,10 +6,8 @@ import 'package:flutter/services.dart';
 /// - iOS: QuickLook QLPreviewController & UIActivityViewController
 /// - Android: Intent.ACTION_VIEW & Intent.ACTION_SEND via FileProvider
 class NativePdfService {
-  NativePdfService({
-    MethodChannel? channel,
-    this.isNativePlatform,
-  }) : _channel = channel ?? const MethodChannel('mgrs/native_pdf');
+  NativePdfService({MethodChannel? channel, this.isNativePlatform})
+    : _channel = channel ?? const MethodChannel('mgrs/native_pdf');
 
   final MethodChannel _channel;
   final bool? isNativePlatform;
@@ -44,9 +42,7 @@ class NativePdfService {
       }
 
       if (_useNativeChannel) {
-        await _channel.invokeMethod<void>('previewPdf', {
-          'path': cleanPath,
-        });
+        await _channel.invokeMethod<void>('previewPdf', {'path': cleanPath});
         return;
       }
 
