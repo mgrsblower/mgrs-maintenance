@@ -265,7 +265,16 @@ class _HistoryScreenState extends State<HistoryScreen>
     bool danger = false,
   }) {
     final theme = Theme.of(context);
-    final operational = theme.extension<OperationalColors>()!;
+    final operational =
+        theme.extension<OperationalColors>() ??
+        const OperationalColors(
+          success: AppTokens.successSurface,
+          onSuccess: AppTokens.success,
+          warning: AppTokens.warningSurface,
+          onWarning: AppTokens.warning,
+          danger: AppTokens.dangerSurface,
+          onDanger: AppTokens.danger,
+        );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppTokens.space24),
       child: Row(

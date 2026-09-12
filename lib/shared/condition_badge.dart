@@ -6,8 +6,18 @@ class ConditionBadge extends StatelessWidget {
   final String value;
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final operational = Theme.of(context).extension<OperationalColors>()!;
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final operational =
+        theme.extension<OperationalColors>() ??
+        const OperationalColors(
+          success: AppTokens.successSurface,
+          onSuccess: AppTokens.success,
+          warning: AppTokens.warningSurface,
+          onWarning: AppTokens.warning,
+          danger: AppTokens.dangerSurface,
+          onDanger: AppTokens.danger,
+        );
     final Color background;
     final Color foreground;
     if (value == 'OK') {

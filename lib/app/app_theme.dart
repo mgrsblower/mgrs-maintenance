@@ -91,8 +91,7 @@ class OperationalColors extends ThemeExtension<OperationalColors> {
 
 const _colorScheme = ColorScheme.light(
   primary: AppTokens.magenta,
-  onPrimary: AppTokens.white,
-  primaryContainer: AppTokens.mistLight,
+  onPrimary: AppTokens.ink,
   onPrimaryContainer: AppTokens.ink,
   secondary: AppTokens.ink,
   onSecondary: AppTokens.white,
