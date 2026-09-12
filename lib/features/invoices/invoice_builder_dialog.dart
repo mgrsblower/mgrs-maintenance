@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../app/app_theme.dart';
 import '../../app/gateway.dart';
 import '../schedule/order_model.dart';
 import '../../shared/pressable.dart';
@@ -29,16 +30,16 @@ class InvoiceBuilderDialog extends StatefulWidget {
 }
 
 class _InvoiceBuilderDialogState extends State<InvoiceBuilderDialog> {
-  static const _footerActionHeight = 48.0;
-  static const _footerActionRadius = 8.0;
-  static const _footerActionGap = 6.0;
-  static const _footerLabelSize = 11.5;
-  static const _footerInk = Color(0xFF18181B);
-  static const _footerMutedSurface = Color(0xFFF4F4F5);
-  static const _footerBorder = Color(0xFFE4E4E7);
-  static const _footerShareSurface = Color(0xFFEDF3EC);
-  static const _footerShareBorder = Color(0xFFCDE2CF);
-  static const _footerShareInk = Color(0xFF346538);
+  static const _footerActionHeight = AppTokens.minTouchTarget;
+  static const _footerActionRadius = AppTokens.controlRadius;
+  static const _footerActionGap = AppTokens.space4;
+  static const _footerLabelSize = 12.0;
+  static const _footerInk = AppTokens.ink;
+  static const _footerMutedSurface = AppTokens.porcelain;
+  static const _footerBorder = AppTokens.mist;
+  static const _footerShareSurface = AppTokens.successSurface;
+  static const _footerShareBorder = AppTokens.success;
+  static const _footerShareInk = AppTokens.success;
 
   final _formKey = GlobalKey<FormState>();
   late bool _isEditing;
@@ -161,6 +162,7 @@ class _InvoiceBuilderDialogState extends State<InvoiceBuilderDialog> {
   }
 
   Future<void> _shareToWhatsApp() async {
+    final colors = Theme.of(context).colorScheme;
     final calc = _calculation;
     final cleanPhone = _customerPhoneController.text.replaceAll(
       RegExp(r'[^0-9]'),
@@ -199,9 +201,10 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
     } else {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tidak dapat membuka WhatsApp.'),
-          backgroundColor: Color(0xFF9F2F2D),
+        SnackBar(
+          content: const Text('Tidak dapat membuka WhatsApp.'),
+          backgroundColor: colors.errorContainer,
+          contentTextStyle: TextStyle(color: colors.onErrorContainer),
         ),
       );
     }
@@ -209,7 +212,9 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final operational = theme.extension<OperationalColors>();
     final calc = _calculation;
     final resolvedAdjustments = _adjustments
         .map((a) {
@@ -256,9 +261,12 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
         SnackBar(
           content: Text(
             'Invoice ${saved.invoiceReference} berhasil disimpan.',
-            style: const TextStyle(fontWeight: FontWeight.w600),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: operational?.onSuccess ?? colors.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          backgroundColor: const Color(0xFF346538),
+          backgroundColor: operational?.success ?? colors.surfaceContainer,
         ),
       );
     } catch (e) {
@@ -266,8 +274,13 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal menyimpan invoice: $e'),
-          backgroundColor: const Color(0xFF9F2F2D),
+          content: Text(
+            'Gagal menyimpan invoice: $e',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colors.onErrorContainer,
+            ),
+          ),
+          backgroundColor: colors.errorContainer,
         ),
       );
     }
@@ -325,29 +338,27 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: AppTokens.space16,
+        vertical: AppTokens.space24,
+      ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480, maxHeight: 750),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(AppTokens.space24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header
               _buildDialogHeader(),
-              const SizedBox(height: 12),
-              const Divider(height: 1, color: Color(0xFFF4F4F5)),
-              const SizedBox(height: 14),
-              // Body: Mode Pratinjau (Document Receipt) vs Mode Edit
+              const SizedBox(height: AppTokens.space12),
+              const Divider(),
+              const SizedBox(height: AppTokens.space16),
               Expanded(
                 child: _isEditing ? _buildEditForm() : _buildReceiptView(),
               ),
-              const SizedBox(height: 12),
-              const Divider(height: 1, color: Color(0xFFF4F4F5)),
-              const SizedBox(height: 12),
-              // Footer Actions
+              const SizedBox(height: AppTokens.space16),
+              const Divider(),
+              const SizedBox(height: AppTokens.space12),
               _buildFooterActions(),
             ],
           ),
@@ -357,26 +368,29 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
   }
 
   Widget _buildDialogHeader() {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final operational = theme.extension<OperationalColors>();
     final (statusBg, statusBorder, statusText) = switch (_paymentStatus) {
       InvoicePaymentStatus.paid => (
-        const Color(0xFFEDF3EC),
-        const Color(0xFFCDE2CF),
-        const Color(0xFF346538),
+        operational?.success ?? colors.surfaceContainer,
+        operational?.onSuccess ?? colors.onSurface,
+        operational?.onSuccess ?? colors.onSurface,
       ),
       InvoicePaymentStatus.partial => (
-        const Color(0xFFFBF3DB),
-        const Color(0xFFEEDDAA),
-        const Color(0xFF956400),
-      ),
-      InvoicePaymentStatus.unpaid => (
-        const Color(0xFFFDEBEC),
-        const Color(0xFFF5C5C7),
-        const Color(0xFF9F2F2D),
+        operational?.warning ?? colors.surfaceContainer,
+        operational?.onWarning ?? colors.onSurface,
+        operational?.onWarning ?? colors.onSurface,
       ),
       InvoicePaymentStatus.cancelled => (
-        const Color(0xFFF1F5F9),
-        const Color(0xFFCBD5E1),
-        const Color(0xFF64748B),
+        operational?.danger ?? colors.errorContainer,
+        operational?.onDanger ?? colors.onErrorContainer,
+        operational?.onDanger ?? colors.onErrorContainer,
+      ),
+      InvoicePaymentStatus.unpaid => (
+        colors.surfaceContainer,
+        colors.outlineVariant,
+        colors.onSurfaceVariant,
       ),
     };
 
@@ -389,110 +403,64 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
             children: [
               Text(
                 _refController.text,
-                style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF18181B),
-                  letterSpacing: -0.2,
-                ),
+                style: theme.textTheme.titleMedium,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 5),
+              const SizedBox(height: AppTokens.space4),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 2.5,
+                      horizontal: AppTokens.space8,
+                      vertical: AppTokens.space4,
                     ),
                     decoration: BoxDecoration(
                       color: statusBg,
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppTokens.badgeRadius),
                       border: Border.all(color: statusBorder),
                     ),
                     child: Text(
                       _paymentStatus.label,
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w700,
+                      style: theme.textTheme.labelMedium?.copyWith(
                         color: statusText,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppTokens.space8),
                   Text(
                     _isEditing ? 'Mode Edit Rincian' : 'Dokumen Tagihan Resmi',
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF71717A),
-                    ),
+                    style: theme.textTheme.bodySmall,
                   ),
                 ],
               ),
             ],
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppTokens.space8),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            PressableScale(
-              onTap: () => setState(() => _isEditing = !_isEditing),
-              child: Container(
-                height: 32,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF4F4F5),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFE4E4E7)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _isEditing
-                          ? Icons.visibility_outlined
-                          : Icons.edit_outlined,
-                      size: 13,
-                      color: const Color(0xFF18181B),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _isEditing ? 'Pratinjau' : 'Ubah',
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF18181B),
-                      ),
-                    ),
-                  ],
+            OutlinedButton.icon(
+              onPressed: () => setState(() => _isEditing = !_isEditing),
+              icon: Icon(
+                _isEditing
+                    ? Icons.visibility_outlined
+                    : Icons.edit_outlined,
+              ),
+              label: Text(_isEditing ? 'Pratinjau' : 'Ubah'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(0, AppTokens.minTouchTarget),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppTokens.space12,
                 ),
               ),
             ),
-            const SizedBox(width: 6),
-            PressableScale(
-              onTap: () => Navigator.of(context).pop(),
-              child: Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF4F4F5),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFE4E4E7)),
-                ),
-                child: const Icon(
-                  Icons.close_rounded,
-                  size: 17,
-                  color: Color(0xFF71717A),
-                ),
-              ),
+            IconButton(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.close_rounded),
+              tooltip: 'Tutup',
             ),
           ],
         ),
@@ -502,6 +470,9 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
 
   // Minimalist Receipt / Document Style (Read-only)
   Widget _buildReceiptView() {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final operational = theme.extension<OperationalColors>();
     final calc = _calculation;
     final clientName = _customerNameController.text.trim().isNotEmpty
         ? _customerNameController.text.trim()
@@ -518,50 +489,22 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Client & Event block
-          Text(
-            clientName,
-            style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF18181B),
-            ),
-          ),
-          const SizedBox(height: 3),
+          Text(clientName, style: theme.textTheme.titleMedium),
+          const SizedBox(height: AppTokens.space4),
           Text(
             '$eventName${phone.isNotEmpty ? " • $phone" : ""}',
-            style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 12.5,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF71717A),
-            ),
+            style: theme.textTheme.bodyMedium,
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: AppTokens.space4),
           Text(
             'Tgl Invoice: ${_invoiceDateController.text.trim()} • Jatuh Tempo: ${_dueDateController.text.trim()}',
-            style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 11,
-              color: Color(0xFFA1A1AA),
-            ),
+            style: theme.textTheme.bodySmall,
           ),
-          const SizedBox(height: 16),
-          const Divider(height: 1, color: Color(0xFFF4F4F5)),
-          const SizedBox(height: 12),
-          // Rincian Item Sewa
-          const Text(
-            'RINCIAN SEWA',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 10.5,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFFA1A1AA),
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppTokens.space16),
+          const Divider(),
+          const SizedBox(height: AppTokens.space12),
+          Text('RINCIAN SEWA', style: theme.textTheme.labelMedium),
+          const SizedBox(height: AppTokens.space8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -570,46 +513,33 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Sewa Mistyfan Blower MGRS',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 13,
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF18181B),
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppTokens.space4),
                     Text(
                       '$qty Unit × $days Hari @ ${InvoiceRecord.formatRupiah(unitPrice)}',
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 11.5,
-                        color: Color(0xFF71717A),
-                      ),
+                      style: theme.textTheme.bodySmall,
                     ),
                   ],
                 ),
               ),
               Text(
                 InvoiceRecord.formatRupiah(calc.subtotal),
-                style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF18181B),
-                ),
+                style: theme.textTheme.labelLarge,
               ),
             ],
           ),
-          // Adjustments if any
           if (_adjustments.isNotEmpty) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: AppTokens.space12),
             for (final adj in _adjustments)
               if (adj.descCtrl.text.trim().isNotEmpty ||
                   (num.tryParse(adj.amountCtrl.text) ?? 0) != 0)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.only(bottom: AppTokens.space8),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -617,55 +547,47 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                         adj.descCtrl.text.trim().isNotEmpty
                             ? adj.descCtrl.text.trim()
                             : 'Penyesuaian Biaya',
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 12,
-                          color: Color(0xFF71717A),
-                        ),
+                        style: theme.textTheme.bodySmall,
                       ),
                       Text(
                         InvoiceRecord.formatRupiah(
                           num.tryParse(adj.amountCtrl.text) ?? 0,
                         ),
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF18181B),
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: colors.onSurface,
                         ),
                       ),
                     ],
                   ),
                 ),
           ],
-          const SizedBox(height: 16),
-          const Divider(height: 1, color: Color(0xFFF4F4F5)),
-          const SizedBox(height: 12),
-          // Summary Rows
+          const SizedBox(height: AppTokens.space16),
+          const Divider(),
+          const SizedBox(height: AppTokens.space12),
           _receiptRow(
             'Subtotal Tagihan',
             InvoiceRecord.formatRupiah(calc.subtotal),
           ),
           if (calc.adjustmentTotal != 0) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: AppTokens.space4),
             _receiptRow(
               'Penyesuaian',
               InvoiceRecord.formatRupiah(calc.adjustmentTotal),
             ),
           ],
-          const SizedBox(height: 6),
+          const SizedBox(height: AppTokens.space8),
           _receiptRow(
             'Total Tagihan',
             InvoiceRecord.formatRupiah(calc.totalAmount),
             isBold: true,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppTokens.space4),
           _receiptRow(
             'Terbayar',
             InvoiceRecord.formatRupiah(calc.paidAmount),
-            valueColor: const Color(0xFF346538),
+            valueColor: operational?.onSuccess ?? colors.primary,
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppTokens.space8),
           _receiptRow(
             calc.remainingAmount > 0 ? 'Sisa Pembayaran' : 'Status Tagihan',
             calc.remainingAmount > 0
@@ -673,32 +595,31 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                 : 'Lunas',
             isBold: true,
             valueColor: calc.remainingAmount > 0
-                ? const Color(0xFF9F2F2D)
-                : const Color(0xFF346538),
+                ? operational?.onDanger ?? colors.error
+                : operational?.onSuccess ?? colors.primary,
           ),
-          const SizedBox(height: 14),
-          // Bank info
+          const SizedBox(height: AppTokens.space16),
           Container(
-            padding: const EdgeInsets.all(10),
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppTokens.space12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF4F4F5),
-              borderRadius: BorderRadius.circular(8),
+              color: colors.surfaceContainer,
+              borderRadius: BorderRadius.circular(AppTokens.controlRadius),
+              border: Border.all(color: colors.outlineVariant),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 Icon(
                   Icons.account_balance_outlined,
-                  size: 16,
-                  color: Color(0xFF71717A),
+                  size: 20,
+                  color: colors.onSurfaceVariant,
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: AppTokens.space8),
                 Text(
                   'BCA 2302619141 a/n MADNUR',
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 11.5,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colors.onSurface,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF18181B),
                   ),
                 ),
               ],
@@ -715,173 +636,113 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
     bool isBold = false,
     Color? valueColor,
   }) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final labelStyle = isBold
+        ? theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)
+        : theme.textTheme.bodySmall;
+    final valueStyle = isBold
+        ? theme.textTheme.labelLarge?.copyWith(color: valueColor)
+        : theme.textTheme.labelMedium?.copyWith(
+            color: valueColor ?? colors.onSurface,
+          );
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontSize: isBold ? 13 : 12,
-            fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
-            color: const Color(0xFF71717A),
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontSize: isBold ? 13.5 : 12,
-            fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
-            color: valueColor ?? const Color(0xFF18181B),
-          ),
-        ),
+        Text(label, style: labelStyle),
+        Text(value, style: valueStyle),
       ],
     );
   }
 
   // Edit Mode (Clean, spacious form without cramped labels)
   Widget _buildEditForm() {
+    final theme = Theme.of(context);
     final calc = _calculation;
 
     return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'INFORMASI KLIEN & ACARA',
-              style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 10.5,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFFA1A1AA),
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 8),
+            Text('INFORMASI KLIEN & ACARA', style: theme.textTheme.labelMedium),
+            const SizedBox(height: AppTokens.space8),
             TextFormField(
               controller: _customerNameController,
-              style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 13,
-              ),
               decoration: _inputDecoration('Nama Klien'),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppTokens.space12),
             TextFormField(
               controller: _customerPhoneController,
               keyboardType: TextInputType.phone,
-              style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 13,
-              ),
               decoration: _inputDecoration('No. WhatsApp Klien'),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppTokens.space12),
             TextFormField(
               controller: _productController,
-              style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 13,
-              ),
               decoration: _inputDecoration('Nama Acara / Keterangan'),
             ),
-            const SizedBox(height: 14),
-            // Dates in 2 balanced columns
+            const SizedBox(height: AppTokens.space16),
             Row(
               children: [
                 Expanded(
                   child: TextFormField(
                     controller: _invoiceDateController,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 12.5,
-                    ),
                     decoration: _inputDecoration('Tanggal Invoice'),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppTokens.space12),
                 Expanded(
                   child: TextFormField(
                     controller: _dueDateController,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 12.5,
-                    ),
                     decoration: _inputDecoration('Jatuh Tempo'),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'KUANTITAS & HARGA SEWA',
-              style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 10.5,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFFA1A1AA),
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 8),
-            // Balanced quantity and price row
+            const SizedBox(height: AppTokens.space24),
+            Text('KUANTITAS & HARGA SEWA', style: theme.textTheme.labelMedium),
+            const SizedBox(height: AppTokens.space8),
             Row(
               children: [
                 Expanded(
                   child: TextFormField(
                     controller: _qtyController,
                     keyboardType: TextInputType.number,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 13,
-                    ),
                     decoration: _inputDecoration('Unit'),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppTokens.space12),
                 Expanded(
                   child: TextFormField(
                     controller: _daysController,
                     keyboardType: TextInputType.number,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 13,
-                    ),
                     decoration: _inputDecoration('Durasi (Hari)'),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppTokens.space12),
                 Expanded(
                   flex: 2,
                   child: TextFormField(
                     controller: _unitPriceController,
                     keyboardType: TextInputType.number,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 13,
+                    decoration: _inputDecoration(
+                      'Harga Satuan',
+                      prefix: 'Rp ',
                     ),
-                    decoration: _inputDecoration('Harga Satuan', prefix: 'Rp '),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            // Adjustments
+            const SizedBox(height: AppTokens.space24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'PENYESUAIAN / DISKON',
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFFA1A1AA),
-                    letterSpacing: 0.5,
-                  ),
+                  style: theme.textTheme.labelMedium,
                 ),
                 TextButton.icon(
                   onPressed: () {
@@ -894,25 +755,17 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                       );
                     });
                   },
-                  icon: const Icon(Icons.add_rounded, size: 14),
-                  label: const Text('Tambah', style: TextStyle(fontSize: 11.5)),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    visualDensity: VisualDensity.compact,
-                  ),
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Tambah'),
                 ),
               ],
             ),
             if (_adjustments.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 4),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppTokens.space4),
                 child: Text(
                   'Tidak ada penyesuaian biaya tambahan.',
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 11.5,
-                    color: Color(0xFFA1A1AA),
-                  ),
+                  style: theme.textTheme.bodySmall,
                 ),
               )
             else
@@ -932,8 +785,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                   },
                 );
               }),
-            const SizedBox(height: 14),
-            // Payment fields
+            const SizedBox(height: AppTokens.space16),
             Row(
               children: [
                 Expanded(
@@ -944,10 +796,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                     items: InvoicePaymentStatus.values.map((s) {
                       return DropdownMenuItem(
                         value: s,
-                        child: Text(
-                          s.label,
-                          style: const TextStyle(fontSize: 12),
-                        ),
+                        child: Text(s.label),
                       );
                     }).toList(),
                     onChanged: (val) {
@@ -965,16 +814,15 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                     },
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppTokens.space12),
                 Expanded(
                   child: TextFormField(
                     controller: _paidAmountController,
                     keyboardType: TextInputType.number,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 13,
+                    decoration: _inputDecoration(
+                      'Terbayar',
+                      prefix: 'Rp ',
                     ),
-                    decoration: _inputDecoration('Terbayar', prefix: 'Rp '),
                   ),
                 ),
               ],
@@ -989,26 +837,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
     return InputDecoration(
       isDense: true,
       labelText: label,
-      labelStyle: const TextStyle(
-        fontFamily: 'Plus Jakarta Sans',
-        fontSize: 12,
-        color: Color(0xFF71717A),
-      ),
       prefixText: prefix,
-      prefixStyle: const TextStyle(
-        fontFamily: 'Plus Jakarta Sans',
-        fontWeight: FontWeight.w700,
-        color: Color(0xFF18181B),
-      ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Color(0xFFE4E4E7)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Color(0xFF18181B)),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
     );
   }
 
@@ -1021,12 +850,13 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
     required Color textColor,
     Key? key,
   }) {
+    final theme = Theme.of(context);
     return PressableScale(
       onTap: onTap,
       child: Container(
         key: key,
         height: _footerActionHeight,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        padding: const EdgeInsets.symmetric(horizontal: AppTokens.space12),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(_footerActionRadius),
@@ -1036,15 +866,10 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (icon != null) ...[icon, const SizedBox(width: 5)],
+            if (icon != null) ...[icon, const SizedBox(width: AppTokens.space4)],
             Text(
               label,
-              style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: _footerLabelSize,
-                fontWeight: FontWeight.w700,
-                color: textColor,
-              ),
+              style: theme.textTheme.labelLarge?.copyWith(color: textColor),
             ),
           ],
         ),
@@ -1096,6 +921,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
     required Color borderColor,
     required Color textColor,
   }) {
+    final theme = Theme.of(context);
     return PressableScale(
       onTap: onTap,
       child: Container(
@@ -1110,16 +936,11 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
         child: FittedBox(
           fit: BoxFit.scaleDown,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: AppTokens.space4),
             child: Text(
               label,
               maxLines: 1,
-              style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: _footerLabelSize,
-                fontWeight: FontWeight.w700,
-                color: textColor,
-              ),
+              style: theme.textTheme.labelLarge?.copyWith(color: textColor),
             ),
           ),
         ),
@@ -1128,57 +949,47 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
   }
 
   Widget _buildFooterActions() {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final operational = theme.extension<OperationalColors>();
     if (_isEditing) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           TextButton(
             onPressed: () => setState(() => _isEditing = false),
-            child: const Text(
-              'Batal Ubah',
-              style: TextStyle(color: Color(0xFF71717A), fontSize: 12),
-            ),
+            child: const Text('Batal Ubah'),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: _footerActionGap),
           _buildActionButton(
             onTap: _isExporting ? null : _exportPdf,
             icon: _isExporting
-                ? const SizedBox(
-                    width: 13,
-                    height: 13,
+                ? const SizedBox.square(
+                    dimension: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(
-                    Icons.download_rounded,
-                    size: 14,
-                    color: Color(0xFF18181B),
-                  ),
+                : Icon(Icons.download_rounded, color: colors.onSurface),
             label: _isExporting ? 'Mengunduh...' : 'Unduh PDF',
-            bg: const Color(0xFFF4F4F5),
-            border: const Color(0xFFE4E4E7),
-            textColor: const Color(0xFF18181B),
+            bg: colors.surfaceContainer,
+            border: colors.outlineVariant,
+            textColor: colors.onSurface,
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: _footerActionGap),
           _buildActionButton(
             onTap: _isSaving ? null : _save,
             icon: _isSaving
-                ? const SizedBox(
-                    width: 13,
-                    height: 13,
+                ? const SizedBox.square(
+                    dimension: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: AppTokens.white,
                     ),
                   )
-                : const Icon(
-                    Icons.save_outlined,
-                    size: 14,
-                    color: Colors.white,
-                  ),
+                : const Icon(Icons.save_outlined, color: AppTokens.white),
             label: 'Simpan',
-            bg: const Color(0xFF18181B),
-            border: const Color(0xFF18181B),
-            textColor: Colors.white,
+            bg: colors.primary,
+            border: colors.primary,
+            textColor: colors.onPrimary,
           ),
         ],
       );
@@ -1191,17 +1002,17 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
           onTap: _isExporting ? null : _exportPdf,
           tooltip: _isExporting ? 'Mengunduh PDF' : 'Unduh PDF',
           icon: _isExporting
-              ? const SizedBox.square(
-                  dimension: 18,
+              ? SizedBox.square(
+                  dimension: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: _footerInk,
+                    color: colors.onSurface,
                   ),
                 )
               : const Icon(Icons.file_download_outlined),
-          backgroundColor: _footerMutedSurface,
-          borderColor: _footerBorder,
-          iconColor: _footerInk,
+          backgroundColor: colors.surfaceContainer,
+          borderColor: colors.outlineVariant,
+          iconColor: colors.onSurface,
         ),
         const SizedBox(width: _footerActionGap),
         _buildIconActionButton(
@@ -1209,9 +1020,9 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
           onTap: _shareToWhatsApp,
           tooltip: 'Bagikan melalui WhatsApp',
           icon: const Icon(Icons.share_rounded),
-          backgroundColor: _footerShareSurface,
-          borderColor: _footerShareBorder,
-          iconColor: _footerShareInk,
+          backgroundColor: operational?.success ?? _footerShareSurface,
+          borderColor: operational?.onSuccess ?? _footerShareBorder,
+          iconColor: operational?.onSuccess ?? _footerShareInk,
         ),
         const SizedBox(width: _footerActionGap),
         Expanded(
@@ -1234,9 +1045,9 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
               );
             },
             label: 'Atur Bayar',
-            backgroundColor: Colors.white,
-            borderColor: _footerBorder,
-            textColor: _footerInk,
+            backgroundColor: colors.surface,
+            borderColor: colors.outline,
+            textColor: colors.onSurface,
           ),
         ),
         const SizedBox(width: _footerActionGap),
@@ -1246,9 +1057,9 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
             key: const Key('btn-close-dialog'),
             onTap: () => Navigator.of(context).pop(),
             label: 'Selesai',
-            backgroundColor: _footerInk,
-            borderColor: _footerInk,
-            textColor: Colors.white,
+            backgroundColor: colors.primary,
+            borderColor: colors.primary,
+            textColor: colors.onPrimary,
           ),
         ),
       ],

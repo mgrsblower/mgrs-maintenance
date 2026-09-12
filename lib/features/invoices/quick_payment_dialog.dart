@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../app/app_theme.dart';
 import '../../app/gateway.dart';
 import '../../shared/pressable.dart';
 import 'invoice_model.dart';
@@ -60,12 +61,22 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
   }
 
   Future<void> _submit() async {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final operational = theme.extension<OperationalColors>();
+    final paidTone = operational?.onSuccess ?? colors.primary;
+    final errorTone = operational?.onDanger ?? colors.onErrorContainer;
+    final paidSurface = operational?.success ?? colors.surfaceContainer;
+    final errorSurface = operational?.danger ?? colors.errorContainer;
     final paid = _currentPaidAmount;
     if (_status == InvoicePaymentStatus.partial && paid <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Nominal DP / sebagian harus lebih dari 0.'),
-          backgroundColor: Color(0xFF9F2F2D),
+        SnackBar(
+          content: const Text('Nominal DP / sebagian harus lebih dari 0.'),
+          backgroundColor: errorSurface,
+          contentTextStyle: theme.textTheme.bodyMedium?.copyWith(
+            color: errorTone,
+          ),
         ),
       );
       return;
@@ -85,9 +96,12 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
         SnackBar(
           content: Text(
             'Status pembayaran ${widget.invoice.invoiceReference} tersimpan.',
-            style: const TextStyle(fontWeight: FontWeight.w600),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: paidTone,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          backgroundColor: const Color(0xFF346538),
+          backgroundColor: paidSurface,
         ),
       );
     } catch (e) {
@@ -95,8 +109,11 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal memperbarui status: $e'),
-          backgroundColor: const Color(0xFF9F2F2D),
+          content: Text(
+            'Gagal memperbarui status: $e',
+            style: theme.textTheme.bodyMedium?.copyWith(color: errorTone),
+          ),
+          backgroundColor: errorSurface,
         ),
       );
     }
@@ -104,136 +121,73 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final operational = theme.extension<OperationalColors>();
     final remaining = _currentRemainingAmount;
     final isLunas = remaining == 0 && _currentPaidAmount > 0;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      backgroundColor: Colors.white,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: AppTokens.space16,
+        vertical: AppTokens.space24,
+      ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 380),
         child: Padding(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(AppTokens.space24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Atur Pembayaran',
-                          style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF18181B),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
+                        Text('Atur Pembayaran', style: theme.textTheme.titleLarge),
                         Text(
                           '${widget.invoice.invoiceReference} • ${widget.invoice.customerName.isNotEmpty ? widget.invoice.customerName : "Klien MGRS"}',
-                          style: const TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 11.5,
-                            color: Color(0xFF71717A),
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style: theme.textTheme.bodySmall,
                         ),
                       ],
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded,
-                        size: 20, color: Color(0xFF71717A)),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                    icon: const Icon(Icons.close_rounded),
+                    tooltip: 'Tutup',
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
-              const Divider(height: 1, color: Color(0xFFF4F4F5)),
-              const SizedBox(height: 12),
-              // Clean Typographic Balances
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Total Tagihan',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 12,
-                      color: Color(0xFF71717A),
-                    ),
-                  ),
-                  Text(
-                    widget.invoice.totalAmountFormatted,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF18181B),
-                    ),
-                  ),
-                ],
+              const SizedBox(height: AppTokens.space12),
+              const Divider(),
+              const SizedBox(height: AppTokens.space12),
+              _summaryRow(
+                context,
+                'Total Tagihan',
+                widget.invoice.totalAmountFormatted,
               ),
-              const SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    isLunas ? 'Status Pembayaran' : 'Sisa Tagihan',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 12,
-                      color: isLunas
-                          ? const Color(0xFF346538)
-                          : const Color(0xFF9F2F2D),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    isLunas
-                        ? 'Lunas'
-                        : InvoiceRecord.formatRupiah(remaining),
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w800,
-                      color: isLunas
-                          ? const Color(0xFF346538)
-                          : const Color(0xFF9F2F2D),
-                    ),
-                  ),
-                ],
+              const SizedBox(height: AppTokens.space8),
+              _summaryRow(
+                context,
+                isLunas ? 'Status Pembayaran' : 'Sisa Tagihan',
+                isLunas ? 'Lunas' : InvoiceRecord.formatRupiah(remaining),
+                valueColor: isLunas
+                    ? operational?.onSuccess ?? colors.primary
+                    : operational?.onDanger ?? colors.error,
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'PILIH STATUS',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFFA1A1AA),
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 6),
-              // Minimalist 3-tab segmented selector (Belum Bayar, Sebagian, Lunas)
+              const SizedBox(height: AppTokens.space24),
+              Text('PILIH STATUS', style: theme.textTheme.labelMedium),
+              const SizedBox(height: AppTokens.space8),
               Container(
-                height: 34,
-                padding: const EdgeInsets.all(2),
+                height: 48,
+                padding: const EdgeInsets.all(AppTokens.space4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF4F4F5),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFE4E4E7)),
+                  color: colors.surfaceContainer,
+                  borderRadius: BorderRadius.circular(AppTokens.badgeRadius),
+                  border: Border.all(color: colors.outlineVariant),
                 ),
                 child: Row(
                   children: [
@@ -252,76 +206,33 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
                   ],
                 ),
               ),
-              // Input for partial / DP
               if (_status == InvoicePaymentStatus.partial) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: AppTokens.space12),
                 TextFormField(
                   controller: _paidController,
                   keyboardType: TextInputType.number,
                   autofocus: true,
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF18181B),
-                  ),
-                  decoration: InputDecoration(
-                    isDense: true,
+                  decoration: const InputDecoration(
                     labelText: 'Nominal DP / Terbayar',
-                    labelStyle: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 12,
-                      color: Color(0xFF71717A),
-                    ),
                     prefixText: 'Rp ',
-                    prefixStyle: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF18181B),
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Color(0xFFE4E4E7)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Color(0xFF18181B)),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
                   ),
                 ),
               ],
-              const SizedBox(height: 18),
-              // Save Button
+              const SizedBox(height: AppTokens.space24),
               SizedBox(
                 width: double.infinity,
-                height: 38,
                 child: FilledButton(
                   onPressed: _isSaving ? null : _submit,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF18181B),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
                   child: _isSaving
                       ? const SizedBox(
-                          width: 18,
-                          height: 18,
+                          width: 20,
+                          height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: AppTokens.white,
                           ),
                         )
-                      : const Text(
-                          'Simpan Status Pembayaran',
-                          style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12.5,
-                          ),
-                        ),
+                      : const Text('Simpan Status Pembayaran'),
                 ),
               ),
             ],
@@ -331,11 +242,46 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
     );
   }
 
+  Widget _summaryRow(
+    BuildContext context,
+    String label,
+    String value, {
+    Color? valueColor,
+  }) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: theme.textTheme.bodySmall),
+        Text(
+          value,
+          style: theme.textTheme.labelLarge?.copyWith(color: valueColor),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSegmentTab({
     required String label,
     required InvoicePaymentStatus status,
   }) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final operational = theme.extension<OperationalColors>();
     final isSelected = _status == status;
+    final selectedBackground = switch (status) {
+      InvoicePaymentStatus.paid =>
+        operational?.success ?? colors.surfaceContainerHighest,
+      InvoicePaymentStatus.partial =>
+        operational?.warning ?? colors.surfaceContainerHighest,
+      _ => colors.surfaceContainerHighest,
+    };
+    final selectedForeground = switch (status) {
+      InvoicePaymentStatus.paid => operational?.onSuccess ?? colors.onSurface,
+      InvoicePaymentStatus.partial =>
+        operational?.onWarning ?? colors.onSurface,
+      _ => colors.onSurface,
+    };
     return Expanded(
       child: PressableScale(
         onTap: () {
@@ -350,20 +296,19 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
           });
         },
         child: Container(
+          constraints: const BoxConstraints(minHeight: AppTokens.minTouchTarget),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF18181B) : Colors.transparent,
-            borderRadius: BorderRadius.circular(6),
+            color: isSelected ? selectedBackground : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppTokens.badgeRadius),
           ),
           alignment: Alignment.center,
           child: Text(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected ? Colors.white : const Color(0xFF71717A),
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: isSelected ? selectedForeground : colors.onSurfaceVariant,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
             ),
           ),
         ),
