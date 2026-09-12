@@ -96,7 +96,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     } catch (_) {
       if (mounted) {
         setState(() {
-          _error = 'Detail orderan belum dapat dimuat. Silakan periksa koneksi lalu coba lagi.';
+          _error =
+              'Detail orderan belum dapat dimuat. Silakan periksa koneksi lalu coba lagi.';
           _isLoading = false;
         });
       }
@@ -113,44 +114,45 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? _buildErrorState(context)
-                : Column(
-                    children: [
-                      Expanded(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(AppTokens.space16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _buildTopBar(context),
-                              const SizedBox(height: AppTokens.space16),
-                              _buildOrderHeaderCard(context),
-                              const SizedBox(height: AppTokens.space16),
-                              _buildVenueCard(context),
-                              if (widget.gateway != null && _order != null) ...[
-                                const SizedBox(height: AppTokens.space16),
-                                UnitAllocationCard(
-                                  gateway: widget.gateway!,
-                                  order: _order!,
-                                  isEditable:
-                                      (widget.user?.isTechnician == true || widget.user?.isAdmin == true) &&
-                                      !_order!.isCompletedOrCancelled,
-                                ),
-                              ],
-                              const SizedBox(height: AppTokens.space16),
-                              _buildCustomerCard(context),
-                              const SizedBox(height: AppTokens.space16),
-                              _buildEventNotesCard(context),
-                              const SizedBox(height: AppTokens.space16),
-                              _buildInvoiceCard(context),
-                              const SizedBox(height: AppTokens.space24),
-                            ],
-                          ),
-                        ),
+            ? _buildErrorState(context)
+            : Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(AppTokens.space16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _buildTopBar(context),
+                          const SizedBox(height: AppTokens.space16),
+                          _buildOrderHeaderCard(context),
+                          const SizedBox(height: AppTokens.space16),
+                          _buildVenueCard(context),
+                          if (widget.gateway != null && _order != null) ...[
+                            const SizedBox(height: AppTokens.space16),
+                            UnitAllocationCard(
+                              gateway: widget.gateway!,
+                              order: _order!,
+                              isEditable:
+                                  (widget.user?.isTechnician == true ||
+                                      widget.user?.isAdmin == true) &&
+                                  !_order!.isCompletedOrCancelled,
+                            ),
+                          ],
+                          const SizedBox(height: AppTokens.space16),
+                          _buildCustomerCard(context),
+                          const SizedBox(height: AppTokens.space16),
+                          _buildEventNotesCard(context),
+                          const SizedBox(height: AppTokens.space16),
+                          _buildInvoiceCard(context),
+                          const SizedBox(height: AppTokens.space24),
+                        ],
                       ),
-                      _buildBottomCta(context),
-                    ],
+                    ),
                   ),
+                  _buildBottomCta(context),
+                ],
+              ),
       ),
     );
   }
@@ -166,9 +168,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           children: [
             Icon(Icons.error_outline_rounded, size: 40, color: colors.error),
             const SizedBox(height: AppTokens.space12),
-            Text(_error!, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
+            Text(
+              _error!,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium,
+            ),
             const SizedBox(height: AppTokens.space12),
-            OutlinedButton(onPressed: _loadOrderDetail, child: const Text('Coba Lagi')),
+            OutlinedButton(
+              onPressed: _loadOrderDetail,
+              child: const Text('Coba Lagi'),
+            ),
           ],
         ),
       ),
@@ -177,7 +186,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   Widget _buildTopBar(BuildContext context) {
     final theme = Theme.of(context);
-    final canManage = widget.user?.canManageOrders == true &&
+    final canManage =
+        widget.user?.canManageOrders == true &&
         _order != null &&
         !_order!.isCompletedOrCancelled;
     return Row(
@@ -225,13 +235,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final statusSurface = cancelled
         ? operational.danger
         : done
-            ? operational.success
-            : colors.surfaceContainer;
+        ? operational.success
+        : colors.surfaceContainer;
     final statusInk = cancelled
         ? operational.onDanger
         : done
-            ? operational.onSuccess
-            : colors.onSurfaceVariant;
+        ? operational.onSuccess
+        : colors.onSurfaceVariant;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppTokens.space16),
@@ -249,15 +259,26 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 ),
                 if (order != null)
                   Chip(
-                    label: Text(cancelled ? 'Dibatalkan' : done ? 'Selesai' : 'Aktif'),
+                    label: Text(
+                      cancelled
+                          ? 'Dibatalkan'
+                          : done
+                          ? 'Selesai'
+                          : 'Aktif',
+                    ),
                     backgroundColor: statusSurface,
-                    labelStyle: theme.textTheme.labelMedium?.copyWith(color: statusInk),
+                    labelStyle: theme.textTheme.labelMedium?.copyWith(
+                      color: statusInk,
+                    ),
                     side: BorderSide(color: statusInk),
                   ),
               ],
             ),
             const SizedBox(height: AppTokens.space8),
-            Text('Nama Event: ${order?.namaEvent ?? '-'}', style: theme.textTheme.bodyLarge),
+            Text(
+              'Nama Event: ${order?.namaEvent ?? '-'}',
+              style: theme.textTheme.bodyLarge,
+            ),
             if (cancelled) ...[
               const SizedBox(height: AppTokens.space12),
               _semanticBanner(
@@ -277,11 +298,29 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
             Row(
               children: [
-                Expanded(child: _metric(context, 'Pemasangan', order?.formattedDate ?? 'Jadwal belum ditentukan')),
+                Expanded(
+                  child: _metric(
+                    context,
+                    'Pemasangan',
+                    order?.formattedDate ?? 'Jadwal belum ditentukan',
+                  ),
+                ),
                 const SizedBox(width: AppTokens.space12),
-                Expanded(child: _metric(context, 'Durasi Sewa', order?.durasiSewaText ?? '1 Hari')),
+                Expanded(
+                  child: _metric(
+                    context,
+                    'Durasi Sewa',
+                    order?.durasiSewaText ?? '1 Hari',
+                  ),
+                ),
                 const SizedBox(width: AppTokens.space12),
-                Expanded(child: _metric(context, 'Kebutuhan', '${order?.jumlahUnit ?? 4} Unit')),
+                Expanded(
+                  child: _metric(
+                    context,
+                    'Kebutuhan',
+                    '${order?.jumlahUnit ?? 4} Unit',
+                  ),
+                ),
               ],
             ),
           ],
@@ -315,14 +354,23 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           children: [
             Row(
               children: [
-                Expanded(child: Text('Lokasi Acara', style: theme.textTheme.titleMedium)),
+                Expanded(
+                  child: Text(
+                    'Lokasi Acara',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
                 if (hasMaps)
                   OutlinedButton.icon(
                     onPressed: () async {
                       final ok = await order!.launchMaps();
                       if (!ok && context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Peta lokasi acara tidak dapat dibuka.')),
+                          const SnackBar(
+                            content: Text(
+                              'Peta lokasi acara tidak dapat dibuka.',
+                            ),
+                          ),
                         );
                       }
                     },
@@ -370,8 +418,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final customerName = order?.namaClient?.trim().isNotEmpty == true
         ? order!.namaClient!.trim()
         : order?.namaPic?.trim().isNotEmpty == true
-            ? order!.namaPic!.trim()
-            : 'Pemesan';
+        ? order!.namaPic!.trim()
+        : 'Pemesan';
     final phone = order?.nomorWhatsapp?.trim().isNotEmpty == true
         ? order!.nomorWhatsapp!.trim()
         : 'Nomor WhatsApp belum tersedia';
@@ -426,7 +474,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
             const SizedBox(height: AppTokens.space8),
             Text(
-              note.isEmpty ? 'Tidak ada catatan khusus untuk orderan ini.' : note,
+              note.isEmpty
+                  ? 'Tidak ada catatan khusus untuk orderan ini.'
+                  : note,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: note.isEmpty ? colors.onSurfaceVariant : null,
                 fontStyle: note.isEmpty ? FontStyle.italic : null,
@@ -459,8 +509,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: theme.textTheme.titleMedium?.copyWith(color: ink)),
-                if (detail != null) Text(detail, style: theme.textTheme.bodyMedium?.copyWith(color: ink)),
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(color: ink),
+                ),
+                if (detail != null)
+                  Text(
+                    detail,
+                    style: theme.textTheme.bodyMedium?.copyWith(color: ink),
+                  ),
               ],
             ),
           ),
@@ -493,7 +550,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
     if (confirmed != true || !mounted) return;
     try {
-      await widget.gateway?.updateOrderStatus(order.orderanId ?? order.id, 'Selesai');
+      await widget.gateway?.updateOrderStatus(
+        order.orderanId ?? order.id,
+        'Selesai',
+      );
       if (!mounted) return;
       setState(() => _order = order.copyWith(statusOrderan: 'Selesai'));
       ScaffoldMessenger.of(context).showSnackBar(
@@ -501,9 +561,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       );
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(failureMessage(error))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(failureMessage(error))));
       }
     }
   }
@@ -511,83 +571,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Future<void> _showCancelOrderDialog() async {
     final order = _order;
     if (order == null) return;
-    final reasonController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    final invoice = _invoice;
-    final hasPayment = invoice != null && invoice.paidAmount > 0;
-    final hasUnpaidInvoice = invoice != null && !invoice.isPaid && !invoice.isCancelled;
-    final confirmed = await showDialog<bool>(
+
+    final reason = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Batalkan Orderan?'),
-        content: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Event "${order.namaEvent}" (${order.displayCode}) akan dibatalkan dan dihapus dari jadwal aktif pemasangan.'),
-                const SizedBox(height: AppTokens.space12),
-                if (hasPayment) ...[
-                  _semanticBanner(
-                    dialogContext,
-                    icon: Icons.warning_amber_rounded,
-                    surface: _operationalColors(dialogContext).warning,
-                    ink: _operationalColors(dialogContext).onWarning,
-                    title: 'Perhatian: Invoice memiliki pembayaran tercatat sebesar ${invoice.paidAmountFormatted}. Pastikan penyelesaian refund atau koordinasi dana dilakukan.',
-                  ),
-                  const SizedBox(height: AppTokens.space12),
-                ] else if (hasUnpaidInvoice) ...[
-                  _semanticBanner(
-                    dialogContext,
-                    icon: Icons.info_outline_rounded,
-                    surface: Theme.of(dialogContext).colorScheme.surfaceContainer,
-                    ink: Theme.of(dialogContext).colorScheme.onSurfaceVariant,
-                    title: 'Invoice terkait (${invoice.invoiceReference}) yang belum dibayar akan otomatis dibatalkan.',
-                  ),
-                  const SizedBox(height: AppTokens.space12),
-                ],
-                TextFormField(
-                  controller: reasonController,
-                  autofocus: true,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Alasan Pembatalan *',
-                    hintText: 'Contoh: Acara dibatalkan oleh pihak klien',
-                  ),
-                  validator: (value) => value == null || value.trim().length < 3
-                      ? 'Alasan pembatalan minimal 3 karakter.'
-                      : null,
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Kembali'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (formKey.currentState?.validate() == true) {
-                Navigator.pop(dialogContext, true);
-              }
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(dialogContext).colorScheme.surface,
-              foregroundColor: Theme.of(dialogContext).colorScheme.error,
-              side: BorderSide(color: Theme.of(dialogContext).colorScheme.error),
-            ),
-            child: const Text('Ya, Batalkan Order'),
-          ),
-        ],
+      builder: (_) => _CancelOrderDialog(
+        order: order,
+        invoice: _invoice,
       ),
     );
-    final reason = reasonController.text.trim();
-    reasonController.dispose();
-    if (confirmed != true || !mounted) return;
+    if (reason == null || !mounted) return;
+
     try {
       final orderanId = order.id.isNotEmpty
           ? order.id
@@ -600,28 +593,39 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       if (!mounted) return;
       final currentNote = order.catatanOrderan ?? '';
       final cancelTag = '[BATAL: $reason]';
-      final updatedNote = currentNote.isNotEmpty ? '$currentNote\n$cancelTag' : cancelTag;
+      final updatedNote = currentNote.isNotEmpty
+          ? '$currentNote\n$cancelTag'
+          : cancelTag;
       setState(() {
-        _order = order.copyWith(statusOrderan: 'Dibatalkan', catatanOrderan: updatedNote);
-        if (_invoice != null && (!_invoice!.isPaid || _invoice!.paidAmount <= 0)) {
+        _order = order.copyWith(
+          statusOrderan: 'Dibatalkan',
+          catatanOrderan: updatedNote,
+        );
+        if (_invoice != null &&
+            (!_invoice!.isPaid || _invoice!.paidAmount <= 0)) {
           _invoice = null;
         }
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Orderan berhasil dibatalkan dan invoice terkait telah dihapus.')),
+        const SnackBar(
+          content: Text(
+            'Orderan berhasil dibatalkan dan invoice terkait telah dihapus.',
+          ),
+        ),
       );
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(failureMessage(error))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(failureMessage(error))));
       }
     }
   }
 
   Widget _buildBottomCta(BuildContext context) {
     final order = _order;
-    final canComplete = widget.user?.canManageOrders == true &&
+    final canComplete =
+        widget.user?.canManageOrders == true &&
         order != null &&
         !order.isCompletedOrCancelled;
     return Material(
@@ -663,7 +667,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Nomor WhatsApp pemesan belum terdaftar.')),
+            const SnackBar(
+              content: Text('Nomor WhatsApp pemesan belum terdaftar.'),
+            ),
           );
         }
       },
@@ -684,17 +690,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final statusSurface = isPaid
         ? operational.success
         : isDp
-            ? operational.warning
-            : isCancelled
-                ? colors.surfaceContainer
-                : operational.danger;
+        ? operational.warning
+        : isCancelled
+        ? colors.surfaceContainer
+        : operational.danger;
     final statusInk = isPaid
         ? operational.onSuccess
         : isDp
-            ? operational.onWarning
-            : isCancelled
-                ? colors.onSurfaceVariant
-                : operational.onDanger;
+        ? operational.onWarning
+        : isCancelled
+        ? colors.onSurfaceVariant
+        : operational.onDanger;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppTokens.space16),
@@ -703,14 +709,25 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           children: [
             Row(
               children: [
-                Expanded(child: Text('Invoice Terkait', style: theme.textTheme.titleMedium)),
+                Expanded(
+                  child: Text(
+                    'Invoice Terkait',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
                 Chip(
                   label: Text(invoice?.paymentStatusDisplay ?? 'Belum Ada'),
-                  backgroundColor: invoice == null ? colors.surfaceContainer : statusSurface,
+                  backgroundColor: invoice == null
+                      ? colors.surfaceContainer
+                      : statusSurface,
                   labelStyle: theme.textTheme.labelMedium?.copyWith(
-                    color: invoice == null ? colors.onSurfaceVariant : statusInk,
+                    color: invoice == null
+                        ? colors.onSurfaceVariant
+                        : statusInk,
                   ),
-                  side: BorderSide(color: invoice == null ? colors.outline : statusInk),
+                  side: BorderSide(
+                    color: invoice == null ? colors.outline : statusInk,
+                  ),
                 ),
               ],
             ),
@@ -731,13 +748,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         onPressed: widget.gateway == null
                             ? null
                             : () => showDialog<void>(
-                                  context: context,
-                                  builder: (_) => QuickPaymentDialog(
-                                    invoice: invoice,
-                                    gateway: widget.gateway!,
-                                    onPaymentUpdated: (updated) => setState(() => _invoice = updated),
-                                  ),
+                                context: context,
+                                builder: (_) => QuickPaymentDialog(
+                                  invoice: invoice,
+                                  gateway: widget.gateway!,
+                                  onPaymentUpdated: (updated) =>
+                                      setState(() => _invoice = updated),
                                 ),
+                              ),
                         icon: const Icon(Icons.payments_outlined),
                         label: const Text('Atur Bayar'),
                       ),
@@ -749,20 +767,23 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       onPressed: widget.gateway == null
                           ? null
                           : () => showDialog<void>(
-                                context: context,
-                                builder: (_) => InvoiceBuilderDialog(
-                                  invoice: invoice,
-                                  gateway: widget.gateway!,
-                                  onSaved: (saved) => setState(() => _invoice = saved),
-                                ),
+                              context: context,
+                              builder: (_) => InvoiceBuilderDialog(
+                                invoice: invoice,
+                                gateway: widget.gateway!,
+                                onSaved: (saved) =>
+                                    setState(() => _invoice = saved),
                               ),
+                            ),
                       icon: const Icon(Icons.receipt_long_rounded),
                       label: const Text('Buka Invoice'),
                     ),
                   ),
                 ],
               )
-            else if (widget.gateway != null && _order != null && !_order!.isCancelled)
+            else if (widget.gateway != null &&
+                _order != null &&
+                !_order!.isCancelled)
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
@@ -784,7 +805,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final date = order.tanggalPemasangan ?? DateTime.now();
     final orderanId = order.orderanId ?? order.id;
     final codeSuffix = orderanId.split('-').last;
-    final datePrefix = date.toIso8601String().substring(0, 10).replaceAll('-', '/');
+    final datePrefix = date
+        .toIso8601String()
+        .substring(0, 10)
+        .replaceAll('-', '/');
     final quantity = order.jumlahUnit > 0 ? order.jumlahUnit : 1;
     final days = order.rentalDays > 0 ? order.rentalDays : 1;
     const unitPrice = 250000;
@@ -793,8 +817,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       'orderan_id': orderanId,
       'invoice_reference': 'INV/$datePrefix-$codeSuffix',
       'invoice_date': date.toIso8601String().substring(0, 10),
-      'due_date': date.add(const Duration(days: 7)).toIso8601String().substring(0, 10),
-      'product_name': order.namaEvent.isNotEmpty ? order.namaEvent : 'Sewa Mistyfan',
+      'due_date': date
+          .add(const Duration(days: 7))
+          .toIso8601String()
+          .substring(0, 10),
+      'product_name': order.namaEvent.isNotEmpty
+          ? order.namaEvent
+          : 'Sewa Mistyfan',
       'quantity': quantity,
       'rental_days': days,
       'unit_price': unitPrice,
@@ -816,5 +845,141 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         );
       }
     }
+  }
+}
+
+class _CancelOrderDialog extends StatefulWidget {
+  const _CancelOrderDialog({
+    required this.order,
+    required this.invoice,
+  });
+
+  final OrderanSewa order;
+  final InvoiceRecord? invoice;
+
+  @override
+  State<_CancelOrderDialog> createState() => _CancelOrderDialogState();
+}
+
+class _CancelOrderDialogState extends State<_CancelOrderDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _reasonController;
+
+  @override
+  void initState() {
+    super.initState();
+    _reasonController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildBanner(
+    BuildContext context, {
+    required IconData icon,
+    required Color surface,
+    required Color ink,
+    required String title,
+  }) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(AppTokens.space12),
+      color: surface,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: ink),
+          const SizedBox(width: AppTokens.space8),
+          Expanded(
+            child: Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(color: ink),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final invoice = widget.invoice;
+    final hasPayment = invoice != null && invoice.paidAmount > 0;
+    final hasUnpaidInvoice =
+        invoice != null && !invoice.isPaid && !invoice.isCancelled;
+    final operational = _operationalColors(context);
+    return AlertDialog(
+      title: const Text('Batalkan Orderan?'),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Event "${widget.order.namaEvent}" (${widget.order.displayCode}) akan dibatalkan dan dihapus dari jadwal aktif pemasangan.',
+              ),
+              const SizedBox(height: AppTokens.space12),
+              if (hasPayment) ...[
+                _buildBanner(
+                  context,
+                  icon: Icons.warning_amber_rounded,
+                  surface: operational.warning,
+                  ink: operational.onWarning,
+                  title:
+                      'Perhatian: Invoice memiliki pembayaran tercatat sebesar ${invoice.paidAmountFormatted}. Pastikan penyelesaian refund atau koordinasi dana dilakukan.',
+                ),
+                const SizedBox(height: AppTokens.space12),
+              ] else if (hasUnpaidInvoice) ...[
+                _buildBanner(
+                  context,
+                  icon: Icons.info_outline_rounded,
+                  surface: Theme.of(context).colorScheme.surfaceContainer,
+                  ink: Theme.of(context).colorScheme.onSurfaceVariant,
+                  title:
+                      'Invoice terkait (${invoice.invoiceReference}) yang belum dibayar akan otomatis dibatalkan.',
+                ),
+                const SizedBox(height: AppTokens.space12),
+              ],
+              TextFormField(
+                controller: _reasonController,
+                autofocus: true,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Alasan Pembatalan *',
+                  hintText: 'Contoh: Acara dibatalkan oleh pihak klien',
+                ),
+                validator: (value) => value == null || value.trim().length < 3
+                    ? 'Alasan pembatalan minimal 3 karakter.'
+                    : null,
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Kembali'),
+        ),
+        FilledButton(
+          onPressed: () {
+            if (_formKey.currentState?.validate() == true) {
+              Navigator.pop(context, _reasonController.text.trim());
+            }
+          },
+          style: FilledButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            foregroundColor: Theme.of(context).colorScheme.error,
+            side: BorderSide(color: Theme.of(context).colorScheme.error),
+          ),
+          child: const Text('Ya, Batalkan Order'),
+        ),
+      ],
+    );
   }
 }
