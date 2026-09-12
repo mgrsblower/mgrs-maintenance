@@ -342,11 +342,37 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: Text(
-                        '${order.displayCode} • ${order.jumlahUnit} Unit (${order.durasiSewaText})',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: colors.onSurface,
-                        ),
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              order.displayCode,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: colors.onSurface,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            ' • ',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                          Text(
+                            '${order.jumlahUnit} Unit',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: colors.onSurface,
+                            ),
+                          ),
+                          Text(
+                            ' (${order.durasiSewaText})',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: AppTokens.space8),

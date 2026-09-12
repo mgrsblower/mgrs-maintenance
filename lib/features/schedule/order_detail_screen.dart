@@ -426,28 +426,35 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppTokens.space16),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              backgroundColor: colors.surfaceContainer,
-              child: Text(customerName.substring(0, 1).toUpperCase()),
+            Text('Data Pemesan', style: theme.textTheme.titleMedium),
+            const SizedBox(height: AppTokens.space8),
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: colors.surfaceContainer,
+                  child: Text(customerName.substring(0, 1).toUpperCase()),
+                ),
+                const SizedBox(width: AppTokens.space12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(customerName, style: theme.textTheme.titleMedium),
+                      Text(phone, style: theme.textTheme.bodyMedium),
+                    ],
+                  ),
+                ),
+                if (hasWhatsapp)
+                  IconButton(
+                    tooltip: 'WhatsApp',
+                    onPressed: () => order!.launchWhatsApp(),
+                    icon: const Icon(Icons.chat_bubble_rounded),
+                  ),
+              ],
             ),
-            const SizedBox(width: AppTokens.space12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(customerName, style: theme.textTheme.titleMedium),
-                  Text(phone, style: theme.textTheme.bodyMedium),
-                ],
-              ),
-            ),
-            if (hasWhatsapp)
-              IconButton(
-                tooltip: 'WhatsApp',
-                onPressed: () => order!.launchWhatsApp(),
-                icon: const Icon(Icons.chat_bubble_rounded),
-              ),
           ],
         ),
       ),
