@@ -63,7 +63,8 @@ class AsyncStateView<T> extends StatelessWidget {
             ErrorStateView(onRetry: retry, error: failure);
       }
       final value = snapshot.data;
-      if (value == null || isEmpty?.call(value) == true || _isEmpty(value)) {
+      if (value == null ||
+          (isEmpty != null ? isEmpty!(value) : _isEmpty(value))) {
         return empty?.call() ?? const EmptyStateView();
       }
       return builder(value);

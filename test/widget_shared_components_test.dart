@@ -6,6 +6,7 @@ import 'package:mgrs_maintenance/app/app_theme.dart';
 import 'package:mgrs_maintenance/app/gateway.dart';
 import 'package:mgrs_maintenance/shared/async_state_view.dart';
 import 'package:mgrs_maintenance/shared/mgrs_components.dart';
+import 'package:mgrs_maintenance/shared/mgrs_app_shell.dart';
 import 'package:mgrs_maintenance/shared/pressable.dart';
 
 void main() {
@@ -87,6 +88,46 @@ void main() {
     expect(changed, MgrsWorkspace.field);
   });
 
+  testWidgets('admin shell requires and renders its workspace switcher',
+      (tester) async {
+    const admin = UserProfile('admin', 'Admin', fullName: 'Admin MGRS');
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: maintenanceTheme(),
+        home: MGRSAppShell(
+          workspace: MgrsWorkspace.pic,
+          user: admin,
+          selectedIndex: 0,
+          onDestinationSelected: (_) {},
+          child: const SizedBox(),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isA<AssertionError>());
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: maintenanceTheme(),
+        home: MGRSAppShell(
+          workspace: MgrsWorkspace.pic,
+          user: admin,
+          selectedIndex: 0,
+          onDestinationSelected: (_) {},
+          onWorkspaceChanged: (_) {},
+          child: const ColoredBox(color: Colors.white),
+        ),
+      ),
+    );
+    expect(find.byType(WorkspaceSwitcher), findsOneWidget);
+    expect(
+      find.ancestor(
+        of: find.byType(NavigationRail),
+        matching: find.byType(SafeArea),
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('async state view renders an explicit empty builder',
       (tester) async {
     await tester.pumpWidget(
@@ -103,6 +144,25 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Tidak ada order'), findsOneWidget);
+  });
+
+  testWidgets('explicit empty predicate overrides compatibility inference',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: maintenanceTheme(),
+        home: AsyncStateView<List<String>>(
+          future: Future.value(const <String>[]),
+          retry: () {},
+          isEmpty: (_) => false,
+          empty: () => const Text('Tidak ada order'),
+          builder: (_) => const Text('Daftar sengaja kosong'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Daftar sengaja kosong'), findsOneWidget);
+    expect(find.text('Tidak ada order'), findsNothing);
   });
 
   testWidgets('async state view renders error and permission states',
@@ -162,6 +222,36 @@ void main() {
     expect(semantics.flagsCollection.isButton, isTrue);
     await tester.tap(find.text('Tekan'));
     expect(taps, 1);
+  });
+
+  testWidgets('pressable meets the touch target without affecting passive layout',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: maintenanceTheme(),
+        home: Column(
+          children: [
+            PressableScale(
+              key: const Key('interactive-pressable'),
+              onTap: () {},
+              child: const SizedBox(width: 12, height: 20),
+            ),
+            PressableScale(
+              key: const Key('passive-pressable'),
+              child: const SizedBox(width: 12, height: 20),
+            ),
+          ],
+        ),
+      ),
+    );
+    final interactiveSize =
+        tester.getSize(find.byKey(const Key('interactive-pressable')));
+    expect(interactiveSize.width, greaterThanOrEqualTo(48));
+    expect(interactiveSize.height, greaterThanOrEqualTo(48));
+    expect(
+      tester.getSize(find.byKey(const Key('passive-pressable'))),
+      const Size(12, 20),
+    );
   });
 
   testWidgets('save action bar owns submitting and retry presentation',

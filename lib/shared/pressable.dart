@@ -87,39 +87,45 @@ class _PressableScaleState extends State<PressableScale>
     _controller.reverse();
   }
 
-  Widget _materialChild(BuildContext context) {
-    final reducedMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    final child = Material(
+  @override
+  Widget build(BuildContext context) {
+    if (!_isInteractive) return widget.child;
+
+    final reducedMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final visual = reducedMotion
+        ? widget.child
+        : AnimatedBuilder(
+            animation: _scaleAnimation,
+            builder: (context, child) => Transform.scale(
+              scale: _scaleAnimation.value,
+              child: child,
+            ),
+            child: widget.child,
+          );
+    final interactiveSurface = ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+      child: Center(child: visual),
+    );
+    final material = Material(
       type: MaterialType.transparency,
       child: InkWell(
-        onTap: _isInteractive ? widget.onTap : null,
-        onLongPress: _isInteractive ? widget.onLongPress : null,
-        onTapDown: _isInteractive ? _handleTapDown : null,
-        onTapUp: _isInteractive ? _handleTapUp : null,
-        onTapCancel: _isInteractive ? _handleTapCancel : null,
-        child: reducedMotion
-            ? widget.child
-            : AnimatedBuilder(
-                animation: _scaleAnimation,
-                builder: (context, child) => Transform.scale(
-                  scale: _scaleAnimation.value,
-                  child: child,
-                ),
-                child: widget.child,
-              ),
+        onTap: widget.onTap,
+        onLongPress: widget.onLongPress,
+        onTapDown: _handleTapDown,
+        onTapUp: _handleTapUp,
+        onTapCancel: _handleTapCancel,
+        child: interactiveSurface,
       ),
     );
     final semantics = Semantics(
-      button: _hasAction,
-      enabled: _isInteractive,
-      child: child,
+      button: true,
+      enabled: true,
+      child: material,
     );
     return widget.tooltip == null
         ? semantics
         : Tooltip(message: widget.tooltip!, child: semantics);
   }
 
-  @override
-  Widget build(BuildContext context) => _materialChild(context);
 }
-
