@@ -153,27 +153,32 @@ class _ScanScreenState extends State<ScanScreen>
 
   Widget _buildLensOption(String label) {
     final isSelected = _activeLensMode == label;
-    return PressableScale(
-      onTap: () => _switchLensMode(label),
+    return Semantics(
+      button: true,
+      label: 'Lensa $label',
+      selected: isSelected,
       child: SizedBox(
         width: 48,
         height: 48,
         child: Center(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: 44,
-            height: 32,
-            decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFFFBBF24) : Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Center(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: isSelected ? AppTokens.ink : Colors.white,
+          child: PressableScale(
+            onTap: () => _switchLensMode(label),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 44,
+              height: 32,
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFFFBBF24) : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Center(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: isSelected ? AppTokens.ink : Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -1087,7 +1092,7 @@ class _ScanScreenState extends State<ScanScreen>
               Expanded(
                 child: PressableScale(
                   child: SizedBox(
-                    height: 44,
+                    height: 48,
                     child: ElevatedButton.icon(
                       onPressed: () {
                         setState(() {
