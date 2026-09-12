@@ -1,17 +1,18 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../features/auth/login_screen.dart';
+import '../features/components/asset_catalog_screen.dart';
+import '../features/history/history_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/home/home_skeleton.dart';
 import '../features/home/pic_home_screen.dart';
-import '../features/components/asset_catalog_screen.dart';
 import '../features/invoices/invoice_list_screen.dart';
-import '../features/maintenance/action_center_screen.dart';
 import '../features/scan/scan_screen.dart';
+import '../features/schedule/schedule_screen.dart';
 import '../features/schedule/upcoming_orders_screen.dart';
 import '../features/splash/splash_screen.dart';
 import '../shared/async_state_view.dart';
-import '../shared/bottom_nav_bar.dart';
+import '../shared/mgrs_app_shell.dart';
 import 'app_theme.dart';
 import 'gateway.dart';
 
@@ -88,6 +89,11 @@ class _MaintenanceAppState extends State<MaintenanceApp>
     }
   }
 
+  Future<void> _signOut() async {
+    await widget.gateway.signOut();
+    await reload();
+  }
+
   @override
   Widget build(BuildContext context) => MaterialApp(
     key: ValueKey(sessionRevision),
@@ -100,7 +106,11 @@ class _MaintenanceAppState extends State<MaintenanceApp>
           )
         : (user == null
             ? LoginScreen(gateway: widget.gateway, onSignedIn: reload)
-            : MaintenanceHome(gateway: widget.gateway, user: user!)),
+            : MaintenanceHome(
+                gateway: widget.gateway,
+                user: user!,
+                onSignOut: _signOut,
+              )),
     builder: (context, child) => Stack(
       children: [
         ?child,
@@ -127,10 +137,7 @@ class _MaintenanceAppState extends State<MaintenanceApp>
                           ),
                           if (user != null)
                             TextButton(
-                              onPressed: () async {
-                                await widget.gateway.signOut();
-                                await reload();
-                              },
+                              onPressed: _signOut,
                               child: const Text('Keluar'),
                             ),
                         ],
@@ -144,237 +151,207 @@ class _MaintenanceAppState extends State<MaintenanceApp>
 }
 
 class MaintenanceHome extends StatefulWidget {
-  const MaintenanceHome({super.key, required this.gateway, required this.user});
+  const MaintenanceHome({
+    super.key,
+    required this.gateway,
+    required this.user,
+    this.onSignOut,
+  });
+
   final MaintenanceGateway gateway;
   final UserProfile user;
+  final Future<void> Function()? onSignOut;
+
   @override
   State<MaintenanceHome> createState() => _MaintenanceHomeState();
 }
 
-class _MaintenanceHomeState extends State<MaintenanceHome>
-    with SingleTickerProviderStateMixin {
-  static const picNavItems = [
-    AppNavItem(
-      label: 'Beranda',
-      activeIcon: Icons.space_dashboard_rounded,
-      inactiveIcon: Icons.space_dashboard_outlined,
-    ),
-    AppNavItem(
-      label: 'Orderan',
-      activeIcon: Icons.event_note_rounded,
-      inactiveIcon: Icons.event_note_outlined,
-    ),
-    AppNavItem(
-      label: 'Invoice',
-      activeIcon: Icons.receipt_long_rounded,
-      inactiveIcon: Icons.receipt_long_outlined,
-    ),
-  ];
-
+class _MaintenanceHomeState extends State<MaintenanceHome> {
   MgrsWorkspace? _workspace;
-  AdminAppMode get _adminMode =>
-      _workspace == MgrsWorkspace.pic
-          ? AdminAppMode.pic
-          : AdminAppMode.service;
-  int tab = 0;
-  late final PageController _pageController;
-  late final AnimationController _fadeController;
-  late final Animation<double> _fadeAnimation;
+  int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _workspace = _safeWorkspace(widget.user.defaultWorkspace);
-    _pageController = PageController(initialPage: tab);
-    _fadeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 220),
-      value: 1.0,
-    );
-    _fadeAnimation = CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeOutCubic,
-    );
   }
 
-  @override
-  void dispose() {
-    _fadeController.dispose();
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  void _onNavigateToTab(int index) {
-    if (tab == index) return;
-    setState(() => tab = index);
-    _pageController.jumpToPage(index);
-    _fadeController.forward(from: 0.0);
-  }
   MgrsWorkspace? _safeWorkspace(MgrsWorkspace? candidate) {
-    final allowedWorkspaces = widget.user.allowedWorkspaces;
-    if (candidate != null && allowedWorkspaces.contains(candidate)) {
-      return candidate;
-    }
+    final allowed = widget.user.allowedWorkspaces;
+    if (candidate != null && allowed.contains(candidate)) return candidate;
     final fallback = widget.user.defaultWorkspace;
-    return fallback != null && allowedWorkspaces.contains(fallback)
-        ? fallback
-        : null;
+    return fallback != null && allowed.contains(fallback) ? fallback : null;
   }
 
   void _selectWorkspace(MgrsWorkspace requestedWorkspace) {
     final nextWorkspace = _safeWorkspace(requestedWorkspace);
-    if (nextWorkspace == null || _workspace == nextWorkspace) return;
+    if (nextWorkspace == null || nextWorkspace == _workspace) return;
     setState(() {
       _workspace = nextWorkspace;
-      tab = 0;
+      _selectedIndex = 0;
     });
-    _pageController.jumpToPage(0);
-    _fadeController.forward(from: 0.0);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          nextWorkspace == MgrsWorkspace.pic
-              ? 'Beralih ke Mode PIC (Orderan & Invoice)'
-              : 'Beralih ke Mode Servis (Teknisi Maintenance)',
-          style: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        backgroundColor: const Color(0xFF18181B),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
-    );
   }
 
-  void _switchAdminMode(AdminAppMode newMode) {
-    _selectWorkspace(
-      newMode == AdminAppMode.pic ? MgrsWorkspace.pic : MgrsWorkspace.field,
-    );
+  void _selectDestination(int index) {
+    if (index == _selectedIndex || index < 0 || index > 3) return;
+    setState(() => _selectedIndex = index);
   }
 
+  Future<void> _signOut() {
+    return widget.onSignOut?.call() ?? widget.gateway.signOut();
+  }
 
-  bool get effectiveIsPic =>
-      _workspace == MgrsWorkspace.pic &&
-      widget.user.allowedWorkspaces.contains(MgrsWorkspace.pic);
-
-  bool get _hasWorkspaceAccess =>
-      _workspace != null && widget.user.allowedWorkspaces.contains(_workspace);
-
-  void openScannerModal() {
-    Navigator.of(context).push<void>(
+  Future<void> _openScanner() {
+    return Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => ScanScreen(
           gateway: widget.gateway,
           user: widget.user,
-          readOnly: effectiveIsPic,
         ),
       ),
     );
   }
 
+  Widget _picDestination() => switch (_selectedIndex) {
+        0 => PicHomeScreen(
+            gateway: widget.gateway,
+            user: widget.user,
+            onOpenOrdersTab: () => _selectDestination(1),
+            onOpenInvoicesTab: () => _selectDestination(2),
+          ),
+        1 => UpcomingOrdersScreen(
+            gateway: widget.gateway,
+            user: widget.user,
+          ),
+        2 => InvoiceListScreen(
+            gateway: widget.gateway,
+            user: widget.user,
+          ),
+        3 => _ProfileDestination(
+            user: widget.user,
+            onSignOut: _signOut,
+          ),
+        _ => const SizedBox.shrink(),
+      };
+
+  Widget _fieldDestination() => switch (_selectedIndex) {
+        0 => HomeScreen(
+            gateway: widget.gateway,
+            user: widget.user,
+            onSignOut: _signOut,
+          ),
+        1 => ScheduleScreen(gateway: widget.gateway),
+        2 => AssetCatalogScreen(
+            gateway: widget.gateway,
+            showBottomNav: false,
+            onNavigateToTab: _selectDestination,
+            onOpenScanner: _openScanner,
+          ),
+        3 => HistoryScreen(gateway: widget.gateway),
+        _ => const SizedBox.shrink(),
+      };
+
+  Widget _picShell() => MGRSAppShell(
+        workspace: MgrsWorkspace.pic,
+        user: widget.user,
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: _selectDestination,
+        onWorkspaceChanged:
+            widget.user.productRole == ProductRole.admin ? _selectWorkspace : null,
+        child: _picDestination(),
+      );
+
+  Widget _fieldShell() => MGRSAppShell(
+        workspace: MgrsWorkspace.field,
+        user: widget.user,
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: _selectDestination,
+        onWorkspaceChanged:
+            widget.user.productRole == ProductRole.admin ? _selectWorkspace : null,
+        child: _fieldDestination(),
+      );
+
+  @override
+  Widget build(BuildContext context) => switch (_workspace) {
+        MgrsWorkspace.pic => _picShell(),
+        MgrsWorkspace.field => _fieldShell(),
+        null => const Scaffold(
+            body: Center(child: Text('Akses workspace tidak tersedia.')),
+          ),
+      };
+}
+
+class _ProfileDestination extends StatefulWidget {
+  const _ProfileDestination({
+    required this.user,
+    required this.onSignOut,
+  });
+
+  final UserProfile user;
+  final Future<void> Function() onSignOut;
+
+  @override
+  State<_ProfileDestination> createState() => _ProfileDestinationState();
+}
+
+class _ProfileDestinationState extends State<_ProfileDestination> {
+  bool _signingOut = false;
+  Object? _error;
+
+  Future<void> _signOut() async {
+    if (_signingOut) return;
+    setState(() {
+      _signingOut = true;
+      _error = null;
+    });
+    try {
+      await widget.onSignOut();
+    } catch (error) {
+      if (mounted) setState(() => _error = error);
+    } finally {
+      if (mounted) setState(() => _signingOut = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (!_hasWorkspaceAccess) {
-      return const Scaffold(
-        body: Center(child: Text('Akses workspace tidak tersedia.')),
-      );
-    }
-    final isPic = effectiveIsPic;
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final scrimHeight = 98.0 + bottomInset;
-
-    final children = isPic
-        ? [
-            PicHomeScreen(
-              gateway: widget.gateway,
-              user: widget.user,
-              adminMode: widget.user.isAdmin ? _adminMode : null,
-              onSwitchAdminMode:
-                  widget.user.isAdmin ? _switchAdminMode : null,
-              onOpenOrdersTab: () => _onNavigateToTab(1),
-              onOpenInvoicesTab: () => _onNavigateToTab(2),
-            ),
-            UpcomingOrdersScreen(
-              gateway: widget.gateway,
-              user: widget.user,
-            ),
-            InvoiceListScreen(
-              gateway: widget.gateway,
-              user: widget.user,
-            ),
-          ]
-        : [
-            HomeScreen(
-              gateway: widget.gateway,
-              user: widget.user,
-              adminMode: widget.user.isAdmin ? _adminMode : null,
-              onSwitchAdminMode:
-                  widget.user.isAdmin ? _switchAdminMode : null,
-              showBottomNav: false,
-              onNavigateToTab: _onNavigateToTab,
-              onOpenScanner: openScannerModal,
-            ),
-            AssetCatalogScreen(
-              gateway: widget.gateway,
-              showBottomNav: false,
-              onNavigateToTab: _onNavigateToTab,
-              onOpenScanner: openScannerModal,
-            ),
-            ActionCenterScreen(
-              gateway: widget.gateway,
-              showBottomNav: false,
-              onNavigateToTab: _onNavigateToTab,
-              onOpenScanner: openScannerModal,
-            ),
-          ];
-
-    return Scaffold(
-      extendBody: true,
-      backgroundColor: const Color(0xFFFBFBFB),
-      body: Stack(
-        children: [
-          FadeTransition(
-            opacity: _fadeAnimation,
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (index) => setState(() => tab = index),
-              physics: const BouncingScrollPhysics(),
-              children: children,
-            ),
-          ),
-          // Native iOS style bottom gradient scrim (fades content softly beneath floating navbar)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: scrimHeight,
-            child: IgnorePointer(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      const Color(0xFFFBFBFB).withValues(alpha: 0.96),
-                      const Color(0xFFFBFBFB).withValues(alpha: 0.65),
-                      const Color(0xFFFBFBFB).withValues(alpha: 0.0),
-                    ],
-                    stops: const [0.0, 0.50, 1.0],
-                  ),
-                ),
-              ),
+    final textTheme = Theme.of(context).textTheme;
+    final username = widget.user.username?.trim();
+    return PageBody(
+      children: [
+        Text('Profil', style: textTheme.headlineSmall),
+        const SizedBox(height: 24),
+        Text(widget.user.displayName, style: textTheme.titleLarge),
+        const SizedBox(height: 4),
+        Text(
+          widget.user.productRole?.label ?? widget.user.role,
+          style: textTheme.bodyMedium,
+        ),
+        if (username != null && username.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text('@$username', style: textTheme.bodyMedium),
+        ],
+        if (_error != null) ...[
+          const SizedBox(height: 24),
+          Text(
+            failureMessage(_error),
+            style: textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.error,
             ),
           ),
         ],
-      ),
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: tab,
-        onNavigateToTab: _onNavigateToTab,
-        items: isPic ? picNavItems : null,
-        onOpenScanner: openScannerModal,
-      ),
+        const SizedBox(height: 32),
+        FilledButton.icon(
+          onPressed: _signingOut ? null : _signOut,
+          icon: _signingOut
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.logout),
+          label: Text(_signingOut ? 'Keluar…' : 'Keluar dari akun'),
+        ),
+      ],
     );
   }
 }

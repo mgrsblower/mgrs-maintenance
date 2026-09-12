@@ -27,14 +27,6 @@ extension ProductRoleLabel on ProductRole {
   };
 }
 
-enum AdminAppMode {
-  pic('Mode PIC (Order & Invoice)'),
-  service('Mode Servis (Teknisi Maintenance)');
-
-  const AdminAppMode(this.label);
-  final String label;
-}
-
 class UserProfile {
   const UserProfile(
     this.id,

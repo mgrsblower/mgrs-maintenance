@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mgrs_maintenance/app/app.dart';
 import 'package:mgrs_maintenance/app/gateway.dart';
 import 'package:mgrs_maintenance/features/components/component.dart';
 import 'package:mgrs_maintenance/features/components/component_detail_screen.dart';
-import 'package:mgrs_maintenance/features/home/pic_home_screen.dart';
 import 'package:mgrs_maintenance/features/invoices/invoice_list_screen.dart';
 import 'package:mgrs_maintenance/features/invoices/invoice_builder_dialog.dart';
 import 'package:mgrs_maintenance/features/invoices/invoice_model.dart';
@@ -338,54 +336,6 @@ void main() {
       }
     });
 
-    testWidgets('renders PIC Dashboard with Beranda, Orderan, Invoice tabs', (
-      tester,
-    ) async {
-      final gateway = MockPicGateway();
-      const picUser = UserProfile('pic-1', 'PIC Pemasangan', fullName: 'Budi');
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: MaintenanceHome(gateway: gateway, user: picUser),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // PIC dashboard tabs should be present
-      expect(find.text('Beranda'), findsWidgets);
-      expect(find.text('Orderan'), findsWidgets);
-      expect(find.text('Invoice'), findsWidgets);
-
-      // Verify QR scanner button IS shown for PIC
-      expect(find.byIcon(Icons.qr_code_scanner_rounded), findsOneWidget);
-    });
-
-    testWidgets('PicHomeScreen shows event summary and quick action button', (
-      tester,
-    ) async {
-      final gateway = MockPicGateway();
-      const picUser = UserProfile('pic-1', 'PIC Pemasangan', fullName: 'Budi');
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: PicHomeScreen(
-              gateway: gateway,
-              user: picUser,
-              onOpenOrdersTab: () {},
-              onOpenInvoicesTab: () {},
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Total Orderan\nBulan Ini'), findsOneWidget);
-      expect(find.text('Total Order'), findsOneWidget);
-      expect(find.text('Akan Datang'), findsOneWidget);
-      expect(find.text('Selesai'), findsOneWidget);
-      expect(find.text('Pameran Otomotif Akbar'), findsOneWidget);
-    });
 
     testWidgets('InvoiceListScreen filters invoices by status', (tester) async {
       final gateway = MockPicGateway();

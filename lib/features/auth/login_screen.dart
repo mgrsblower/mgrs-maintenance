@@ -12,7 +12,7 @@ class LoginScreen extends StatefulWidget {
   });
 
   final MaintenanceGateway gateway;
-  final VoidCallback onSignedIn;
+  final Future<void> Function() onSignedIn;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -81,7 +81,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _triggerSuccess?.fire();
       // Allow user to briefly enjoy the success celebration animation
       await Future.delayed(const Duration(milliseconds: 1400));
-      if (mounted) widget.onSignedIn();
+      if (mounted) await widget.onSignedIn();
     } catch (e) {
       _triggerFail?.fire();
       if (mounted) setState(() => error = failureMessage(e));
