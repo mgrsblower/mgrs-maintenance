@@ -24,30 +24,186 @@ class AsyncStateView<T> extends StatelessWidget {
     required this.future,
     required this.builder,
     required this.retry,
+    this.empty,
+    this.error,
+    this.permission,
+    this.conflict,
+    this.loading,
+    this.isEmpty,
   });
+
   final Future<T> future;
   final Widget Function(T) builder;
   final VoidCallback retry;
+  final Widget Function()? empty;
+  final Widget Function(Object? error)? error;
+  final Widget Function()? permission;
+  final Widget Function(Object? error)? conflict;
+  final Widget Function()? loading;
+  final bool Function(T value)? isEmpty;
+
   @override
   Widget build(BuildContext context) => FutureBuilder<T>(
     future: future,
     builder: (context, snapshot) {
       if (snapshot.connectionState != ConnectionState.done) {
-        return const Center(child: CircularProgressIndicator());
+        return loading?.call() ?? const LoadingStateView();
       }
-      if (snapshot.hasError) {
-        return PageBody(
-          children: [
-            const Icon(Icons.cloud_off_outlined, size: 40),
-            const SizedBox(height: 16),
-            Text(failureMessage(snapshot.error), textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            OutlinedButton(onPressed: retry, child: const Text('Coba lagi')),
-          ],
-        );
+      final failure = snapshot.error;
+      if (failure != null) {
+        if (_isPermissionFailure(failure)) {
+          return permission?.call() ??
+              PermissionStateView(onRetry: retry, error: failure);
+        }
+        if (_isConflictFailure(failure)) {
+          return conflict?.call(failure) ??
+              ConflictStateView(onRetry: retry, error: failure);
+        }
+        return error?.call(failure) ??
+            ErrorStateView(onRetry: retry, error: failure);
       }
-      return builder(snapshot.data as T);
+      final value = snapshot.data;
+      if (value == null || isEmpty?.call(value) == true || _isEmpty(value)) {
+        return empty?.call() ?? const EmptyStateView();
+      }
+      return builder(value);
     },
+  );
+
+  bool _isEmpty(T value) {
+    if (value is String) return value.trim().isEmpty;
+    if (value is Iterable) return value.isEmpty;
+    if (value is Map) return value.isEmpty;
+    return false;
+  }
+
+  bool _isPermissionFailure(Object value) {
+    return value is AppFailure &&
+        {'forbidden', 'permission_denied', 'unauthenticated'}.contains(value.code);
+  }
+
+  bool _isConflictFailure(Object value) {
+    return value is AppFailure &&
+        {'conflict', 'version_conflict'}.contains(value.code);
+  }
+}
+
+class LoadingStateView extends StatelessWidget {
+  const LoadingStateView({super.key, this.message = 'Memuat data…'});
+  final String message;
+
+  @override
+  Widget build(BuildContext context) => StatePanel(
+    icon: Icons.hourglass_empty,
+    title: message,
+    showProgress: true,
+  );
+}
+
+class EmptyStateView extends StatelessWidget {
+  const EmptyStateView({
+    super.key,
+    this.title = 'Belum ada data',
+    this.message = 'Belum ada catatan untuk ditampilkan.',
+  });
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) =>
+      StatePanel(icon: Icons.inbox_outlined, title: title, message: message);
+}
+
+class ErrorStateView extends StatelessWidget {
+  const ErrorStateView({
+    super.key,
+    required this.onRetry,
+    this.error,
+  });
+  final VoidCallback onRetry;
+  final Object? error;
+
+  @override
+  Widget build(BuildContext context) => StatePanel(
+    icon: Icons.cloud_off_outlined,
+    title: 'Data belum dapat dimuat',
+    message: failureMessage(error),
+    action: OutlinedButton(onPressed: onRetry, child: const Text('Coba lagi')),
+  );
+}
+
+class PermissionStateView extends StatelessWidget {
+  const PermissionStateView({
+    super.key,
+    required this.onRetry,
+    this.error,
+  });
+  final VoidCallback onRetry;
+  final Object? error;
+
+  @override
+  Widget build(BuildContext context) => StatePanel(
+    icon: Icons.lock_outline,
+    title: 'Akses tidak tersedia',
+    message: failureMessage(error),
+    action: OutlinedButton(onPressed: onRetry, child: const Text('Coba lagi')),
+  );
+}
+
+class ConflictStateView extends StatelessWidget {
+  const ConflictStateView({
+    super.key,
+    required this.onRetry,
+    this.error,
+  });
+  final VoidCallback onRetry;
+  final Object? error;
+
+  @override
+  Widget build(BuildContext context) => StatePanel(
+    icon: Icons.sync_problem_outlined,
+    title: 'Perubahan belum tersimpan',
+    message: failureMessage(error),
+    action: OutlinedButton(onPressed: onRetry, child: const Text('Coba lagi')),
+  );
+}
+
+class StatePanel extends StatelessWidget {
+  const StatePanel({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.message,
+    this.action,
+    this.showProgress = false,
+  });
+  final IconData icon;
+  final String title;
+  final String? message;
+  final Widget? action;
+  final bool showProgress;
+
+  @override
+  Widget build(BuildContext context) => PageBody(
+    children: [
+      const SizedBox(height: 32),
+      Icon(icon, size: 40, semanticLabel: title),
+      if (showProgress) ...[
+        const SizedBox(height: 16),
+        const Center(child: CircularProgressIndicator()),
+      ],
+      const SizedBox(height: 16),
+      Text(
+        title,
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.titleMedium,
+      ),
+      if (message != null) ...[
+        const SizedBox(height: 8),
+        Text(message!, textAlign: TextAlign.center),
+      ],
+      if (action != null) ...[const SizedBox(height: 16), action!],
+    ],
   );
 }
 

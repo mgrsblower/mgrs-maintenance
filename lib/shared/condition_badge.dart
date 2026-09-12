@@ -11,15 +11,24 @@ class ConditionBadge extends StatelessWidget {
         : value == 'Rusak Ringan'
         ? AppTokens.warning
         : AppTokens.danger;
-    return Chip(
-      avatar: Icon(
-        value == 'OK' ? Icons.check_circle_outline : Icons.info_outline,
-        color: color,
-        size: 18,
+    return Tooltip(
+      message: 'Kondisi: $value',
+      child: Semantics(
+        container: true,
+        label: 'Kondisi: $value',
+        child: Chip(
+          avatar: Icon(
+            value == 'OK'
+                ? Icons.check_circle_outline
+                : Icons.info_outline,
+            color: color,
+            size: 18,
+          ),
+          label: Text(value, style: TextStyle(color: color)),
+          side: BorderSide(color: color.withValues(alpha: .3)),
+          backgroundColor: color.withValues(alpha: .06),
+        ),
       ),
-      label: Text(value, style: TextStyle(color: color)),
-      side: BorderSide(color: color.withValues(alpha: .3)),
-      backgroundColor: color.withValues(alpha: .06),
     );
   }
 }
