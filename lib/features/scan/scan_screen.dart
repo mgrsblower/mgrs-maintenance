@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../app/gateway.dart';
 import '../../shared/pressable.dart';
@@ -16,11 +14,13 @@ class ScanScreen extends StatefulWidget {
     required this.user,
     this.initialComponent,
     this.readOnly = false,
+    this.cameraUnavailable = false,
   });
   final MaintenanceGateway gateway;
   final UserProfile user;
   final Component? initialComponent;
   final bool readOnly;
+  final bool cameraUnavailable;
 
   @override
   State<ScanScreen> createState() => _ScanScreenState();
@@ -37,12 +37,6 @@ class _ScanScreenState extends State<ScanScreen>
   Object? error;
   Component? scannedComponent;
 
-  // Lens & Touch to Focus state
-  String _activeLensMode = '1x';
-  Offset? _focusPoint;
-  Timer? _focusTimer;
-  bool _showFocusRing = false;
-
   static bool get _isTestEnvironment {
     return WidgetsBinding.instance.runtimeType
         .toString()
@@ -54,11 +48,9 @@ class _ScanScreenState extends State<ScanScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     scannedComponent = widget.initialComponent;
-    scanning = widget.initialComponent == null;
+    scanning = widget.initialComponent == null && !widget.cameraUnavailable;
     camera = MobileScannerController(
-      autoStart: widget.initialComponent == null,
-      lensType: CameraLensType.normal, // Default ke Lensa Utama 1x (Bukan Ultra Wide 0.5x)
-      facing: CameraFacing.back,
+      autoStart: widget.initialComponent == null && !widget.cameraUnavailable,
       detectionSpeed: DetectionSpeed.noDuplicates,
     );
 
@@ -77,103 +69,63 @@ class _ScanScreenState extends State<ScanScreen>
 
   @override
   void dispose() {
-    _focusTimer?.cancel();
     _laserController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     unawaited(camera.dispose());
     super.dispose();
   }
 
-  Future<void> _switchLensMode(String mode) async {
-    if (_activeLensMode == mode) return;
-    HapticFeedback.lightImpact();
-    setState(() => _activeLensMode = mode);
-    try {
-      if (mode == '0.5x') {
-        await camera.switchCamera(
-          const SelectCamera(lensType: CameraLensType.wide),
-        );
-      } else if (mode == '1x') {
-        await camera.switchCamera(
-          const SelectCamera(lensType: CameraLensType.normal),
-        );
-        await camera.resetZoomScale();
-      } else if (mode == '2x') {
-        final supported =
-            await camera.getSupportedLenses(facing: CameraFacing.back);
-        if (supported.contains(CameraLensType.zoom)) {
-          await camera.switchCamera(
-            const SelectCamera(lensType: CameraLensType.zoom),
-          );
-        } else {
-          await camera.switchCamera(
-            const SelectCamera(lensType: CameraLensType.normal),
-          );
-          await camera.setZoomScale(0.35);
-        }
-      }
-    } catch (_) {
-      if (mode == '2x') {
-        try {
-          await camera.setZoomScale(0.35);
-        } catch (_) {}
-      } else {
-        try {
-          await camera.resetZoomScale();
-        } catch (_) {}
-      }
-    }
-  }
-
-  void _onTapFocus(TapDownDetails details, Size screenSize) {
-    final dx = details.globalPosition.dx;
-    final dy = details.globalPosition.dy;
-    final nx = (dx / screenSize.width).clamp(0.0, 1.0);
-    final ny = (dy / screenSize.height).clamp(0.0, 1.0);
-
-    HapticFeedback.lightImpact();
-    try {
-      final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
-      // In iOS portrait back camera, sensor X is portrait Y, sensor Y is 1.0 - portrait X
-      final targetPoint = isIOS ? Offset(ny, 1.0 - nx) : Offset(nx, ny);
-      camera.setFocusPoint(targetPoint);
-    } catch (_) {}
-
-    _focusTimer?.cancel();
-    setState(() {
-      _focusPoint = Offset(dx, dy);
-      _showFocusRing = true;
-    });
-    _focusTimer = Timer(const Duration(milliseconds: 1400), () {
-      if (mounted) setState(() => _showFocusRing = false);
-    });
-  }
-
-  Widget _buildLensOption(String label) {
-    final isSelected = _activeLensMode == label;
-    return PressableScale(
-      onTap: () => _switchLensMode(label),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 44,
-        height: 32,
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFBBF24) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: isSelected ? const Color(0xFF0F172A) : Colors.white,
-            ),
+  Future<void> _showManualCodeDialog() async {
+    final controller = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text(
+          'Masukkan kode manual',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
           ),
         ),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            autofocus: true,
+            textCapitalization: TextCapitalization.characters,
+            decoration: const InputDecoration(
+              labelText: 'Kode Komponen',
+              hintText: 'Contoh: KPL-001',
+            ),
+            validator: (val) {
+              if (val == null || val.trim().isEmpty) {
+                return 'Kode komponen tidak boleh kosong';
+              }
+              return null;
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.of(ctx).pop(controller.text.trim());
+              }
+            },
+            child: const Text('Cari'),
+          ),
+        ],
       ),
     );
+    if (result != null && result.isNotEmpty) {
+      await lookup(result);
+    }
   }
 
   @override
@@ -244,8 +196,6 @@ class _ScanScreenState extends State<ScanScreen>
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.sizeOf(context);
-
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -253,25 +203,28 @@ class _ScanScreenState extends State<ScanScreen>
         children: [
           // 1. Full-Screen Immersive Camera Preview (Edge-to-Edge)
           Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTapDown: (details) => _onTapFocus(details, screenSize),
-              child: MobileScanner(
-                controller: camera,
-                fit: BoxFit.cover,
-                onDetect: (capture) {
-                  for (final b in capture.barcodes) {
-                    final v = b.rawValue;
-                    if (v != null && v.isNotEmpty) {
-                      unawaited(lookup(v));
-                      break;
-                    }
-                  }
-                },
-                errorBuilder: (context, error) =>
-                    _buildCameraErrorView(context, error),
-              ),
-            ),
+            child: widget.cameraUnavailable
+                ? _buildCameraErrorView(
+                    context,
+                    const MobileScannerException(
+                      errorCode: MobileScannerErrorCode.controllerUninitialized,
+                    ),
+                  )
+                : MobileScanner(
+                    controller: camera,
+                    fit: BoxFit.cover,
+                    onDetect: (capture) {
+                      for (final b in capture.barcodes) {
+                        final v = b.rawValue;
+                        if (v != null && v.isNotEmpty) {
+                          unawaited(lookup(v));
+                          break;
+                        }
+                      }
+                    },
+                    errorBuilder: (context, error) =>
+                        _buildCameraErrorView(context, error),
+                  ),
           ),
 
           // 2. Subtle Dark Gradient Vignette for Top Bar Readability
@@ -297,9 +250,9 @@ class _ScanScreenState extends State<ScanScreen>
             ),
           ),
 
-          // 3. Center Viewfinder Frame (food-scanner-camera wireframe style with animated laser)
-          // Centered slightly higher than middle so it balances perfectly above the bottom sheet
-          Align(
+          // 3. Center Viewfinder Frame (animated laser)
+          if (!widget.cameraUnavailable && scannedComponent == null)
+            Align(
             alignment: const Alignment(0, -0.22),
             child: IgnorePointer(
               child: SizedBox(
@@ -376,12 +329,11 @@ class _ScanScreenState extends State<ScanScreen>
                       ),
                     ),
 
-                    // Animated Scanning Laser Beam from food-scanner-camera wireframe
+                    // Animated Scanning Laser Beam
                     AnimatedBuilder(
                       animation: _laserAnimation,
                       builder: (context, child) {
                         final t = _laserAnimation.value;
-                        // Moves between 10% and 90% (28px to 252px)
                         final posY = 28.0 + t * (280.0 - 56.0);
                         final opacity = (t < 0.1
                                 ? (t / 0.1)
@@ -425,92 +377,7 @@ class _ScanScreenState extends State<ScanScreen>
             ),
           ),
 
-          // 4. Touch-to-Focus Animated Ring (Apple Camera Yellow Target)
-          if (_focusPoint != null && _showFocusRing)
-            Positioned(
-              left: (_focusPoint!.dx - 32).clamp(
-                0.0,
-                screenSize.width - 64,
-              ),
-              top: (_focusPoint!.dy - 32).clamp(
-                0.0,
-                screenSize.height - 64,
-              ),
-              child: IgnorePointer(
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 1.3, end: 1.0),
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOutBack,
-                  builder: (context, scale, child) {
-                    return Transform.scale(
-                      scale: scale,
-                      child: Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: const Color(0xFFFBBF24),
-                            width: 1.8,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Center(
-                          child: SizedBox(
-                            width: 6,
-                            height: 6,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: Color(0xFFFBBF24),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-
-          // 5. Lens & Zoom Switcher Pill (Floating cleanly right above the bottom sheet)
-          if (scannedComponent == null)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 148 + MediaQuery.paddingOf(context).bottom,
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.65),
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.20),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.35),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildLensOption('0.5x'),
-                      const SizedBox(width: 4),
-                      _buildLensOption('1x'),
-                      const SizedBox(width: 4),
-                      _buildLensOption('2x'),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-          // 6. Floating Top Bar
+          // 4. Floating Top Bar
           Positioned(
             top: 0,
             left: 0,
@@ -523,21 +390,18 @@ class _ScanScreenState extends State<ScanScreen>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    PressableScale(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.45),
-                          shape: BoxShape.circle,
-                          border: Border.all(
+                    Tooltip(
+                      message: 'Tutup',
+                      child: IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close_rounded,
+                            color: Colors.white, size: 22),
+                        style: IconButton.styleFrom(
+                          minimumSize: const Size(48, 48),
+                          backgroundColor: Colors.black.withValues(alpha: 0.45),
+                          side: BorderSide(
                             color: Colors.white.withValues(alpha: 0.2),
                           ),
-                        ),
-                        child: const Center(
-                          child: Icon(Icons.close_rounded,
-                              color: Colors.white, size: 22),
                         ),
                       ),
                     ),
@@ -577,38 +441,34 @@ class _ScanScreenState extends State<ScanScreen>
                         final isUnavailable =
                             torchState == TorchState.unavailable;
 
-                        return PressableScale(
-                          onTap: isUnavailable
-                              ? null
-                              : () => camera.toggleTorch(),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
+                        return Tooltip(
+                          message: 'Senter',
+                          child: IconButton(
+                            onPressed: isUnavailable
+                                ? null
+                                : () => camera.toggleTorch(),
+                            icon: Icon(
+                              isOn
+                                  ? Icons.flash_on_rounded
+                                  : Icons.flash_off_rounded,
                               color: isOn
+                                  ? const Color(0xFFFBBF24)
+                                  : (isUnavailable
+                                      ? Colors.white38
+                                      : Colors.white),
+                              size: 20,
+                            ),
+                            style: IconButton.styleFrom(
+                              minimumSize: const Size(48, 48),
+                              backgroundColor: isOn
                                   ? const Color(0xFFFBBF24)
                                       .withValues(alpha: 0.3)
                                   : Colors.black.withValues(alpha: 0.45),
-                              shape: BoxShape.circle,
-                              border: Border.all(
+                              side: BorderSide(
                                 color: isOn
                                     ? const Color(0xFFFBBF24)
                                     : Colors.white.withValues(alpha: 0.2),
                                 width: isOn ? 1.5 : 1.0,
-                              ),
-                            ),
-                            child: Center(
-                              child: Icon(
-                                isOn
-                                    ? Icons.flash_on_rounded
-                                    : Icons.flash_off_rounded,
-                                color: isOn
-                                    ? const Color(0xFFFBBF24)
-                                    : (isUnavailable
-                                        ? Colors.white38
-                                        : Colors.white),
-                                size: 20,
                               ),
                             ),
                           ),
@@ -621,13 +481,14 @@ class _ScanScreenState extends State<ScanScreen>
             ),
           ),
 
-          // 7. Docked Bottom Sheet
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _buildScannedResultSheet(context),
-          ),
+          // Docked Bottom Sheet
+          if (!widget.cameraUnavailable || scannedComponent != null)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: _buildScannedResultSheet(context),
+            ),
         ],
       ),
     );
@@ -722,7 +583,7 @@ class _ScanScreenState extends State<ScanScreen>
               const SizedBox(height: 14),
               SizedBox(
                 width: double.infinity,
-                height: 44,
+                height: 48,
                 child: ElevatedButton.icon(
                   onPressed: () {
                     setState(() {
@@ -742,6 +603,29 @@ class _ScanScreenState extends State<ScanScreen>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF147CC1),
                     foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: _showManualCodeDialog,
+                  icon: const Icon(Icons.keyboard_outlined, size: 18),
+                  label: const Text(
+                    'Masukkan kode manual',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF334155),
+                    side: const BorderSide(color: Color(0xFFCBD5E1)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -772,6 +656,27 @@ class _ScanScreenState extends State<ScanScreen>
                   fontFamily: 'Plus Jakarta Sans',
                   fontSize: 12,
                   color: Color(0xFF64748B),
+                ),
+              ),
+              const SizedBox(height: 14),
+              OutlinedButton.icon(
+                onPressed: _showManualCodeDialog,
+                icon: const Icon(Icons.keyboard_outlined, size: 18),
+                label: const Text(
+                  'Masukkan kode manual',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 48),
+                  foregroundColor: const Color(0xFF334155),
+                  side: const BorderSide(color: Color(0xFFCBD5E1)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ],
@@ -1184,27 +1089,56 @@ class _ScanScreenState extends State<ScanScreen>
             ),
           ),
           const SizedBox(height: 22),
-          ElevatedButton.icon(
-            onPressed: () {
-              unawaited(camera.start());
-              setState(() {});
-            },
-            icon: const Icon(Icons.refresh_rounded,
+          Tooltip(
+            message: 'Coba lagi',
+            child: ElevatedButton.icon(
+              onPressed: () {
+                unawaited(camera.start());
+                setState(() {});
+              },
+              icon: const Icon(Icons.refresh_rounded,
+                  size: 18, color: Colors.white),
+              label: Text(
+                isPermissionDenied
+                    ? 'Beri Izin / Coba Lagi'
+                    : 'Hubungkan Ulang Kamera',
+                style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF147CC1),
+                elevation: 0,
+                minimumSize: const Size(0, 48),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _showManualCodeDialog,
+            icon: const Icon(Icons.keyboard_outlined,
                 size: 18, color: Colors.white),
-            label: Text(
-              isPermissionDenied
-                  ? 'Beri Izin / Coba Lagi'
-                  : 'Hubungkan Ulang Kamera',
-              style: const TextStyle(
+            label: const Text(
+              'Masukkan kode manual',
+              style: TextStyle(
                 fontFamily: 'Plus Jakarta Sans',
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
               ),
             ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF147CC1),
-              elevation: 0,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white,
+              side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+              minimumSize: const Size(0, 48),
               padding:
                   const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
               shape: RoundedRectangleBorder(

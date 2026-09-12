@@ -474,7 +474,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Perbarui Kondisi'), findsOneWidget);
+    expect(find.text('Catat Pemeriksaan'), findsOneWidget);
     expect(find.text('Catat Servis'), findsOneWidget);
   });
 

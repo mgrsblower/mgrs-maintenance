@@ -173,19 +173,26 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
           children: [
             PressableScale(
               onTap: () => Navigator.of(context).pop(),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.chevron_left_rounded,
-                    color: Color(0xFF0F172A),
-                    size: 24,
+              child: Semantics(
+                button: true,
+                label: 'Kembali',
+                child: Tooltip(
+                  message: 'Kembali',
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.chevron_left_rounded,
+                        color: Color(0xFF0F172A),
+                        size: 24,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -219,19 +226,26 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
         ),
         PressableScale(
           onTap: () {},
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.more_horiz_rounded,
-                color: Color(0xFF0F172A),
-                size: 20,
+          child: Semantics(
+            button: true,
+            label: 'Opsi komponen',
+            child: Tooltip(
+              message: 'Opsi komponen',
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.more_horiz_rounded,
+                    color: Color(0xFF0F172A),
+                    size: 20,
+                  ),
+                ),
               ),
             ),
           ),
@@ -1068,7 +1082,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Perbarui Kondisi',
+                      'Catat Pemeriksaan',
                       style: TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 14,

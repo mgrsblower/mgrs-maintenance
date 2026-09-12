@@ -13,7 +13,7 @@ class AssetCatalogScreen extends StatefulWidget {
     required this.user,
     required this.onNavigateToTab,
     required this.onOpenScanner,
-    this.showBottomNav = true,
+    this.showBottomNav = false,
   });
 
   final MaintenanceGateway gateway;
@@ -292,23 +292,18 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
             ),
           ],
         ),
-        PressableScale(
-          onTap: () {},
-          child: Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.filter_list_rounded,
-                color: Color(0xFF334155),
-                size: 18,
-              ),
-            ),
+        IconButton(
+          tooltip: 'Filter komponen',
+          onPressed: () {},
+          icon: const Icon(
+            Icons.filter_list_rounded,
+            color: Color(0xFF334155),
+            size: 20,
+          ),
+          style: IconButton.styleFrom(
+            minimumSize: const Size(48, 48),
+            backgroundColor: const Color(0xFFF1F5F9),
+            side: const BorderSide(color: Color(0xFFE2E8F0)),
           ),
         ),
       ],
@@ -318,7 +313,7 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
   // Search Bar
   Widget _buildSearchBar(BuildContext context) {
     return Container(
-      height: 44,
+      height: 48,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
@@ -403,93 +398,20 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
   // List of Component Cards
   Widget _buildComponentList(BuildContext context, List<Map<String, dynamic>> items) {
     if (isLoading && components.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 48),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(color: Color(0xFF147CC1)),
-              SizedBox(height: 14),
-              Text(
-                'Memuat katalog aset...',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 13,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      return const LoadingStateView(message: 'Memuat katalog aset...');
     }
 
     if (error != null && components.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-        child: Column(
-          children: [
-            const Icon(Icons.error_outline_rounded, size: 40, color: Color(0xFFDC2626)),
-            const SizedBox(height: 12),
-            Text(
-              failureMessage(error),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF991B1B),
-              ),
-            ),
-            const SizedBox(height: 14),
-            ElevatedButton.icon(
-              onPressed: loadComponents,
-              icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('Coba Lagi'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF147CC1),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
-        ),
+      return ErrorStateView(
+        onRetry: () => loadComponents(forceRefresh: true),
+        error: error,
       );
     }
 
     if (items.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 48),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.inventory_2_outlined, size: 44, color: Color(0xFF94A3B8)),
-              SizedBox(height: 12),
-              Text(
-                'Tidak ada komponen ditemukan',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Coba ubah kata kunci pencarian atau kategori filter.',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 12,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-            ],
-          ),
-        ),
+      return const EmptyStateView(
+        title: 'Tidak ada komponen ditemukan',
+        message: 'Coba ubah kata kunci pencarian atau kategori filter.',
       );
     }
 
