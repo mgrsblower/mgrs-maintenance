@@ -196,7 +196,7 @@ void main() {
     expect(find.text('KPL-2026-084'), findsOneWidget);
     expect(find.text('Status Kondisi Hasil Cek *'), findsOneWidget);
     expect(find.text('Layak Pakai'), findsOneWidget);
-    expect(find.text('Simpan & Selesaikan Tugas'), findsOneWidget);
+    expect(find.text('Simpan'), findsOneWidget);
   });
 
   testWidgets('CheckingScreen renders Form Catat Servis (11R-1)', (tester) async {
@@ -228,7 +228,7 @@ void main() {
     expect(find.text('TBG-2026-039'), findsOneWidget);
     expect(find.text('Masalah / Kendala Fisik *'), findsOneWidget);
     expect(find.text('Tindakan Perbaikan yang Dilakukan *'), findsOneWidget);
-    expect(find.text('Simpan & Selesaikan Servis'), findsOneWidget);
+    expect(find.text('Simpan'), findsOneWidget);
   });
 
   testWidgets('HomeSkeletonScreen renders loading placeholders', (tester) async {
@@ -405,7 +405,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final submitButton = find.text('Simpan & Selesaikan Tugas');
+    await tester.tap(find.text('Layak Pakai'));
+    await tester.pumpAndSettle();
+
+    final submitButton = find.text('Simpan');
     expect(submitButton, findsOneWidget);
     await tester.tap(submitButton);
     await tester.pumpAndSettle();
@@ -447,7 +450,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final submitButton = find.text('Simpan & Selesaikan Servis');
+    await tester.enterText(
+        find.byKey(const ValueKey('problem-field')), 'Bocor katup');
+    await tester.ensureVisible(find.text('Layak Pakai (Selesai & Siap Pakai)'));
+    await tester.tap(find.text('Layak Pakai (Selesai & Siap Pakai)'));
+    await tester.pumpAndSettle();
+
+    final submitButton = find.text('Simpan');
     expect(submitButton, findsOneWidget);
     await tester.tap(submitButton);
     await tester.pumpAndSettle();
@@ -575,7 +584,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final submitButton = find.text('Simpan & Selesaikan Tugas');
+    await tester.tap(find.text('Layak Pakai'));
+    await tester.pumpAndSettle();
+
+    final submitButton = find.text('Simpan');
     expect(submitButton, findsOneWidget);
     await tester.tap(submitButton);
     await tester.pumpAndSettle();

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../../app/gateway.dart';
+import '../../shared/mgrs_components.dart';
 import '../../shared/pressable.dart';
 import '../components/component.dart';
 import 'submission_controller.dart';
@@ -39,8 +40,20 @@ class _CheckingScreenState extends State<CheckingScreen> {
   late final SubmissionController submission;
   String? condition, usable;
   String summaryAction = 'keep';
-  bool dirty = false, leaving = false, refreshing = false;
+  bool leaving = false, refreshing = false;
   String? refreshError;
+  bool _formEdited = false;
+
+  bool get dirty =>
+      _formEdited ||
+      condition != null ||
+      usable != null ||
+      note.text.trim().isNotEmpty ||
+      impaired.text.trim().isNotEmpty ||
+      problem.text.trim().isNotEmpty ||
+      action.text.trim().isNotEmpty ||
+      summary.text.trim().isNotEmpty ||
+      reason.text.trim().isNotEmpty;
 
   @override
   void initState() {
@@ -48,17 +61,12 @@ class _CheckingScreenState extends State<CheckingScreen> {
     component = widget.component;
     submission = SubmissionController(widget.gateway);
 
-    // Initial defaults
-    if (!widget.service) {
-      condition = 'OK'; // Default Layak Pakai
-      usable = 'Ya';
-    } else {
-      problem.text =
-          'Indikasi penurunan tekanan drastis & kebocoran paking segel tabung.';
-      action.text =
-          'Penggantian karet O-Ring segel baru, pembersihan drat tabung, dan tes kompresi tekanan 10 bar selama 15 menit normal.';
-      condition = 'OK';
-      usable = 'Ya';
+    // Initial state starts unselected and empty (no fabricated defaults)
+    condition = null;
+    usable = null;
+    if (widget.service) {
+      problem.text = '';
+      action.text = '';
     }
   }
 
@@ -130,14 +138,14 @@ class _CheckingScreenState extends State<CheckingScreen> {
 
   Future<void> save() async {
     if (!(form.currentState?.validate() ?? false)) return;
-    if (condition == null) {
+    if (!widget.service && condition == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Pilih status kondisi terlebih dahulu.')),
       );
       return;
     }
 
-    if (condition != 'OK' && !widget.service && note.text.trim().isEmpty && impaired.text.trim().isEmpty) {
+    if (condition != null && condition != 'OK' && !widget.service && note.text.trim().isEmpty && impaired.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Harap tuliskan catatan kendala untuk unit yang bermasalah.'),
@@ -146,7 +154,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
       return;
     }
 
-    if (widget.service && (problem.text.trim().isEmpty || action.text.trim().isEmpty)) {
+    if (widget.service && problem.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Harap isi deskripsi kendala dan tindakan servis.'),
@@ -164,7 +172,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
           : widget.taskId != null
               ? 'periodic_check'
               : 'manual_check',
-      'condition': condition,
+      'condition': condition ?? (widget.service ? 'OK' : 'OK'),
       'usable': usable ?? (severe ? 'Tidak' : 'Ya'),
       'impairedFunction':
           condition == 'OK' ? 'Tidak Ada' : (impaired.text.trim().isEmpty ? 'Tidak Ada' : impaired.text.trim()),
@@ -174,7 +182,9 @@ class _CheckingScreenState extends State<CheckingScreen> {
       if (widget.taskId != null) 'taskId': widget.taskId,
       if (widget.service) ...{
         'problem': problem.text.trim(),
-        'action': action.text.trim(),
+        'action': action.text.trim().isEmpty
+            ? 'Pemeriksaan dan penanganan standar'
+            : action.text.trim(),
       },
       if (widget.correctsEventId != null) ...{
         'correctsEventId': widget.correctsEventId,
@@ -224,7 +234,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   child: Form(
                     key: form,
-                    onChanged: () => dirty = true,
+                    onChanged: () => _formEdited = true,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -264,22 +274,19 @@ class _CheckingScreenState extends State<CheckingScreen> {
       children: [
         Row(
           children: [
-            PressableScale(
-              onTap: blocked ? null : leave,
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+            Tooltip(
+              message: 'Kembali',
+              child: IconButton(
+                onPressed: blocked ? null : leave,
+                icon: const Icon(
+                  Icons.chevron_left_rounded,
+                  color: Color(0xFF0F172A),
+                  size: 24,
                 ),
-                child: const Center(
-                  child: Icon(
-                    Icons.chevron_left_rounded,
-                    color: Color(0xFF0F172A),
-                    size: 24,
-                  ),
+                style: IconButton.styleFrom(
+                  minimumSize: const Size(48, 48),
+                  backgroundColor: Colors.white,
+                  side: const BorderSide(color: Color(0xFFE2E8F0)),
                 ),
               ),
             ),
@@ -484,6 +491,33 @@ class _CheckingScreenState extends State<CheckingScreen> {
             ],
           ),
           const SizedBox(height: 14),
+          if (condition == null)
+            Container(
+              key: const ValueKey('condition-empty'),
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: Color(0xFF64748B)),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Pilih status kondisi di bawah untuk mencatat pemeriksaan.',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 12,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           // Option 1: Layak Pakai
           _buildConditionRadioCard(
             title: 'Layak Pakai',
@@ -714,6 +748,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 child: TextField(
+                  key: const ValueKey('problem-field'),
                   controller: problem,
                   maxLines: 3,
                   style: const TextStyle(
@@ -778,6 +813,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 child: TextField(
+                  key: const ValueKey('action-field'),
                   controller: action,
                   maxLines: 4,
                   style: const TextStyle(
@@ -873,71 +909,18 @@ class _CheckingScreenState extends State<CheckingScreen> {
   // Bottom Fixed Submit Button
   Widget _buildBottomSubmitBar(BuildContext context) {
     final isSubmitting = submission.state == SubmissionState.submitting;
+    final isFailed = submission.state == SubmissionState.failed ||
+        submission.state == SubmissionState.uncertain;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
-      ),
-      child: SizedBox(
-        width: double.infinity,
-        height: 50,
-        child: PressableScale(
-          onTap: blocked ? null : save,
-          child: Container(
-            decoration: BoxDecoration(
-              color: blocked
-                  ? const Color(0xFF94A3B8)
-                  : const Color(0xFF147CC1),
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: blocked
-                  ? null
-                  : const [
-                      BoxShadow(
-                        color: Color(0x25147CC1),
-                        blurRadius: 10,
-                        offset: Offset(0, 3),
-                      ),
-                    ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (isSubmitting)
-                  const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                else
-                  Icon(
-                    widget.service ? Icons.build_rounded : Icons.check_rounded,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                const SizedBox(width: 8),
-                Text(
-                  isSubmitting
-                      ? 'Menyimpan…'
-                      : widget.service
-                          ? 'Simpan & Selesaikan Servis'
-                          : 'Simpan & Selesaikan Tugas',
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return SaveActionBar(
+      label: 'Simpan',
+      isSubmitting: isSubmitting,
+      isDisabled: blocked,
+      errorMessage: isFailed ? 'Gagal menyimpan' : null,
+      onSave: blocked ? null : save,
+      onRetry: submission.state == SubmissionState.uncertain
+          ? submission.recover
+          : (isFailed ? save : null),
     );
   }
 
@@ -970,7 +953,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                       ? 'Konflik Data Pembaruan'
                       : isUncertain
                           ? 'Koneksi Terputus / Tidak Stabil'
-                          : 'Gagal Menyimpan Data',
+                          : 'Kendala Penyimpanan Data',
                   style: const TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
                     color: Color(0xFFB91C1C),
