@@ -32,6 +32,12 @@ void main() {
     final lightContext = tester.element(find.byKey(const Key('theme-home')));
     expect(Theme.of(lightContext).colorScheme.primary, AppTokens.actionBlue);
     expect(Theme.of(lightContext).scaffoldBackgroundColor, AppTokens.canvas);
+    final lightTheme = maintenanceTheme();
+    expect(lightTheme.textTheme.headlineMedium?.fontSize, 30);
+    expect(lightTheme.textTheme.headlineSmall?.fontSize, 28);
+    expect(lightTheme.textTheme.titleLarge?.fontSize, 24);
+    expect(lightTheme.textTheme.titleMedium?.fontSize, 22);
+    expect(lightTheme.textTheme.titleSmall?.fontSize, 20);
 
     final darkTheme = maintenanceDarkTheme();
     expect(darkTheme.brightness, Brightness.dark);
