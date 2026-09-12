@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../../app/gateway.dart';
 import '../../app/app_theme.dart';
+import '../../shared/pressable.dart';
 import '../components/component.dart';
 import 'submission_controller.dart';
 
@@ -137,16 +138,22 @@ class _CheckingScreenState extends State<CheckingScreen> {
       return;
     }
 
-    if (condition != 'OK' && !widget.service && note.text.trim().isEmpty && impaired.text.trim().isEmpty) {
+    if (condition != 'OK' &&
+        !widget.service &&
+        note.text.trim().isEmpty &&
+        impaired.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Harap tuliskan catatan kendala untuk unit yang bermasalah.'),
+          content: Text(
+            'Harap tuliskan catatan kendala untuk unit yang bermasalah.',
+          ),
         ),
       );
       return;
     }
 
-    if (widget.service && (problem.text.trim().isEmpty || action.text.trim().isEmpty)) {
+    if (widget.service &&
+        (problem.text.trim().isEmpty || action.text.trim().isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Harap isi deskripsi kendala dan tindakan servis.'),
@@ -162,12 +169,13 @@ class _CheckingScreenState extends State<CheckingScreen> {
       'activity': widget.service
           ? 'service'
           : widget.taskId != null
-              ? 'periodic_check'
-              : 'manual_check',
+          ? 'periodic_check'
+          : 'manual_check',
       'condition': condition,
       'usable': usable ?? (severe ? 'Tidak' : 'Ya'),
-      'impairedFunction':
-          condition == 'OK' ? 'Tidak Ada' : (impaired.text.trim().isEmpty ? 'Tidak Ada' : impaired.text.trim()),
+      'impairedFunction': condition == 'OK'
+          ? 'Tidak Ada'
+          : (impaired.text.trim().isEmpty ? 'Tidak Ada' : impaired.text.trim()),
       'eventNote': note.text.trim(),
       'summaryAction': summaryAction,
       if (summaryAction == 'replace') 'summaryText': summary.text.trim(),
@@ -251,12 +259,12 @@ class _CheckingScreenState extends State<CheckingScreen> {
                           _buildSubmissionErrorBanner(context),
                         ],
                         const SizedBox(height: 24),
-                        _buildBottomSubmitBar(context),
                       ],
                     ),
                   ),
                 ),
               ),
+              _buildBottomSubmitBar(context),
             ],
           ),
         ),
@@ -320,7 +328,9 @@ class _CheckingScreenState extends State<CheckingScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: widget.service ? AppTokens.mistLight : const Color(0xFFF0FDF4),
+            color: widget.service
+                ? AppTokens.mistLight
+                : const Color(0xFFF0FDF4),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
@@ -328,8 +338,9 @@ class _CheckingScreenState extends State<CheckingScreen> {
             children: [
               CircleAvatar(
                 radius: 3,
-                backgroundColor:
-                    widget.service ? AppTokens.magenta : const Color(0xFF16A34A),
+                backgroundColor: widget.service
+                    ? AppTokens.magenta
+                    : const Color(0xFF16A34A),
               ),
               const SizedBox(width: 5),
               Text(
@@ -337,7 +348,9 @@ class _CheckingScreenState extends State<CheckingScreen> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: widget.service ? AppTokens.magenta : const Color(0xFF15803D),
+                  color: widget.service
+                      ? AppTokens.magenta
+                      : const Color(0xFF15803D),
                 ),
               ),
             ],
@@ -411,7 +424,10 @@ class _CheckingScreenState extends State<CheckingScreen> {
             PressableScale(
               onTap: blocked ? null : () => Navigator.pop(context),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(10),
@@ -501,7 +517,8 @@ class _CheckingScreenState extends State<CheckingScreen> {
             title: 'Perlu Servis',
             description: 'Ada keausan minor, butuh pelumasan / kalibrasi',
             value: 'Rusak Ringan',
-            selected: condition == 'Rusak Ringan' || condition == 'Perlu Servis',
+            selected:
+                condition == 'Rusak Ringan' || condition == 'Perlu Servis',
             activeBorderColor: const Color(0xFFF59E0B),
             activeBgColor: const Color(0xFFFFFBEB),
             dotColor: const Color(0xFFF59E0B),
@@ -643,10 +660,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
               decoration: const InputDecoration(
                 hintText:
                     'Kondisi katup & konektor bersih, segel utuh tanpa indikasi keausan mekanis, siap digunakan.',
-                hintStyle: TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF94A3B8),
-                ),
+                hintStyle: TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
@@ -847,6 +861,13 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   usable = 'Tidak';
                 }),
               ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   // Submit action
   Widget _buildBottomSubmitBar(BuildContext context) {
     final isSubmitting = submission.state == SubmissionState.submitting;
@@ -864,13 +885,11 @@ class _CheckingScreenState extends State<CheckingScreen> {
           onTap: blocked ? null : save,
           child: Container(
             decoration: BoxDecoration(
-              color: blocked
-                  ? const Color(0xFF94A3B8)
-              : AppTokens.magenta,
+              color: blocked ? const Color(0xFF94A3B8) : AppTokens.magenta,
               borderRadius: BorderRadius.circular(14),
               boxShadow: blocked
                   ? null
-                  : const [
+                  : [
                       BoxShadow(
                         color: AppTokens.magenta.withValues(alpha: 0.2),
                         blurRadius: 10,
@@ -901,8 +920,8 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   isSubmitting
                       ? 'Menyimpan…'
                       : widget.service
-                          ? 'Simpan & Selesaikan Servis'
-                          : 'Simpan & Selesaikan Tugas',
+                      ? 'Simpan & Selesaikan Servis'
+                      : 'Simpan & Selesaikan Tugas',
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -945,8 +964,8 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   isConflict
                       ? 'Konflik Data Pembaruan'
                       : isUncertain
-                          ? 'Koneksi Terputus / Tidak Stabil'
-                          : 'Gagal Menyimpan Data',
+                      ? 'Koneksi Terputus / Tidak Stabil'
+                      : 'Gagal Menyimpan Data',
                   style: const TextStyle(
                     color: Color(0xFFB91C1C),
                     fontWeight: FontWeight.w700,
@@ -975,10 +994,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   icon: const Icon(Icons.refresh_rounded, size: 16),
                   label: const Text(
                     'Perbarui Data Unit',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFFB91C1C),
@@ -993,8 +1009,11 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   onPressed: blocked
                       ? null
                       : (isUncertain ? submission.recover : save),
-                  icon: const Icon(Icons.replay_rounded,
-                      size: 16, color: Colors.white),
+                  icon: const Icon(
+                    Icons.replay_rounded,
+                    size: 16,
+                    color: Colors.white,
+                  ),
                   label: const Text(
                     'Coba Kirim Ulang',
                     style: TextStyle(
@@ -1071,9 +1090,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
           ),
           const SizedBox(height: 14),
           Text(
-            isService
-                ? 'Laporan Servis Berhasil!'
-                : 'Pemeriksaan Berhasil!',
+            isService ? 'Laporan Servis Berhasil!' : 'Pemeriksaan Berhasil!',
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 19,
@@ -1150,24 +1167,24 @@ class _CheckingScreenState extends State<CheckingScreen> {
                         color: isOk
                             ? const Color(0xFFDCFCE7)
                             : (condition == 'Rusak Ringan'
-                                ? const Color(0xFFFEF3C7)
-                                : const Color(0xFFFEE2E2)),
+                                  ? const Color(0xFFFEF3C7)
+                                  : const Color(0xFFFEE2E2)),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         isOk
                             ? 'Layak Pakai (OK)'
                             : (condition == 'Rusak Ringan'
-                                ? 'Perlu Servis'
-                                : (condition ?? 'Perlu Tindakan')),
+                                  ? 'Perlu Servis'
+                                  : (condition ?? 'Perlu Tindakan')),
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: isOk
                               ? const Color(0xFF15803D)
                               : (condition == 'Rusak Ringan'
-                                  ? const Color(0xFFB45309)
-                                  : const Color(0xFFB91C1C)),
+                                    ? const Color(0xFFB45309)
+                                    : const Color(0xFFB91C1C)),
                         ),
                       ),
                     ),
