@@ -71,7 +71,7 @@ class _HomeSkeletonScreenState extends State<HomeSkeletonScreen>
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceContainerLow,
       body: SafeArea(
         bottom: false,
         child: SingleChildScrollView(

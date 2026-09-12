@@ -78,9 +78,13 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
 
   void _finishDrag() {
     final index = _draggedIndex;
+    _cancelDrag();
+    if (index != null) _selectDestination(index);
+  }
+
+  void _cancelDrag() {
     _dragX = null;
     _draggedIndex = null;
-    if (index != null) _selectDestination(index);
   }
 
   @override
@@ -118,7 +122,7 @@ class _AppBottomNavBarState extends State<AppBottomNavBar> {
                   items.length,
                 ),
                 onHorizontalDragEnd: (_) => _finishDrag(),
-                onHorizontalDragCancel: _finishDrag,
+                onHorizontalDragCancel: _cancelDrag,
                 child: NavigationBar(
                   height: 72,
                   animationDuration: disableAnimations
