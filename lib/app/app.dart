@@ -171,7 +171,11 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
     ),
   ];
 
-  AdminAppMode _adminMode = AdminAppMode.service;
+  MgrsWorkspace? _workspace;
+  AdminAppMode get _adminMode =>
+      _workspace == MgrsWorkspace.pic
+          ? AdminAppMode.pic
+          : AdminAppMode.service;
   int tab = 0;
   late final PageController _pageController;
   late final AnimationController _fadeController;
@@ -180,6 +184,7 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
   @override
   void initState() {
     super.initState();
+    _workspace = _safeWorkspace(widget.user.defaultWorkspace);
     _pageController = PageController(initialPage: tab);
     _fadeController = AnimationController(
       vsync: this,
@@ -205,11 +210,22 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
     _pageController.jumpToPage(index);
     _fadeController.forward(from: 0.0);
   }
+  MgrsWorkspace? _safeWorkspace(MgrsWorkspace? candidate) {
+    final allowedWorkspaces = widget.user.allowedWorkspaces;
+    if (candidate != null && allowedWorkspaces.contains(candidate)) {
+      return candidate;
+    }
+    final fallback = widget.user.defaultWorkspace;
+    return fallback != null && allowedWorkspaces.contains(fallback)
+        ? fallback
+        : null;
+  }
 
-  void _switchAdminMode(AdminAppMode newMode) {
-    if (_adminMode == newMode) return;
+  void _selectWorkspace(MgrsWorkspace requestedWorkspace) {
+    final nextWorkspace = _safeWorkspace(requestedWorkspace);
+    if (nextWorkspace == null || _workspace == nextWorkspace) return;
     setState(() {
-      _adminMode = newMode;
+      _workspace = nextWorkspace;
       tab = 0;
     });
     _pageController.jumpToPage(0);
@@ -217,7 +233,7 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          newMode == AdminAppMode.pic
+          nextWorkspace == MgrsWorkspace.pic
               ? 'Beralih ke Mode PIC (Orderan & Invoice)'
               : 'Beralih ke Mode Servis (Teknisi Maintenance)',
           style: const TextStyle(
@@ -232,9 +248,19 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
     );
   }
 
+  void _switchAdminMode(AdminAppMode newMode) {
+    _selectWorkspace(
+      newMode == AdminAppMode.pic ? MgrsWorkspace.pic : MgrsWorkspace.field,
+    );
+  }
+
+
   bool get effectiveIsPic =>
-      widget.user.isPic ||
-      (widget.user.isAdmin && _adminMode == AdminAppMode.pic);
+      _workspace == MgrsWorkspace.pic &&
+      widget.user.allowedWorkspaces.contains(MgrsWorkspace.pic);
+
+  bool get _hasWorkspaceAccess =>
+      _workspace != null && widget.user.allowedWorkspaces.contains(_workspace);
 
   void openScannerModal() {
     Navigator.of(context).push<void>(
@@ -250,6 +276,11 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
 
   @override
   Widget build(BuildContext context) {
+    if (!_hasWorkspaceAccess) {
+      return const Scaffold(
+        body: Center(child: Text('Akses workspace tidak tersedia.')),
+      );
+    }
     final isPic = effectiveIsPic;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final scrimHeight = 98.0 + bottomInset;

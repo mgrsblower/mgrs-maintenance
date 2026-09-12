@@ -15,6 +15,18 @@ List<Map<String, Object?>> jsonItems(Object? value) {
   return value.map(jsonObject).toList();
 }
 
+enum MgrsWorkspace { pic, field }
+
+enum ProductRole { admin, picMgrs, timLapangan }
+
+extension ProductRoleLabel on ProductRole {
+  String get label => switch (this) {
+    ProductRole.admin => 'Admin',
+    ProductRole.picMgrs => 'PIC MGRS',
+    ProductRole.timLapangan => 'Tim Lapangan',
+  };
+}
+
 enum AdminAppMode {
   pic('Mode PIC (Order & Invoice)'),
   service('Mode Servis (Teknisi Maintenance)');
@@ -35,6 +47,26 @@ class UserProfile {
   final String role;
   final String? fullName;
   final String? username;
+
+  ProductRole? get productRole => switch (role) {
+    'Admin' => ProductRole.admin,
+    'PIC Pemasangan' => ProductRole.picMgrs,
+    'Tim Service' || 'Tim Pemasangan' => ProductRole.timLapangan,
+    _ => null,
+  };
+
+  Set<MgrsWorkspace> get allowedWorkspaces => switch (productRole) {
+    ProductRole.admin => {MgrsWorkspace.pic, MgrsWorkspace.field},
+    ProductRole.picMgrs => {MgrsWorkspace.pic},
+    ProductRole.timLapangan => {MgrsWorkspace.field},
+    null => const <MgrsWorkspace>{},
+  };
+
+  MgrsWorkspace? get defaultWorkspace => switch (productRole) {
+    ProductRole.admin || ProductRole.timLapangan => MgrsWorkspace.field,
+    ProductRole.picMgrs => MgrsWorkspace.pic,
+    null => null,
+  };
 
   UserProfile copyWith({
     String? id,
@@ -85,6 +117,7 @@ class UserProfile {
     return isPic ? 'PIC' : 'PM';
   }
 }
+
 
 class AppFailure implements Exception {
   const AppFailure(this.code);
