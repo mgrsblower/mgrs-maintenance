@@ -12,6 +12,7 @@ class _HomeSkeletonScreenState extends State<HomeSkeletonScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _shimmer;
+  bool? _disableAnimations;
 
   @override
   void initState() {
@@ -19,10 +20,26 @@ class _HomeSkeletonScreenState extends State<HomeSkeletonScreen>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
-    _shimmer = Tween<double>(begin: 0.45, end: 0.95).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
+    _shimmer = Tween<double>(
+      begin: 0.45,
+      end: 0.95,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final disableAnimations = MediaQuery.disableAnimationsOf(context);
+    if (_disableAnimations == disableAnimations) return;
+    _disableAnimations = disableAnimations;
+    if (disableAnimations) {
+      _controller
+        ..stop()
+        ..value = 1;
+    } else {
+      _controller.repeat(reverse: true);
+    }
   }
 
   @override
@@ -31,12 +48,7 @@ class _HomeSkeletonScreenState extends State<HomeSkeletonScreen>
     super.dispose();
   }
 
-  Widget _box({
-    double? width,
-    required double height,
-    double radius = 8,
-    Color color = const Color(0xFFE2E8F0),
-  }) {
+  Widget _box({double? width, required double height, double radius = 8}) {
     return AnimatedBuilder(
       animation: _shimmer,
       builder: (context, child) {
@@ -46,7 +58,7 @@ class _HomeSkeletonScreenState extends State<HomeSkeletonScreen>
             width: width,
             height: height,
             decoration: BoxDecoration(
-              color: color,
+              color: Theme.of(context).colorScheme.outlineVariant,
               borderRadius: BorderRadius.circular(radius),
             ),
           ),
@@ -57,8 +69,9 @@ class _HomeSkeletonScreenState extends State<HomeSkeletonScreen>
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colors.surface,
       body: SafeArea(
         bottom: false,
         child: SingleChildScrollView(
@@ -95,7 +108,7 @@ class _HomeSkeletonScreenState extends State<HomeSkeletonScreen>
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
+                  color: colors.surfaceContainer,
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: Row(
@@ -145,9 +158,9 @@ class _HomeSkeletonScreenState extends State<HomeSkeletonScreen>
                       padding: const EdgeInsets.all(12),
                       height: 120,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
+                        color: colors.surfaceContainer,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        border: Border.all(color: colors.outlineVariant),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,9 +212,9 @@ class _HomeSkeletonScreenState extends State<HomeSkeletonScreen>
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: colors.surface,
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color: colors.outlineVariant),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
