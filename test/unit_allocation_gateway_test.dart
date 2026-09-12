@@ -32,12 +32,15 @@ class MockGatewayWithAllocation extends MaintenanceGateway {
     final counts = <String, int>{};
     for (final o in orders) {
       for (final u in o.allocatedUnits) {
-        if (u.kepalaSticker != null)
+        if (u.kepalaSticker != null) {
           counts[u.kepalaSticker!] = (counts[u.kepalaSticker!] ?? 0) + 1;
-        if (u.batangSticker != null)
+        }
+        if (u.batangSticker != null) {
           counts[u.batangSticker!] = (counts[u.batangSticker!] ?? 0) + 1;
-        if (u.tabungSticker != null)
+        }
+        if (u.tabungSticker != null) {
           counts[u.tabungSticker!] = (counts[u.tabungSticker!] ?? 0) + 1;
+        }
       }
     }
     return counts;
