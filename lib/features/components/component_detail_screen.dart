@@ -43,11 +43,11 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
   }
 
   void reload() => setState(() {
-        future = Component.load(widget.gateway, widget.id);
-        futureHistory = widget.gateway.fetchComponentHistory(widget.id);
-        _orderUsageFuture = null;
-        _loadedCode = null;
-      });
+    future = Component.load(widget.gateway, widget.id);
+    futureHistory = widget.gateway.fetchComponentHistory(widget.id);
+    _orderUsageFuture = null;
+    _loadedCode = null;
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +63,9 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                   _buildTopAppBar(context, 'Memuat...'),
                   const Expanded(
                     child: Center(
-                      child: CircularProgressIndicator(color: AppTokens.magenta),
+                      child: CircularProgressIndicator(
+                        color: AppTokens.magenta,
+                      ),
                     ),
                   ),
                 ],
@@ -96,7 +98,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                               failureMessage(snapshot.error),
                               textAlign: TextAlign.center,
                               style: const TextStyle(
-                                                                fontSize: 14,
+                                fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: AppTokens.danger,
                               ),
@@ -128,7 +130,9 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
         final comp = snapshot.data!;
         if (_loadedCode != comp.code) {
           _loadedCode = comp.code;
-          _orderUsageFuture = widget.gateway.fetchComponentOrderUsageHistory(comp.code);
+          _orderUsageFuture = widget.gateway.fetchComponentOrderUsageHistory(
+            comp.code,
+          );
         }
 
         return Scaffold(
@@ -196,7 +200,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                 const Text(
                   'Detail Komponen',
                   style: TextStyle(
-                                        fontSize: 18,
+                    fontSize: 18,
                     fontWeight: FontWeight.w800,
                     color: AppTokens.ink,
                     letterSpacing: -0.3,
@@ -205,7 +209,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                 Text(
                   'Unit MGRS • $kind',
                   style: const TextStyle(
-                                        fontSize: 12,
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: AppTokens.stone,
                   ),
@@ -238,20 +242,20 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
   }
 
   // Card 1: Identity Card
-  Widget _buildIdentityCard(
-    BuildContext context,
-    Component comp,
-  ) {
+  Widget _buildIdentityCard(BuildContext context, Component comp) {
     final label = conditionDisplayLabel(comp.condition);
     final isGood = comp.condition == 'Layak Pakai' || comp.condition == 'OK';
-    final isService = comp.condition == 'Service' || comp.condition == 'Rusak Berat';
+    final isService =
+        comp.condition == 'Service' || comp.condition == 'Rusak Berat';
     final badgeColor = isGood
         ? AppTokens.success
         : (isService ? AppTokens.danger : AppTokens.warning);
-    final lastCheckStr = comp.lastCheckingAt != null && comp.lastCheckingAt!.length >= 10
+    final lastCheckStr =
+        comp.lastCheckingAt != null && comp.lastCheckingAt!.length >= 10
         ? comp.lastCheckingAt!.substring(0, 10)
         : 'Belum tercatat';
-    final serviceStr = comp.lastServiceAt != null && comp.lastServiceAt!.length >= 10
+    final serviceStr =
+        comp.lastServiceAt != null && comp.lastServiceAt!.length >= 10
         ? 'Servis: ${comp.lastServiceAt!.substring(0, 10)}'
         : 'Tercatat di MGRS';
 
@@ -274,7 +278,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                   Text(
                     comp.code,
                     style: const TextStyle(
-                                            fontSize: 22,
+                      fontSize: 22,
                       fontWeight: FontWeight.w800,
                       color: AppTokens.ink,
                       letterSpacing: -0.5,
@@ -284,7 +288,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                   Text(
                     'Komponen ${comp.kind} Utama',
                     style: const TextStyle(
-                                            fontSize: 13,
+                      fontSize: 13,
                       fontWeight: FontWeight.w500,
                       color: AppTokens.stone,
                     ),
@@ -292,7 +296,10 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: badgeColor,
                   borderRadius: BorderRadius.circular(AppTokens.cardRadius),
@@ -312,7 +319,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     Text(
                       label,
                       style: const TextStyle(
-                                                fontSize: 11,
+                        fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: AppTokens.white,
                       ),
@@ -326,9 +333,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
           Container(
             padding: const EdgeInsets.only(top: 14),
             decoration: const BoxDecoration(
-              border: Border(
-                top: BorderSide(color: AppTokens.mistLight),
-              ),
+              border: Border(top: BorderSide(color: AppTokens.mistLight)),
             ),
             child: Row(
               children: [
@@ -339,7 +344,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                       const Text(
                         'Pemeriksaan Terakhir',
                         style: TextStyle(
-                                                    fontSize: 11,
+                          fontSize: 11,
                           fontWeight: FontWeight.w500,
                           color: AppTokens.stone,
                         ),
@@ -348,7 +353,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                       Text(
                         lastCheckStr,
                         style: const TextStyle(
-                                                    fontSize: 13,
+                          fontSize: 13,
                           fontWeight: FontWeight.w800,
                           color: AppTokens.ink,
                         ),
@@ -356,11 +361,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     ],
                   ),
                 ),
-                Container(
-                  width: 1,
-                  height: 32,
-                  color: AppTokens.mist,
-                ),
+                Container(width: 1, height: 32, color: AppTokens.mist),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -369,7 +370,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                       const Text(
                         'Status Layanan',
                         style: TextStyle(
-                                                    fontSize: 11,
+                          fontSize: 11,
                           fontWeight: FontWeight.w500,
                           color: AppTokens.stone,
                         ),
@@ -378,7 +379,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                       Text(
                         serviceStr,
                         style: const TextStyle(
-                                                    fontSize: 13,
+                          fontSize: 13,
                           fontWeight: FontWeight.w800,
                           color: AppTokens.ink,
                         ),
@@ -399,16 +400,23 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
               final badgeBg = isZero
                   ? AppTokens.mistLight
                   : (usageCount <= 5
-                      ? AppTokens.successSurface
-                      : (usageCount <= 15 ? AppTokens.warningSurface : AppTokens.mistLight));
+                        ? AppTokens.successSurface
+                        : (usageCount <= 15
+                              ? AppTokens.warningSurface
+                              : AppTokens.mistLight));
               final badgeText = isZero
                   ? AppTokens.graphite
                   : (usageCount <= 5
-                      ? AppTokens.success
-                      : (usageCount <= 15 ? AppTokens.warning : AppTokens.graphite));
+                        ? AppTokens.success
+                        : (usageCount <= 15
+                              ? AppTokens.warning
+                              : AppTokens.graphite));
 
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: AppTokens.white,
                   borderRadius: BorderRadius.circular(12),
@@ -419,12 +427,16 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                   children: [
                     const Row(
                       children: [
-                        Icon(Icons.repeat_rounded, size: 16, color: AppTokens.ink),
+                        Icon(
+                          Icons.repeat_rounded,
+                          size: 16,
+                          color: AppTokens.ink,
+                        ),
                         SizedBox(width: 6),
                         Text(
                           'Total Pemakaian di Orderan',
                           style: TextStyle(
-                                                        fontSize: 12,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppTokens.graphite,
                           ),
@@ -432,7 +444,10 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                       ],
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: badgeBg,
                         borderRadius: BorderRadius.circular(6),
@@ -440,7 +455,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                       child: Text(
                         '$usageCount kali pakai',
                         style: TextStyle(
-                                                    fontSize: 11,
+                          fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: badgeText,
                         ),
@@ -461,7 +476,8 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
     final note = comp.note != null && comp.note!.trim().isNotEmpty
         ? comp.note!.trim()
         : 'Tidak ada catatan kondisi khusus untuk komponen ini.';
-    final dateStr = comp.lastCheckingAt != null && comp.lastCheckingAt!.length >= 10
+    final dateStr =
+        comp.lastCheckingAt != null && comp.lastCheckingAt!.length >= 10
         ? comp.lastCheckingAt!.substring(0, 10)
         : 'Belum tercatat';
 
@@ -481,7 +497,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
               const Text(
                 'Catatan Kondisi Terkini',
                 style: TextStyle(
-                                    fontSize: 14,
+                  fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: AppTokens.ink,
                 ),
@@ -489,7 +505,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
               Text(
                 dateStr,
                 style: const TextStyle(
-                                    fontSize: 11,
+                  fontSize: 11,
                   fontWeight: FontWeight.w500,
                   color: AppTokens.stone,
                 ),
@@ -500,7 +516,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
           Text(
             note,
             style: const TextStyle(
-                            fontSize: 13,
+              fontSize: 13,
               fontWeight: FontWeight.w500,
               color: AppTokens.graphite,
               height: 1.45,
@@ -510,9 +526,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
           Container(
             padding: const EdgeInsets.only(top: 12),
             decoration: const BoxDecoration(
-              border: Border(
-                top: BorderSide(color: AppTokens.mistLight),
-              ),
+              border: Border(top: BorderSide(color: AppTokens.mistLight)),
             ),
             child: Row(
               children: [
@@ -537,7 +551,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                       ? 'Pemeriksaan terakhir: $dateStr'
                       : 'Belum pernah dilakukan pemeriksaan',
                   style: const TextStyle(
-                                        fontSize: 12,
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
                     color: AppTokens.stone,
                   ),
@@ -574,13 +588,17 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                       color: AppTokens.mistLight,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.event_note_rounded, size: 16, color: AppTokens.ink),
+                    child: const Icon(
+                      Icons.event_note_rounded,
+                      size: 16,
+                      color: AppTokens.ink,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   const Text(
                     'Riwayat Pemakaian di Orderan',
                     style: TextStyle(
-                                            fontSize: 14,
+                      fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: AppTokens.ink,
                     ),
@@ -592,7 +610,10 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                 builder: (context, snap) {
                   final count = snap.data?.length ?? 0;
                   return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTokens.mistLight,
                       borderRadius: BorderRadius.circular(10),
@@ -600,7 +621,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     child: Text(
                       '$count orderan',
                       style: const TextStyle(
-                                                fontSize: 11,
+                        fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: AppTokens.graphite,
                       ),
@@ -621,7 +642,10 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     child: SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppTokens.ink),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppTokens.ink,
+                      ),
                     ),
                   ),
                 );
@@ -630,7 +654,10 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
               final items = snap.data ?? [];
               if (items.isEmpty) {
                 return Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 14,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTokens.white,
                     borderRadius: BorderRadius.circular(12),
@@ -638,13 +665,17 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.info_outline_rounded, size: 18, color: AppTokens.stone),
+                      Icon(
+                        Icons.info_outline_rounded,
+                        size: 18,
+                        color: AppTokens.stone,
+                      ),
                       SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           'Komponen ini belum pernah dipakai pada orderan sewa.',
                           style: TextStyle(
-                                                        fontSize: 12,
+                            fontSize: 12,
                             color: AppTokens.stone,
                           ),
                         ),
@@ -656,10 +687,13 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
 
               return Column(
                 children: items.map((item) {
-                  final namaEvent = item['nama_event']?.toString() ?? 'Sewa Blower';
+                  final namaEvent =
+                      item['nama_event']?.toString() ?? 'Sewa Blower';
                   final namaClient = item['nama_client']?.toString() ?? '-';
                   final tanggal = item['tanggal']?.toString() ?? '';
-                  final dateStr = tanggal.length >= 10 ? tanggal.substring(0, 10) : tanggal;
+                  final dateStr = tanggal.length >= 10
+                      ? tanggal.substring(0, 10)
+                      : tanggal;
                   final status = item['status_orderan']?.toString() ?? '-';
                   final unitIdx = item['unit_index'];
                   final roleSlot = item['role_slot']?.toString() ?? '';
@@ -683,7 +717,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                               child: Text(
                                 namaEvent,
                                 style: const TextStyle(
-                                                                    fontSize: 13,
+                                  fontSize: 13,
                                   fontWeight: FontWeight.w700,
                                   color: AppTokens.ink,
                                 ),
@@ -691,17 +725,24 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: isDone ? AppTokens.successSurface : AppTokens.mistLight,
+                                color: isDone
+                                    ? AppTokens.successSurface
+                                    : AppTokens.mistLight,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 status,
                                 style: TextStyle(
-                                                                    fontSize: 10,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.w700,
-                                  color: isDone ? AppTokens.success : AppTokens.graphite,
+                                  color: isDone
+                                      ? AppTokens.success
+                                      : AppTokens.graphite,
                                 ),
                               ),
                             ),
@@ -710,20 +751,27 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            const Icon(Icons.person_outline_rounded, size: 12, color: AppTokens.stone),
+                            const Icon(
+                              Icons.person_outline_rounded,
+                              size: 12,
+                              color: AppTokens.stone,
+                            ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 namaClient,
                                 style: const TextStyle(
-                                                                    fontSize: 12,
+                                  fontSize: 12,
                                   color: AppTokens.graphite,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 1.5,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppTokens.mist,
                                 borderRadius: BorderRadius.circular(4),
@@ -731,7 +779,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                               child: Text(
                                 'Unit $unitIdx • $roleSlot',
                                 style: const TextStyle(
-                                                                    fontSize: 10,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.w600,
                                   color: AppTokens.graphite,
                                 ),
@@ -742,21 +790,28 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            const Icon(Icons.calendar_today_rounded, size: 11, color: AppTokens.stone),
+                            const Icon(
+                              Icons.calendar_today_rounded,
+                              size: 11,
+                              color: AppTokens.stone,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               dateStr,
                               style: const TextStyle(
-                                                                fontSize: 11,
+                                fontSize: 11,
                                 color: AppTokens.stone,
                               ),
                             ),
                             if (item['orderan_id'] != null) ...[
-                              const Text(' • ', style: TextStyle(color: AppTokens.stone)),
+                              const Text(
+                                ' • ',
+                                style: TextStyle(color: AppTokens.stone),
+                              ),
                               Text(
                                 '#${item['orderan_id']}',
                                 style: const TextStyle(
-                                                                    fontSize: 11,
+                                  fontSize: 11,
                                   color: AppTokens.stone,
                                 ),
                               ),
@@ -793,7 +848,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
               const Text(
                 'Riwayat Pemeriksaan & Servis',
                 style: TextStyle(
-                                    fontSize: 14,
+                  fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: AppTokens.ink,
                 ),
@@ -815,7 +870,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                 child: const Text(
                   'Lihat Semua',
                   style: TextStyle(
-                                        fontSize: 12,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: AppTokens.primary,
                   ),
@@ -836,21 +891,22 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     final title = activity == 'service'
                         ? 'Tindakan Servis'
                         : (activity == 'periodic_check'
-                            ? 'Pemeriksaan Berkala'
-                            : 'Pemeriksaan Manual');
+                              ? 'Pemeriksaan Berkala'
+                              : 'Pemeriksaan Manual');
                     final recordedAt = item['recordedAt']?.toString() ?? '';
                     final dateText = recordedAt.length >= 10
                         ? recordedAt.substring(0, 10)
                         : 'Baru saja';
-                    final after =
-                        item['after'] is Map ? item['after'] as Map : null;
+                    final after = item['after'] is Map
+                        ? item['after'] as Map
+                        : null;
                     final cond = after?['condition']?.toString() ?? 'OK';
                     final actor = item['actor']?.toString() ?? 'Petugas';
                     final dotColor = cond == 'OK'
                         ? AppTokens.success
                         : (cond == 'Service' || cond == 'Rusak Berat'
-                            ? AppTokens.danger
-                            : AppTokens.warning);
+                              ? AppTokens.danger
+                              : AppTokens.warning);
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
@@ -886,7 +942,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                                     Text(
                                       title,
                                       style: const TextStyle(
-                                                                                fontSize: 13,
+                                        fontSize: 13,
                                         fontWeight: FontWeight.w700,
                                         color: AppTokens.ink,
                                       ),
@@ -894,7 +950,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                                     Text(
                                       dateText,
                                       style: const TextStyle(
-                                                                                fontSize: 11,
+                                        fontSize: 11,
                                         fontWeight: FontWeight.w500,
                                         color: AppTokens.stone,
                                       ),
@@ -905,7 +961,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                                 Text(
                                   '${conditionDisplayLabel(cond)} • $actor',
                                   style: const TextStyle(
-                                                                        fontSize: 11,
+                                    fontSize: 11,
                                     fontWeight: FontWeight.w500,
                                     color: AppTokens.stone,
                                   ),
@@ -943,7 +999,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     Text(
                       'Belum ada riwayat pemeriksaan atau servis',
                       style: TextStyle(
-                                                fontSize: 12,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: AppTokens.stone,
                       ),
@@ -959,8 +1015,6 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
   }
 
   Widget _buildBottomActionBar(BuildContext context, Component comp) {
-    final isDamaged = comp.condition != 'OK';
-
     return Container(
       padding: EdgeInsets.fromLTRB(
         20,
@@ -993,7 +1047,9 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
               child: Container(
                 height: 48,
                 decoration: BoxDecoration(
-                  color: AppTokens.magenta,
+                  color: comp.condition != 'OK'
+                      ? const Color(0xFFF1F5F9)
+                      : const Color(0xFF147CC1),
                   borderRadius: BorderRadius.circular(AppTokens.controlRadius),
                 ),
                 child: Row(
@@ -1002,15 +1058,20 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     Icon(
                       Icons.fact_check_outlined,
                       size: 18,
-                      color: AppTokens.white,
+                      color: comp.condition != 'OK'
+                          ? const Color(0xFF334155)
+                          : Colors.white,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'Perbarui Kondisi',
-                      style: const TextStyle(
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: AppTokens.white,
+                        color: comp.condition != 'OK'
+                            ? const Color(0xFF334155)
+                            : Colors.white,
                       ),
                     ),
                   ],
@@ -1038,25 +1099,32 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
               child: Container(
                 height: 48,
                 decoration: BoxDecoration(
-                  color: AppTokens.white,
+                  color: comp.condition != 'OK'
+                      ? const Color(0xFFDC2626)
+                      : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(AppTokens.controlRadius),
                   border: Border.all(color: AppTokens.mist),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.build_rounded,
                       size: 18,
-                      color: AppTokens.graphite,
+                      color: comp.condition != 'OK'
+                          ? Colors.white
+                          : const Color(0xFF334155),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'Catat Servis',
-                      style: const TextStyle(
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: AppTokens.graphite,
+                        color: comp.condition != 'OK'
+                            ? Colors.white
+                            : const Color(0xFF334155),
                       ),
                     ),
                   ],
@@ -1092,12 +1160,16 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.remove_red_eye_outlined, size: 16, color: AppTokens.stone),
+              Icon(
+                Icons.remove_red_eye_outlined,
+                size: 16,
+                color: AppTokens.stone,
+              ),
               SizedBox(width: 8),
               Text(
                 'Mode Pantau Status • Hanya Baca',
                 style: TextStyle(
-                                    fontSize: 12,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: AppTokens.stone,
                 ),
