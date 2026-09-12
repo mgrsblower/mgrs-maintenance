@@ -220,8 +220,15 @@ class _CheckingScreenState extends State<CheckingScreen> {
             children: [
               Expanded(
                 child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    12,
+                    20,
+                    MediaQuery.viewInsetsOf(context).bottom + 24,
+                  ),
                   child: Form(
                     key: form,
                     onChanged: () => dirty = true,
@@ -244,12 +251,12 @@ class _CheckingScreenState extends State<CheckingScreen> {
                           _buildSubmissionErrorBanner(context),
                         ],
                         const SizedBox(height: 24),
+                        _buildBottomSubmitBar(context),
                       ],
                     ),
                   ),
                 ),
               ),
-              _buildBottomSubmitBar(context),
             ],
           ),
         ),
@@ -840,19 +847,12 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   usable = 'Tidak';
                 }),
               ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Bottom Fixed Submit Button
+  // Submit action
   Widget _buildBottomSubmitBar(BuildContext context) {
     final isSubmitting = submission.state == SubmissionState.submitting;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
+      padding: const EdgeInsets.fromLTRB(0, 10, 0, 24),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),

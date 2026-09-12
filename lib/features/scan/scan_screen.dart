@@ -155,21 +155,27 @@ class _ScanScreenState extends State<ScanScreen>
     final isSelected = _activeLensMode == label;
     return PressableScale(
       onTap: () => _switchLensMode(label),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 44,
-        height: 32,
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFBBF24) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
+      child: SizedBox(
+        width: 48,
+        height: 48,
         child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-                            fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: isSelected ? AppTokens.ink : Colors.white,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 44,
+            height: 32,
+            decoration: BoxDecoration(
+              color: isSelected ? const Color(0xFFFBBF24) : Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Center(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: isSelected ? AppTokens.ink : Colors.white,
+                ),
+              ),
             ),
           ),
         ),
@@ -524,21 +530,28 @@ class _ScanScreenState extends State<ScanScreen>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    PressableScale(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: AppTokens.minTouchTarget,
-                        height: AppTokens.minTouchTarget,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.45),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
+                    Tooltip(
+                      message: 'Tutup pemindai',
+                      child: Semantics(
+                        button: true,
+                        label: 'Tutup pemindai',
+                        child: PressableScale(
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            width: AppTokens.minTouchTarget,
+                            height: AppTokens.minTouchTarget,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.45),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: const Center(
+                              child: Icon(Icons.close_rounded,
+                                  color: Colors.white, size: 22),
+                            ),
                           ),
-                        ),
-                        child: const Center(
-                          child: Icon(Icons.close_rounded,
-                              color: Colors.white, size: 22),
                         ),
                       ),
                     ),
@@ -577,38 +590,49 @@ class _ScanScreenState extends State<ScanScreen>
                         final isUnavailable =
                             torchState == TorchState.unavailable;
 
-                        return PressableScale(
-                          onTap: isUnavailable
-                              ? null
-                              : () => camera.toggleTorch(),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            width: AppTokens.minTouchTarget,
-                            height: AppTokens.minTouchTarget,
-                            decoration: BoxDecoration(
-                              color: isOn
-                                  ? const Color(0xFFFBBF24)
-                                      .withValues(alpha: 0.3)
-                                  : Colors.black.withValues(alpha: 0.45),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isOn
-                                    ? const Color(0xFFFBBF24)
-                                    : Colors.white.withValues(alpha: 0.2),
-                                width: isOn ? 1.5 : 1.0,
-                              ),
-                            ),
-                            child: Center(
-                              child: Icon(
-                                isOn
-                                    ? Icons.flash_on_rounded
-                                    : Icons.flash_off_rounded,
-                                color: isOn
-                                    ? const Color(0xFFFBBF24)
-                                    : (isUnavailable
-                                        ? Colors.white38
-                                        : Colors.white),
-                                size: 20,
+                        return Tooltip(
+                          message: isUnavailable
+                              ? 'Lampu kilat tidak tersedia'
+                              : (isOn ? 'Matikan lampu kilat' : 'Nyalakan lampu kilat'),
+                          child: Semantics(
+                            button: true,
+                            label: isUnavailable
+                                ? 'Lampu kilat tidak tersedia'
+                                : (isOn ? 'Matikan lampu kilat' : 'Nyalakan lampu kilat'),
+                            child: PressableScale(
+                              onTap: isUnavailable
+                                  ? null
+                                  : () => camera.toggleTorch(),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                width: AppTokens.minTouchTarget,
+                                height: AppTokens.minTouchTarget,
+                                decoration: BoxDecoration(
+                                  color: isOn
+                                      ? const Color(0xFFFBBF24)
+                                          .withValues(alpha: 0.3)
+                                      : Colors.black.withValues(alpha: 0.45),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isOn
+                                        ? const Color(0xFFFBBF24)
+                                        : Colors.white.withValues(alpha: 0.2),
+                                    width: isOn ? 1.5 : 1.0,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    isOn
+                                        ? Icons.flash_on_rounded
+                                        : Icons.flash_off_rounded,
+                                    color: isOn
+                                        ? const Color(0xFFFBBF24)
+                                        : (isUnavailable
+                                            ? Colors.white38
+                                            : Colors.white),
+                                    size: 20,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -720,7 +744,7 @@ class _ScanScreenState extends State<ScanScreen>
               const SizedBox(height: 14),
               SizedBox(
                 width: double.infinity,
-                height: 44,
+                height: 48,
                 child: ElevatedButton.icon(
                   onPressed: () {
                     setState(() {

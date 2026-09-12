@@ -519,12 +519,11 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
                       children: [
                         Text(
                           item['code'] as String,
-                          style: const TextStyle(
-                                                        fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: AppTokens.ink,
-                            letterSpacing: -0.2,
-                          ),
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: AppTokens.ink,
+                                letterSpacing: -0.2,
+                              ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
