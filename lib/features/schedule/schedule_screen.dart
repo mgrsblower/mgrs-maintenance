@@ -30,9 +30,10 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     'scheduled': 'Terjadwal',
     'due': 'Perlu diperiksa',
     'overdue': 'Terlambat',
-    'completed': 'Selesai',
+    'completed': 'Selesai diperiksa',
     'completed_late': 'Selesai terlambat',
   };
+
   @override
   void initState() {
     super.initState();
@@ -134,6 +135,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             ),
             IconButton(
               tooltip: 'Perbarui jadwal',
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
               onPressed: busy ? null : load,
               icon: const Icon(Icons.refresh),
             ),
@@ -146,6 +148,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           children: [
             IconButton(
               tooltip: 'Bulan sebelumnya',
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
               onPressed: busy || month == 'current' ? null : () => move(-1),
               icon: const Icon(Icons.chevron_left),
             ),
@@ -160,6 +163,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             ),
             IconButton(
               tooltip: 'Bulan berikutnya',
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
               onPressed: busy || month == 'current' ? null : () => move(1),
               icon: const Icon(Icons.chevron_right),
             ),
@@ -206,6 +210,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             labelText: 'Cari kode komponen',
             suffixIcon: IconButton(
               tooltip: 'Cari komponen',
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
               onPressed: busy ? null : load,
               icon: const Icon(Icons.search),
             ),
@@ -218,55 +223,225 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           InfoLine('Jadwal mulai', stamp(period!['opensAt'])),
           InfoLine('Batas pemeriksaan', stamp(period!['closesAt'])),
           if (period!['snapshotState'] == 'preview')
-            const Text(
-              'Jadwal belum dimulai. Daftar komponen akan ditetapkan saat periode dibuka.',
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'Jadwal belum dimulai. Daftar komponen akan ditetapkan saat periode dibuka.',
+              ),
             ),
           if (period!['snapshotState'] == 'not_generated')
-            const Text(
-              'Daftar pemeriksaan bulan ini belum tersedia. Hubungi admin untuk memeriksa jadwal.',
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'Daftar pemeriksaan bulan ini belum tersedia. Hubungi admin untuk memeriksa jadwal.',
+              ),
             ),
           if (total != null)
-            Text(
-              '$completed dari $total pemeriksaan selesai sesuai filter.',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          if (period!['snapshotState'] == 'ready' && items.isEmpty && !busy)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Text('Tidak ada komponen yang sesuai filter.'),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                '$completed dari $total pemeriksaan selesai sesuai filter.',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
             ),
         ],
+        if (busy && items.isEmpty)
+          const LoadingStateView(message: 'Memuat jadwal pemeriksaan…'),
+        if (error != null && items.isEmpty)
+          ErrorStateView(
+            onRetry: () => load(),
+            error: error,
+          ),
+        if (!busy &&
+            error == null &&
+            items.isEmpty &&
+            period != null &&
+            period!['snapshotState'] == 'ready')
+          const EmptyStateView(
+            title: 'Tidak ada tugas pemeriksaan',
+            message: 'Tidak ada komponen yang sesuai filter.',
+          ),
         ...items.map(
-          (item) => Card(
-            child: ListTile(
-              isThreeLine: true,
-              title: Text(item['code'] as String),
-              subtitle: Text(
-                '${item['kind']}\n${states[item['status']] ?? 'Status belum tersedia'}',
-              ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => open(item),
-            ),
+          (item) => PeriodicTaskCard(
+            task: item,
+            onTap: () => open(item),
           ),
         ),
-        if (busy)
+        if (busy && items.isNotEmpty)
           const Padding(
             padding: EdgeInsets.all(24),
             child: Center(child: CircularProgressIndicator()),
           ),
-        if (error != null) ...[
-          Text(failureMessage(error)),
+        if (error != null && items.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              failureMessage(error),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
           TextButton(
-            onPressed: () => load(more: items.isNotEmpty),
+            onPressed: () => load(more: true),
             child: const Text('Coba lagi'),
           ),
         ],
         if (!busy && cursor != null && error == null)
-          OutlinedButton(
-            onPressed: () => load(more: true),
-            child: const Text('Muat berikutnya'),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: SizedBox(
+              height: 48,
+              child: OutlinedButton(
+                onPressed: () => load(more: true),
+                child: const Text('Muat berikutnya'),
+              ),
+            ),
           ),
       ],
     ),
   );
+}
+
+/// Dedicated card for displaying a periodic maintenance task.
+/// Explicitly separates periodic task completion from physical component condition.
+class PeriodicTaskCard extends StatelessWidget {
+  const PeriodicTaskCard({
+    super.key,
+    required this.task,
+    this.onTap,
+  });
+
+  final Map<String, Object?> task;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final code = task['code']?.toString() ?? '-';
+    final kind = task['kind']?.toString() ?? '-';
+    final rawStatus = task['status']?.toString() ?? '';
+    final statusLabel =
+        _ScheduleScreenState.states[rawStatus] ?? 'Status belum tersedia';
+    final condition =
+        task['condition']?.toString() ?? task['componentCondition']?.toString();
+    final completedAt = task['completedAt'];
+
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          code,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          kind,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _statusBadge(context, rawStatus, statusLabel),
+                ],
+              ),
+              if (condition != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Text(
+                      'Kondisi: ',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    Text(
+                      conditionDisplayLabel(condition),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: condition.toLowerCase().contains('rusak')
+                            ? theme.colorScheme.error
+                            : theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              if (completedAt != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Selesai pada: ${stamp(completedAt)}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _statusBadge(BuildContext context, String rawStatus, String label) {
+    final theme = Theme.of(context);
+    final (Color bg, Color fg) = switch (rawStatus) {
+      'completed' => (
+        theme.colorScheme.primaryContainer,
+        theme.colorScheme.onPrimaryContainer,
+      ),
+      'completed_late' => (
+        theme.colorScheme.tertiaryContainer,
+        theme.colorScheme.onTertiaryContainer,
+      ),
+      'overdue' => (
+        theme.colorScheme.errorContainer,
+        theme.colorScheme.onErrorContainer,
+      ),
+      'due' => (
+        theme.colorScheme.secondaryContainer,
+        theme.colorScheme.onSecondaryContainer,
+      ),
+      _ => (
+        theme.colorScheme.surfaceContainerHighest,
+        theme.colorScheme.onSurfaceVariant,
+      ),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: fg,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
 }

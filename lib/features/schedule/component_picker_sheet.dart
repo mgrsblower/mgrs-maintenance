@@ -120,6 +120,7 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final displayedItems = _allComponents.where((item) {
       if (_searchQuery.isEmpty) return true;
       final sticker = (item['nomor_stiker']?.toString() ?? '').toLowerCase();
@@ -128,9 +129,9 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -142,7 +143,7 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: theme.colorScheme.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -158,25 +159,24 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
                     children: [
                       Text(
                         'Pilih ${widget.kind} Blower',
-                        style: const TextStyle(
-                          fontSize: 18,
+                        style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF0F172A),
                         ),
                       ),
                       const SizedBox(height: 2),
-                      const Text(
+                      Text(
                         'Urutan atas adalah unit tersegar / paling jarang dipakai',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF64748B),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Color(0xFF64748B)),
+                  tooltip: 'Tutup',
+                  constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                  icon: Icon(Icons.close, color: theme.colorScheme.onSurfaceVariant),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -189,9 +189,11 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
               controller: _searchCtrl,
               decoration: InputDecoration(
                 hintText: 'Cari stiker ${widget.kind} (contoh: 01)...',
-                prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFF94A3B8)),
+                prefixIcon: Icon(Icons.search, size: 20, color: theme.colorScheme.onSurfaceVariant),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
+                        tooltip: 'Hapus pencarian',
+                        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                         icon: const Icon(Icons.clear, size: 18),
                         onPressed: () {
                           _searchCtrl.clear();
@@ -200,15 +202,15 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
                       )
                     : null,
                 filled: true,
-                fillColor: const Color(0xFFF8FAFC),
+                fillColor: theme.colorScheme.surfaceContainerHighest,
                 contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
                 ),
               ),
               onChanged: (val) => setState(() => _searchQuery = val.trim()),
@@ -227,7 +229,7 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
                             Text(
                               'Gagal memuat komponen: $_error',
                               textAlign: TextAlign.center,
-                              style: const TextStyle(color: Colors.red),
+                              style: TextStyle(color: theme.colorScheme.error),
                             ),
                             const SizedBox(height: 8),
                             ElevatedButton(
@@ -243,7 +245,7 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
                               _searchQuery.isNotEmpty
                                   ? 'Tidak ada ${widget.kind} dengan kode "$_searchQuery"'
                                   : 'Belum ada data ${widget.kind} yang siap pakai',
-                              style: const TextStyle(color: Color(0xFF64748B)),
+                              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                             ),
                           )
                         : ListView.separated(
@@ -257,12 +259,12 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
                                   dense: true,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10),
-                                    side: BorderSide(color: Colors.grey.shade300),
+                                    side: BorderSide(color: theme.colorScheme.outlineVariant),
                                   ),
-                                  leading: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
-                                  title: const Text(
+                                  leading: Icon(Icons.remove_circle_outline, color: theme.colorScheme.error),
+                                  title: Text(
                                     'Kosongkan Pilihan',
-                                    style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600),
+                                    style: TextStyle(color: theme.colorScheme.error, fontWeight: FontWeight.w600),
                                   ),
                                   onTap: () => Navigator.of(context).pop(''),
                                 );
@@ -281,10 +283,10 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                                   decoration: BoxDecoration(
-                                    color: isSelected ? const Color(0xFFEFF6FF) : Colors.white,
+                                    color: isSelected ? theme.colorScheme.primaryContainer : theme.colorScheme.surface,
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: isSelected ? const Color(0xFF3B82F6) : const Color(0xFFE2E8F0),
+                                      color: isSelected ? theme.colorScheme.primary : theme.colorScheme.outlineVariant,
                                       width: isSelected ? 1.5 : 1,
                                     ),
                                   ),
@@ -293,13 +295,15 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
                                       Container(
                                         padding: const EdgeInsets.all(8),
                                         decoration: BoxDecoration(
-                                          color: isSelected ? const Color(0xFFDBEAFE) : const Color(0xFFF1F5F9),
+                                          color: isSelected
+                                              ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                                              : theme.colorScheme.surfaceContainerHighest,
                                           borderRadius: BorderRadius.circular(8),
                                         ),
                                         child: Icon(
                                           Icons.qr_code_2,
                                           size: 20,
-                                          color: isSelected ? const Color(0xFF2563EB) : const Color(0xFF475569),
+                                          color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
                                         ),
                                       ),
                                       const SizedBox(width: 12),
@@ -309,17 +313,15 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
                                           children: [
                                             Text(
                                               sticker,
-                                              style: TextStyle(
-                                                fontSize: 16,
+                                              style: theme.textTheme.titleMedium?.copyWith(
                                                 fontWeight: FontWeight.bold,
-                                                color: isSelected ? const Color(0xFF1E40AF) : const Color(0xFF0F172A),
+                                                color: isSelected ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurface,
                                               ),
                                             ),
                                             Text(
                                               'Kondisi: $kondisi',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey.shade600,
+                                              style: theme.textTheme.bodySmall?.copyWith(
+                                                color: theme.colorScheme.onSurfaceVariant,
                                               ),
                                             ),
                                           ],
@@ -353,7 +355,7 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
                                       ),
                                       if (isSelected) ...[
                                         const SizedBox(width: 8),
-                                        const Icon(Icons.check_circle, color: Color(0xFF2563EB), size: 20),
+                                        Icon(Icons.check_circle, color: theme.colorScheme.primary, size: 20),
                                       ],
                                     ],
                                   ),

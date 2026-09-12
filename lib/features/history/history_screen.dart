@@ -31,6 +31,7 @@ class _HistoryScreenState extends State<HistoryScreen>
   bool busy = false;
   Object? error;
   int request = 0;
+
   @override
   void initState() {
     super.initState();
@@ -54,6 +55,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     date.month,
     date.day + addDays,
   ).subtract(const Duration(hours: 7)).toIso8601String();
+
   Future<void> load({bool more = false}) async {
     final token = ++request;
     setState(() {
@@ -104,6 +106,7 @@ class _HistoryScreenState extends State<HistoryScreen>
   }
 
   String dateLabel(DateTime d) => '${d.day}/${d.month}/${d.year}';
+
   Future<void> open(String id) async {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
@@ -129,6 +132,7 @@ class _HistoryScreenState extends State<HistoryScreen>
             ),
             IconButton(
               tooltip: 'Perbarui riwayat',
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
               onPressed: busy ? null : load,
               icon: const Icon(Icons.refresh),
             ),
@@ -154,71 +158,161 @@ class _HistoryScreenState extends State<HistoryScreen>
                 },
         ),
         const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: busy ? null : chooseDates,
-          icon: const Icon(Icons.date_range),
-          label: Text(
-            range == null
-                ? 'Semua tanggal · WIB'
-                : '${dateLabel(range!.start)} – ${dateLabel(range!.end)}',
-          ),
-        ),
-        if (range != null)
-          TextButton(
-            onPressed: busy
-                ? null
-                : () {
-                    range = null;
-                    load();
-                  },
-            child: const Text('Hapus filter tanggal'),
-          ),
-        const SizedBox(height: 16),
-        if (!busy && error == null && items.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Text('Belum ada riwayat yang sesuai filter.'),
-          ),
-        ...items.map(
-          (item) => Card(
-            child: ListTile(
-              title: Text(item['code']?.toString() ?? 'Kode tidak tercatat'),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(activityLabels[item['activity']] ?? 'Aktivitas'),
-                    Text(stamp(item['recordedAt'])),
-                    Text(
-                      '${item['actor'] ?? 'Petugas'}${item['legacy'] == true ? ' · Catatan lama' : ''}',
-                    ),
-                  ],
-                ),
-              ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => open(item['eventId'] as String),
+        SizedBox(
+          height: 48,
+          child: OutlinedButton.icon(
+            onPressed: busy ? null : chooseDates,
+            icon: const Icon(Icons.date_range),
+            label: Text(
+              range == null
+                  ? 'Semua tanggal · WIB'
+                  : '${dateLabel(range!.start)} – ${dateLabel(range!.end)}',
             ),
           ),
         ),
-        if (busy)
+        if (range != null) ...[
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: busy
+                  ? null
+                  : () {
+                      range = null;
+                      load();
+                    },
+              child: const Text('Hapus filter tanggal'),
+            ),
+          ),
+        ],
+        const SizedBox(height: 16),
+        if (busy && items.isEmpty)
+          const LoadingStateView(message: 'Memuat riwayat…'),
+        if (error != null && items.isEmpty)
+          ErrorStateView(
+            onRetry: () => load(),
+            error: error,
+          ),
+        if (!busy && error == null && items.isEmpty)
+          const EmptyStateView(
+            title: 'Belum ada riwayat',
+            message: 'Belum ada catatan untuk ditampilkan.',
+          ),
+        ...items.map(
+          (item) => HistoryEventCard(
+            item: item,
+            onTap: () => open(item['eventId'] as String),
+          ),
+        ),
+        if (busy && items.isNotEmpty)
           const Padding(
             padding: EdgeInsets.all(24),
             child: Center(child: CircularProgressIndicator()),
           ),
-        if (error != null) ...[
-          Text(failureMessage(error)),
+        if (error != null && items.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              failureMessage(error),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
           TextButton(
-            onPressed: () => load(more: items.isNotEmpty),
+            onPressed: () => load(more: true),
             child: const Text('Coba lagi'),
           ),
         ],
         if (!busy && cursor != null && error == null)
-          OutlinedButton(
-            onPressed: () => load(more: true),
-            child: const Text('Muat berikutnya'),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: SizedBox(
+              height: 48,
+              child: OutlinedButton(
+                onPressed: () => load(more: true),
+                child: const Text('Muat berikutnya'),
+              ),
+            ),
           ),
       ],
     ),
   );
+}
+
+/// Dedicated card for displaying an immutable maintenance history event.
+class HistoryEventCard extends StatelessWidget {
+  const HistoryEventCard({
+    super.key,
+    required this.item,
+    this.onTap,
+  });
+
+  final Map<String, Object?> item;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final code = item['code']?.toString() ?? 'Kode tidak tercatat';
+    final activity = item['activity']?.toString();
+    final activityText = activityLabels[activity] ?? 'Aktivitas';
+    final recordedAt = item['recordedAt'];
+    final actor = item['actor']?.toString() ?? 'Petugas';
+    final isLegacy = item['legacy'] == true;
+
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      code,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      activityText,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      stamp(recordedAt),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$actor${isLegacy ? ' · Catatan lama' : ''}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

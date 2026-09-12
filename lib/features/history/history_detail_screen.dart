@@ -107,6 +107,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
       actions: [
         IconButton(
           tooltip: 'Perbarui catatan',
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           onPressed: reload,
           icon: const Icon(Icons.refresh),
         ),
@@ -166,13 +167,16 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
           ),
           if (data['legacy'] == false && data['componentId'] != null) ...[
             if (correctionError != null) Text(failureMessage(correctionError)),
-            OutlinedButton.icon(
-              onPressed: openingCorrection ? null : () => correct(data),
-              icon: const Icon(Icons.edit_note),
-              label: Text(
-                openingCorrection
-                    ? 'Memuat kondisi terbaru…'
-                    : 'Buat catatan koreksi',
+            SizedBox(
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: openingCorrection ? null : () => correct(data),
+                icon: const Icon(Icons.edit_note),
+                label: Text(
+                  openingCorrection
+                      ? 'Memuat kondisi terbaru…'
+                      : 'Buat catatan koreksi',
+                ),
               ),
             ),
           ],
@@ -181,16 +185,19 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
               'Alasan koreksi',
               data['correctionReason']?.toString() ?? 'Tidak tercatat',
             ),
-            TextButton(
-              onPressed: () => Navigator.of(context).push<void>(
-                MaterialPageRoute(
-                  builder: (_) => HistoryDetailScreen(
-                    gateway: widget.gateway,
-                    eventId: data['correctsEventId'] as String,
+            SizedBox(
+              height: 48,
+              child: TextButton(
+                onPressed: () => Navigator.of(context).push<void>(
+                  MaterialPageRoute(
+                    builder: (_) => HistoryDetailScreen(
+                      gateway: widget.gateway,
+                      eventId: data['correctsEventId'] as String,
+                    ),
                   ),
                 ),
+                child: const Text('Lihat catatan yang dikoreksi'),
               ),
-              child: const Text('Lihat catatan yang dikoreksi'),
             ),
           ],
         ],
