@@ -72,11 +72,11 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
     if (_status == InvoicePaymentStatus.partial && paid <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Nominal DP / sebagian harus lebih dari 0.'),
-          backgroundColor: errorSurface,
-          contentTextStyle: theme.textTheme.bodyMedium?.copyWith(
-            color: errorTone,
+          content: Text(
+            'Nominal DP / sebagian harus lebih dari 0.',
+            style: theme.textTheme.bodyMedium?.copyWith(color: errorTone),
           ),
+          backgroundColor: errorSurface,
         ),
       );
       return;
@@ -146,7 +146,10 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Atur Pembayaran', style: theme.textTheme.titleLarge),
+                        Text(
+                          'Atur Pembayaran',
+                          style: theme.textTheme.titleLarge,
+                        ),
                         Text(
                           '${widget.invoice.invoiceReference} • ${widget.invoice.customerName.isNotEmpty ? widget.invoice.customerName : "Klien MGRS"}',
                           style: theme.textTheme.bodySmall,
@@ -288,15 +291,18 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
           setState(() {
             _status = status;
             if (status == InvoicePaymentStatus.paid) {
-              _paidController.text =
-                  widget.invoice.totalAmount.toInt().toString();
+              _paidController.text = widget.invoice.totalAmount
+                  .toInt()
+                  .toString();
             } else if (status == InvoicePaymentStatus.unpaid) {
               _paidController.text = '0';
             }
           });
         },
         child: Container(
-          constraints: const BoxConstraints(minHeight: AppTokens.minTouchTarget),
+          constraints: const BoxConstraints(
+            minHeight: AppTokens.minTouchTarget,
+          ),
           decoration: BoxDecoration(
             color: isSelected ? selectedBackground : Colors.transparent,
             borderRadius: BorderRadius.circular(AppTokens.badgeRadius),

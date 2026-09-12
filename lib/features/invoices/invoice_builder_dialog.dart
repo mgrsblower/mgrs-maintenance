@@ -33,10 +33,6 @@ class _InvoiceBuilderDialogState extends State<InvoiceBuilderDialog> {
   static const _footerActionHeight = AppTokens.minTouchTarget;
   static const _footerActionRadius = AppTokens.controlRadius;
   static const _footerActionGap = AppTokens.space4;
-  static const _footerLabelSize = 12.0;
-  static const _footerInk = AppTokens.ink;
-  static const _footerMutedSurface = AppTokens.porcelain;
-  static const _footerBorder = AppTokens.mist;
   static const _footerShareSurface = AppTokens.successSurface;
   static const _footerShareBorder = AppTokens.success;
   static const _footerShareInk = AppTokens.success;
@@ -162,7 +158,8 @@ class _InvoiceBuilderDialogState extends State<InvoiceBuilderDialog> {
   }
 
   Future<void> _shareToWhatsApp() async {
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final calc = _calculation;
     final cleanPhone = _customerPhoneController.text.replaceAll(
       RegExp(r'[^0-9]'),
@@ -202,9 +199,13 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Tidak dapat membuka WhatsApp.'),
+          content: Text(
+            'Tidak dapat membuka WhatsApp.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colors.onErrorContainer,
+            ),
+          ),
           backgroundColor: colors.errorContainer,
-          contentTextStyle: TextStyle(color: colors.onErrorContainer),
         ),
       );
     }
@@ -418,7 +419,9 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                     ),
                     decoration: BoxDecoration(
                       color: statusBg,
-                      borderRadius: BorderRadius.circular(AppTokens.badgeRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppTokens.badgeRadius,
+                      ),
                       border: Border.all(color: statusBorder),
                     ),
                     child: Text(
@@ -445,9 +448,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
             OutlinedButton.icon(
               onPressed: () => setState(() => _isEditing = !_isEditing),
               icon: Icon(
-                _isEditing
-                    ? Icons.visibility_outlined
-                    : Icons.edit_outlined,
+                _isEditing ? Icons.visibility_outlined : Icons.edit_outlined,
               ),
               label: Text(_isEditing ? 'Pratinjau' : 'Ubah'),
               style: OutlinedButton.styleFrom(
@@ -728,10 +729,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                   child: TextFormField(
                     controller: _unitPriceController,
                     keyboardType: TextInputType.number,
-                    decoration: _inputDecoration(
-                      'Harga Satuan',
-                      prefix: 'Rp ',
-                    ),
+                    decoration: _inputDecoration('Harga Satuan', prefix: 'Rp '),
                   ),
                 ),
               ],
@@ -794,10 +792,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                     initialValue: _paymentStatus,
                     decoration: _inputDecoration('Status'),
                     items: InvoicePaymentStatus.values.map((s) {
-                      return DropdownMenuItem(
-                        value: s,
-                        child: Text(s.label),
-                      );
+                      return DropdownMenuItem(value: s, child: Text(s.label));
                     }).toList(),
                     onChanged: (val) {
                       if (val != null) {
@@ -819,10 +814,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                   child: TextFormField(
                     controller: _paidAmountController,
                     keyboardType: TextInputType.number,
-                    decoration: _inputDecoration(
-                      'Terbayar',
-                      prefix: 'Rp ',
-                    ),
+                    decoration: _inputDecoration('Terbayar', prefix: 'Rp '),
                   ),
                 ),
               ],
@@ -834,11 +826,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
   }
 
   InputDecoration _inputDecoration(String label, {String? prefix}) {
-    return InputDecoration(
-      isDense: true,
-      labelText: label,
-      prefixText: prefix,
-    );
+    return InputDecoration(isDense: true, labelText: label, prefixText: prefix);
   }
 
   Widget _buildActionButton({
@@ -866,7 +854,10 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (icon != null) ...[icon, const SizedBox(width: AppTokens.space4)],
+            if (icon != null) ...[
+              icon,
+              const SizedBox(width: AppTokens.space4),
+            ],
             Text(
               label,
               style: theme.textTheme.labelLarge?.copyWith(color: textColor),
