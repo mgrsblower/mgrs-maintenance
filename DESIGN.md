@@ -1,35 +1,166 @@
-# MGRS-Maintenance design contract
+# MGRS design contract
 
 ## 0. Reference and scope
 
-Adapt the local MGRS operational design vocabulary from ../mgrs-release/DESIGN.md: cobalt actions, pale canvas, white bordered surfaces, compact readable mobile information. This is a functional maintenance app using the existing product identity, not a Paper screen clone. No downloaded assets, concept art or screenshots are embedded in product screens. Native Material controls retain accessible behavior.
+Use `C:\Users\ogi\Downloads\DESIGN-apple.md` as the visual north star, adapted for a functional Flutter Android application. This is a complete visual-world replacement, not a color refresh. The Apple reference contributes restraint, typography, surface rhythm, hierarchy, and product focus. Android Material 3 remains the platform behavior baseline.
 
-## 1. Atmosphere
+The product has two workspaces:
 
-A calm field-work utility. The main action is scanning a component; the component code and last condition are prominent. No dashboard charts, invented metrics or decorative hero.
+- **PIC MGRS:** orderan and invoice.
+- **Tim Lapangan:** maintenance, field order context, and installation confirmation.
 
-## 2. Tokens
+Admin can access both workspaces. PIC MGRS and Tim Lapangan have separate shells and navigation.
 
-Canvas #F4F8FC, surface #FFFFFF, primary #147CC1, text #141820, secondary #667085, border #DDE2E8, success #137333, warning #9A6700, danger #B42318. Spacing 4/8/12/16/24/32; corner radius 12; minimum control height 48; content maximum width 640. Native platform typography: title 24, section 18, body 16, label 14. Camera background dark only while scanning.
+## 1. Design read
 
-## 3. Layout
+A precise field-operations instrument for people working with real equipment, orders, and maintenance records. The interface should feel curated like an Apple product surface, but behave like a dependable Android work tool. The product's character comes from exact hierarchy, quiet surfaces, clear state, and one decisive action, not decorative effects.
 
-Scan / Berkala / Riwayat navigation remains visible on home tabs. Details and forms have a back button. Single scroll column, 16px outer spacing and safe-area handling. Form actions scroll above the keyboard; no fixed overlay on inputs.
+Dials:
 
-## 4. Components
+- ENERGY: 4
+- RHYTHM: 6
+- MOTION: 3
+- VISUAL DENSITY: 5
 
-Material filled and outlined buttons; outlined text fields; bordered panels; text-labelled condition chips. MGRS icon uses a standard tool symbol with product text, not a copied logo. Primary action is blue; destructive errors are red. Every icon-only control has a tooltip.
+## 2. Visual principles
 
-Invoice dialog footer uses one 48-unit action row with 6-unit gaps and 8-unit radii. Download and share are fixed 48-unit icon controls; payment and completion share the remaining width at a 3:2 ratio. Footer neutrals use ink `#18181B`, muted surface `#F4F4F5`, and subtle border `#E4E4E7`; share uses surface `#EDF3EC`, border `#CDE2CF`, and icon `#346538`. Text actions use the compact 11.5 label treatment.
+- UI chrome recedes so the current task leads.
+- Use a cool monochrome base with white, pearl, charcoal, and one Action Blue.
+- Use whitespace and typography to separate concepts before adding containers.
+- A surface is only elevated when elevation communicates a real interaction or hierarchy.
+- No decorative gradients, glow, grain, glass, colored stripes, or floating effects without a written product purpose.
+- No marketing hero, fake product gallery, invented statistics, fake avatars, or decorative dashboard sections.
+- Do not preserve the current liquid-glass dock, bento dashboard treatment, or mixed invoice/maintenance shell.
 
-## 5. States
+## 3. Palette
 
-Async content has loading, loaded, empty and failure states with retry. Form has idle, validation, saving, uncertain, conflict and success. All condition labels are textual. Error copy never exposes SQL or exception details. Loading never claims no records.
+Semantic roles:
 
-## 6. Motion and accessibility
+- `canvas`: `#FFFFFF`
+- `canvasSubtle`: `#F5F5F7`
+- `surface`: `#FAFAFC`
+- `surfaceStrong`: `#FFFFFF`
+- `surfaceDark`: `#272729`
+- `surfaceBlack`: `#1D1D1F`
+- `ink`: `#1D1D1F`
+- `inkOnDark`: `#FFFFFF`
+- `inkMuted`: `#6E6E73`
+- `divider`: `#E0E0E0`
+- `actionBlue`: `#0066CC`
+- `actionBlueFocus`: `#0071E3`
+- `success`: `#2E7D32`
+- `warning`: `#956400`
+- `danger`: `#B42318`
 
-Use native Material feedback. No continuous decorative animation. Text scaling follows the OS. Buttons at least 48 units, semantic labels, keyboard submit, scrollable forms, disabled busy state. Scanner stops on result, navigation, app pause and logout.
+Action Blue is reserved for primary actions, links, focus, and selected controls. Status colors are semantic and always paired with text.
 
-## 7. Verification and debt
+## 4. Typography
 
-Verify native screens and interaction states on Android emulator; actual physical barcode/camera testing remains a release requirement. Desktop/web are not distribution targets. The schema is not deployed by UI verification. Production labels never present fixture data as real data.
+Use a native/system sans family suitable for Android. If a licensed SF Pro asset is not explicitly provided, do not fake SF Pro; use the platform sans stack and preserve the Apple reference's proportion, weight, and spacing character.
+
+Material text roles map to this scale:
+
+- Display: 34–40, weight 600, tight tracking
+- Headline: 28–32, weight 600
+- Title: 20–24, weight 600
+- Body: 16–17, weight 400
+- Body strong: 16–17, weight 600
+- Caption: 13–14, weight 400
+- Label: 12–14, weight 600
+
+Typography must come from `ThemeData.textTheme`; do not set arbitrary font sizes per screen. Body text must remain readable at enlarged system font scale.
+
+## 5. Workspace composition
+
+### PIC MGRS
+
+Landing composition:
+
+1. Workspace identity and current context.
+2. Orderan requiring attention.
+3. Order/pasangan status and allocation actions.
+4. Invoice actions and payment status.
+
+Navigation: Beranda, Orderan, Invoice, Profil.
+
+### Tim Lapangan
+
+Landing composition:
+
+1. Workspace identity.
+2. Scan component as the primary action.
+3. Open field tasks and periodic work.
+4. Relevant order/pasangan context.
+5. Recent maintenance history.
+
+Navigation: Scan, Berkala, Komponen, Riwayat. Servis and pemeriksaan are contextual actions from component/task detail.
+
+### Admin
+
+Admin has a visible switcher with exactly two choices: PIC MGRS and Tim Lapangan. Switching workspace resets to that workspace landing screen and does not change authorization.
+
+## 6. Component language
+
+Prefer native Material 3 controls and flat grouping:
+
+- `NavigationBar`, `NavigationRail`, or drawer based on available width.
+- Material buttons with clear hierarchy.
+- Outlined or filled fields with labels above input content.
+- `ListTile`, dividers, and whitespace for repeated records.
+- Cards only when a record or action genuinely needs a boundary.
+- Status badges only for real status values.
+- Bottom sheets and dialogs only for focused decisions.
+- Every icon-only control has a semantic label and tooltip.
+- Every interactive target is at least 48dp with visible focus.
+
+Shared components must own spacing, semantics, state, and interaction. Workspace components own domain content and vocabulary.
+
+## 7. State and motion
+
+Every data view has explicit loading, empty, error, retry, and permission states. Forms have idle, validation, saving, uncertain, conflict, success, and discard states. Loading never implies empty data.
+
+Motion is quiet and purposeful:
+
+- Use Material transitions for navigation and sheets.
+- Use short transform/opacity feedback for press and selection.
+- No perpetual decorative loops.
+- Scanner animation runs only while scanning.
+- Respect reduced-motion settings with crossfade or immediate state changes.
+- Never animate layout properties for decoration.
+
+## 8. Content integrity
+
+- No invented numbers, customer names, avatars, testimonials, or operational claims.
+- Empty values stay empty or use explicit contextual placeholders.
+- Service examples belong in hint text, never initial field values.
+- Checking forms never default to a successful condition.
+- Status text is Indonesian, specific, and action-oriented.
+
+## 9. Responsive and Android rules
+
+- Compact width uses Material NavigationBar.
+- Expanded width uses NavigationRail or drawer and a wider content composition.
+- Define compact, medium, and expanded layout states based on content breakage, not device names.
+- No horizontal overflow or clipped text.
+- Forms reserve IME space and keep the focused field visible.
+- System Back and predictive Back remain functional.
+- Verify light/dark appearance, 1.3 font scale, portrait, landscape, and expanded width.
+
+## 10. Anti-slop delivery gate
+
+Apply the global `antislop`, `antislop-ui`, `antislop-human`, and `antislop-layoutmobile` skills **during** planning and implementation.
+
+Before shipping, verify:
+
+- Every visual technique has a product purpose.
+- Every interactive control works or is removed.
+- Navigation points to real destinations.
+- Real data is used; no fabricated metrics or content.
+- Contrast and non-text boundaries meet WCAG AA expectations.
+- Focus, semantics, empty/loading/error, conflict, and retry states are perceivable.
+- Mobile, medium, and expanded layouts are intentionally designed.
+- The result remains recognizably MGRS even without the logo or product name.
+
+## 11. Verification debt
+
+Verify the native app on Android emulator and, before release, physical hardware for camera, barcode, gestures, keyboard, and network conditions. UI verification does not prove database deployment or live policy compatibility.

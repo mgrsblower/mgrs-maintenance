@@ -10,6 +10,12 @@
 The current Flutter application combines maintenance, field operations, orders, invoices, and PIC flows inside one navigation model. The product is intentionally a combined MGRS application, but the current UI does not express clear workspace boundaries. Admin, PIC, and field users need different entry points and task-focused navigation.
 
 This redesign changes the information architecture and component system, not only colors or visual styling.
+## Visual reference and anti-slop mode
+
+`C:\Users\ogi\Downloads\DESIGN-apple.md` is the approved visual north star. Apply its cool monochrome surfaces, Action Blue, restrained chrome, typography-led hierarchy, and curated product focus as an aggressive replacement of the current visual world. Do not copy its marketing-gallery composition or iOS/web-only patterns into the Android app.
+
+Apply the globally installed `antislop`, `antislop-ui`, `antislop-human`, and `antislop-layoutmobile` skills **DURING** planning and implementation. Every technique must pass a purpose test. Every interactive element must work, real data must remain evidence-based, and all states, contrast, focus, touch targets, and responsive layouts must be verified before delivery.
+
 
 ## Product model
 

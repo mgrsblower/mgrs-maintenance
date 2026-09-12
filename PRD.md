@@ -11,15 +11,30 @@ Dokumen ini membedakan keputusan pengguna, usulan aturan MVP, dan hal teknis yan
 
 ### 1.1 Masalah
 
-Petugas membutuhkan aplikasi dengan cakupan kecil untuk mengetahui kondisi komponen dan mencatat pemeriksaan serta servis. Pekerjaan tersebut harus dapat dilakukan langsung melalui barcode atau kode komponen, tanpa melalui pemasangan, pesanan, atau alokasi.
+Pengguna MGRS membutuhkan satu aplikasi operasional dengan workspace berbeda sesuai pekerjaan. PIC MGRS mengelola orderan dan invoice, sedangkan Tim Lapangan menangani maintenance, melihat konteks order/pasangan, dan mengonfirmasi pemasangan. Admin membutuhkan akses ke kedua workspace tanpa mencampur alur kerja di satu navigasi datar.
 
 ### 1.2 Solusi
 
-MGRS-Maintenance adalah aplikasi terpisah yang menggunakan database MGRS yang sama. Aplikasi menangani Kepala, Batang, dan Tabung dengan alur: temukan komponen, lihat kondisi, catat pemeriksaan atau servis, lalu simpan kondisi terbaru beserta riwayatnya.
+MGRS adalah aplikasi operasional dengan dua workspace dalam satu produk:
 
-Pengecekan berkala berlangsung sebulan sekali pada Sabtu keempat setiap bulan dan Minggu setelahnya. Pengecekan manual dan servis tetap dapat dicatat kapan saja.
+1. **PIC MGRS** untuk orderan dan invoice.
+2. **Tim Lapangan** untuk maintenance, konteks order/pasangan, serta konfirmasi pemasangan.
 
-### 1.3 Keputusan yang sudah disepakati
+Admin dapat berpindah di antara kedua workspace. Tim Lapangan mencakup tanggung jawab Tim Service dan Tim Pemasangan. Aplikasi tetap menggunakan database MGRS yang sama dan menangani Kepala, Batang, dan Tabung.
+
+Pengecekan berkala berlangsung sebulan sekali pada Sabtu keempat setiap bulan dan Minggu setelahnya. Pengecekan manual, servis, serta pekerjaan lapangan dapat dicatat sesuai hak akses dan konteks operasional.
+
+### 1.3 Workspace dan akses
+
+| Role | Workspace | Default entry |
+| --- | --- | --- |
+| Admin | PIC MGRS dan Tim Lapangan | Pemilih workspace |
+| PIC MGRS | PIC MGRS | Orderan |
+| Tim Lapangan | Tim Lapangan | Scan / tugas lapangan |
+
+Workspace adalah batas navigasi dan konteks, bukan pengganti authorization server.
+
+### 1.4 Keputusan yang sudah disepakati
 
 | Area | Keputusan pengguna |
 | --- | --- |
@@ -27,13 +42,15 @@ Pengecekan berkala berlangsung sebulan sekali pada Sabtu keempat setiap bulan da
 | Objek | Kepala, Batang, dan Tabung |
 | Identitas | Setiap komponen sudah memiliki barcode atau kode unik |
 | Data | Tetap menggunakan database MGRS yang sama |
-| Hubungan operasional | Tidak memiliki hubungan alur dengan pemasangan, pesanan, atau alokasi |
-| Interaksi | Scanner/manual untuk menemukan dan memeriksa komponen |
-| Mutasi | Pemeriksaan dan maintenance dapat memperbarui kondisi |
+| Workspace | PIC MGRS untuk orderan/invoice; Tim Lapangan untuk maintenance dan pekerjaan lapangan |
+| Tim Lapangan | Menggabungkan tanggung jawab Tim Service dan Tim Pemasangan |
+| Interaksi | Scanner/manual untuk komponen; order/pasangan untuk konteks lapangan |
+| Pemasangan | Konfirmasi pemasangan dengan pemilihan unit opsional |
 | Jadwal | Sabtu keempat setiap bulan sampai Minggu berikutnya |
-| Akses pembaruan | Tim Service, Tim Pemasangan, dan Admin |
+| Akses Admin | Dapat berpindah antara dua workspace |
 
-### 1.4 Kriteria keberhasilan
+### 1.5 Kriteria keberhasilan
+
 
 Target berikut adalah usulan penerimaan MVP, bukan hasil pengujian yang sudah tercapai.
 
@@ -47,34 +64,37 @@ Target berikut adalah usulan penerimaan MVP, bukan hasil pengujian yang sudah te
 
 ### 2.1 Pengguna dan hak akses
 
-| Kemampuan | Admin | Tim Service | Tim Pemasangan |
+| Kemampuan | Admin | PIC MGRS | Tim Lapangan |
 | --- | --- | --- | --- |
-| Scan/cari komponen dan lihat kondisi | Ya | Ya | Ya |
-| Lihat jadwal dan riwayat komponen | Ya | Ya | Ya |
-| Catat pemeriksaan dan ubah kondisi | Ya | Ya | Ya |
-| Catat servis dan kondisi hasil servis | Ya | Ya | Ya |
+| Mengakses workspace PIC MGRS | Ya | Ya | Tidak |
+| Mengakses workspace Tim Lapangan | Ya | Tidak | Ya |
+| Mengelola orderan dan invoice | Ya | Ya | Tidak |
+| Melihat order/pasangan terkait pekerjaan lapangan | Ya | Tidak | Ya |
+| Konfirmasi pemasangan dengan unit opsional | Ya | Tidak | Ya |
+| Scan/cari komponen dan lihat kondisi | Ya | Tidak | Ya |
+| Lihat jadwal dan riwayat komponen | Ya | Tidak | Ya |
+| Catat pemeriksaan dan ubah kondisi | Ya | Tidak | Ya |
+| Catat servis dan kondisi hasil servis | Ya | Tidak | Ya |
 | Hapus/ubah catatan riwayat yang sudah disimpan | Tidak dalam MVP | Tidak dalam MVP | Tidak dalam MVP |
-| Mengubah pemasangan, alokasi, atau status penggunaan | Tidak | Tidak | Tidak |
+| Mengubah status penggunaan tanpa operasi sah | Tidak | Tidak | Tidak |
 
-Usulan akses MVP: menggunakan akun MGRS aktif yang sudah ada. Role lain, termasuk `PIC Pemasangan`, tidak otomatis mendapat akses aplikasi ini. Pengelolaan akun tetap dilakukan melalui mekanisme MGRS yang ada. Ketiga role memiliki kemampuan pencatatan yang sama tanpa tahap approval tambahan.
+Gunakan akun MGRS aktif yang memiliki salah satu role `Admin`, `PIC MGRS`, atau `Tim Lapangan`. Admin dapat berpindah workspace dari UI, tetapi workspace bukan pengganti pemeriksaan role dan status aktif pada server.
 
-Nama Tim Pemasangan adalah identitas role pengguna; tidak menambahkan fitur atau ketergantungan pemasangan pada aplikasi.
+Tim Lapangan adalah nama baru untuk gabungan tanggung jawab Tim Service dan Tim Pemasangan. Jika database masih menyimpan role lama, pemetaan dan migrasi harus diverifikasi terhadap schema live sebelum rilis.
 
 ### 2.2 Navigasi dan layar
 
-Navigasi utama yang diusulkan: **Scan**, **Berkala**, dan **Riwayat**. Akun dan keluar tersedia dari menu profil sederhana.
+Navigasi utama dipisahkan menjadi dua workspace. Tidak ada navigasi datar yang mencampur order, invoice, maintenance, dan pekerjaan lapangan.
 
-| Layar | Konten/tindakan utama |
-| --- | --- |
-| Login | Masuk menggunakan akun MGRS, pesan kegagalan, penolakan akses |
-| Scan | Aktifkan kamera, masukkan kode manual, hasil pencarian |
-| Detail komponen | Jenis, kode/stiker, kondisi, kelayakan, gangguan fungsi, catatan, pemeriksaan terakhir; tombol Catat Pemeriksaan dan Catat Servis |
-| Form pemeriksaan | Kondisi hasil pemeriksaan, kelayakan, gangguan fungsi, catatan, konteks rutin atau berkala |
-| Form servis | Masalah, tindakan servis, kondisi setelah servis, kelayakan, gangguan fungsi, catatan |
-| Berkala | Periode, rentang Sabtu–Minggu, jumlah selesai/belum selesai/terlambat, filter jenis dan pencarian kode |
-| Riwayat | Pemeriksaan dan servis, filter jenis kegiatan, kode, dan tanggal; detail petugas dan hasil |
+| Workspace | Navigasi utama | Layar/konten utama |
+| --- | --- | --- |
+| PIC MGRS | Beranda, Orderan, Invoice, Profil | Ringkasan order, daftar/detail order, daftar/detail invoice, akun |
+| Tim Lapangan | Scan, Berkala, Komponen, Riwayat | Scan/manual, tugas berkala, katalog/detail komponen, pemeriksaan, servis, konteks order/pasangan, konfirmasi pemasangan |
 
-Kondisi selalu ditampilkan dengan teks, bukan warna saja. Jika tidak ada riwayat, tampilkan “Belum ada pemeriksaan tercatat”; jangan menggunakan tanggal perubahan master sebagai tanggal pemeriksaan.
+Admin memilih workspace saat masuk dan dapat berpindah melalui switcher yang persisten. PIC MGRS dan Tim Lapangan tidak melihat workspace lain.
+
+Kondisi dan status selalu ditampilkan dengan teks, bukan warna saja. Jika tidak ada riwayat, tampilkan “Belum ada pemeriksaan tercatat”; jangan menggunakan tanggal perubahan master sebagai tanggal pemeriksaan.
+
 
 ### 2.3 Alur utama
 
@@ -90,9 +110,12 @@ Membuka detail atau memindai barcode tidak mencatat pemeriksaan dan tidak mengub
 
 #### US-01 — Akses akun
 
-Sebagai anggota Tim Service, Tim Pemasangan, atau Admin, saya ingin masuk dengan akun MGRS agar pencatatan terhubung dengan identitas saya.
+Sebagai Admin, PIC MGRS, atau Tim Lapangan, saya ingin masuk dengan akun MGRS agar pencatatan dan pekerjaan terhubung dengan identitas saya.
 
-- Hanya akun aktif dengan salah satu dari tiga role tersebut dapat mengakses fungsi aplikasi.
+- Hanya akun aktif dengan role yang sesuai dapat mengakses workspace dan operasi yang dilindungi.
+- Admin dapat memilih workspace PIC MGRS atau Tim Lapangan.
+- PIC MGRS langsung masuk ke workspace orderan dan invoice.
+- Tim Lapangan langsung masuk ke workspace maintenance dan pekerjaan lapangan.
 - Pemeriksaan role dan status aktif diterapkan pada server untuk setiap operasi yang dilindungi; menyembunyikan tombol saja tidak cukup.
 - Petugas pencatat berasal dari sesi autentikasi, tidak dapat diganti melalui isian formulir.
 - Sesi kedaluwarsa meminta login kembali dan tidak menampilkan klaim penyimpanan berhasil.
@@ -108,17 +131,17 @@ Sebagai petugas, saya ingin memindai barcode atau memasukkan kode agar membuka k
 - Jika data menghasilkan lebih dari satu kecocokan, aplikasi meminta pemilihan identitas yang jelas atau menolak pencatatan sampai data diperbaiki; tidak memilih diam-diam.
 - Kode yang termasuk objek lain, seperti kabel rol, ditampilkan sebagai di luar cakupan aplikasi.
 
-#### US-03 — Melihat kondisi
+#### US-03 — Melihat kondisi dan konteks pekerjaan
 
-Sebagai petugas, saya ingin melihat kondisi dan riwayat terakhir agar mengetahui hasil pemeriksaan sebelumnya.
+Sebagai pengguna berwenang, saya ingin melihat kondisi komponen serta konteks order/pasangan yang relevan agar dapat mengambil tindakan lapangan yang benar.
 
-- Detail menampilkan identitas, kondisi terbaru, kelayakan, gangguan fungsi, dan catatan dari sumber data yang sesuai.
+- Detail komponen menampilkan identitas, kondisi terbaru, kelayakan, gangguan fungsi, catatan, dan riwayat terakhir.
 - Tanggal pemeriksaan terakhir berasal dari riwayat pemeriksaan; tanggal servis ditampilkan terpisah.
+- Tim Lapangan dapat membuka order/pasangan yang relevan untuk pekerjaan lapangan tanpa masuk ke workspace PIC MGRS.
 - Refresh membaca perubahan yang disimpan oleh aplikasi lain pada database bersama.
-- Tidak ada pencarian order, persyaratan pemasangan, atau perubahan status penggunaan untuk membuka detail.
+- Membuka detail atau melihat konteks tidak mencatat pemeriksaan, mengubah kondisi, atau mengubah status penggunaan.
 
 #### US-04 — Mencatat pemeriksaan
-
 Sebagai petugas berwenang, saya ingin mencatat hasil pemeriksaan agar kondisi master dan riwayat tetap sesuai keadaan komponen.
 
 - Identitas komponen dikunci setelah dipilih; pengguna dapat kembali untuk mengganti komponen sebelum menyimpan.
@@ -161,6 +184,17 @@ Sebagai pengguna berwenang, saya ingin melihat riwayat pemeriksaan dan servis ag
 - Koreksi hasil dibuat melalui pencatatan baru dengan alasan koreksi; catatan asli tidak dihapus atau diubah dalam MVP.
 - Daftar dimuat bertahap, tidak mengunduh seluruh riwayat ketika aplikasi dibuka.
 
+#### US-08 — Mengonfirmasi pemasangan
+
+Sebagai Tim Lapangan, saya ingin mengonfirmasi pemasangan berdasarkan order/pasangan agar status pekerjaan lapangan tercatat dengan benar.
+
+- Hanya order/pasangan yang tersedia untuk pekerjaan lapangan yang dapat dikonfirmasi.
+- Identitas order, pasangan, dan unit ditampilkan terpisah.
+- Unit boleh dipilih secara opsional ketika aturan operasi mengizinkannya.
+- Aplikasi tidak boleh memilih unit secara diam-diam.
+- Sebelum simpan, pengguna meninjau order/pasangan dan unit yang dipilih atau keterangan bahwa unit tidak dipilih.
+- Konfirmasi berhasil, gagal, dan konflik ditampilkan sebagai state yang berbeda.
+
 ### 2.5 Aturan jadwal bulanan
 
 **Disepakati:** satu jadwal bulanan pada Sabtu keempat dan Minggu sesudahnya.
@@ -191,13 +225,19 @@ Oktober 2026 memiliki Sabtu kelima pada 31 Oktober; jadwal tetap 24–25 Oktober
 
 ### 2.6 Batas MVP
 
-- Tidak ada pemasangan, order, alokasi, reservasi, approval order, invoice, atau pengubahan status penggunaan.
+- MVP mencakup dua workspace: PIC MGRS untuk orderan dan invoice, serta Tim Lapangan untuk scan, maintenance, berkala, komponen, riwayat, dan konteks order/pasangan.
+- Konfirmasi pemasangan hanya mencatat aksi dan field yang telah diverifikasi pada kontrak backend; aplikasi tidak mengarang status, relasi, atau aturan unit.
 - Tidak membuat master komponen, barcode baru, atau database operasional duplikat.
 - Tidak mencakup kabel rol dan aksesori di luar Kepala/Batang/Tabung.
 - Tidak mencakup pengelolaan akun, stok suku cadang, penugasan teknisi, anggaran, dan approval servis.
 - Tidak menyediakan penulisan offline atau sinkronisasi antrean pada MVP. Gangguan jaringan harus terlihat dan tidak boleh menghasilkan sukses semu.
 - Foto, push notification, checklist teknis per jenis, ekspor, dan analitik lanjutan adalah pengembangan berikutnya, bukan syarat MVP.
 - Form awal memakai kondisi, kelayakan, gangguan fungsi, dan catatan. Butir checklist teknis tidak dikarang sebelum divalidasi dengan tim lapangan.
+
+### 2.7 Aturan label produk
+
+- `PIC MGRS` dan `Tim Lapangan` adalah label produk yang wajib dipakai pada UI, dokumentasi, dan navigasi baru.
+- Nilai role legacy seperti `PIC Pemasangan`, `Tim Pemasangan`, dan `Tim Service` tetap dicatat sebagai kontrak source sampai pemetaan backend live diverifikasi.
 
 ## 3. AI System Requirements (If Applicable)
 
@@ -207,11 +247,11 @@ Tidak berlaku. MVP tidak memakai AI, diagnosis otomatis, pengenalan kerusakan da
 
 ### 4.1 Arsitektur dan batas kepemilikan
 
-Alur data: aplikasi baru → autentikasi MGRS → layanan baca/tulis dengan validasi server → database Supabase MGRS yang sama.
+Alur data: aplikasi Flutter baru → autentikasi MGRS → layanan baca/tulis dengan validasi server → database Supabase MGRS yang sama.
 
 Kode MGRS lama adalah referensi kontrak data. Aplikasi baru memiliki source, konfigurasi, build, dan rilis sendiri. Perubahan pada kode lama bukan bagian pekerjaan PRD ini.
 
-Platform, framework, target perangkat, anggaran, dan tenggat belum ditetapkan pengguna. PRD ini tidak mengunci Flutter, Expo, maupun web. Pemilihan teknologi menjadi keluaran tahap fondasi berdasarkan perangkat kerja dan kebutuhan scanner yang sebenarnya.
+Target perangkat, anggaran, dan tenggat belum ditetapkan pengguna. Redesign mempertahankan Flutter Android yang ada; keputusan distribusi dan target performa pilot menjadi keluaran tahap fondasi.
 
 ### 4.2 Kontrak yang ditemukan pada source lokal
 
@@ -219,8 +259,7 @@ Temuan berikut membuktikan kontrak klien saat ini, bukan verifikasi kondisi data
 
 | Sumber/data | Temuan |
 | --- | --- |
-| `profiles` | Auth membaca `id`, `is_active`, `role` |
-| Role | `Admin`, `PIC Pemasangan`, `Tim Pemasangan`, `Tim Service` |
+| Role produk | `Admin`, `PIC MGRS`, `Tim Lapangan`; pemetaan ke nilai role backend legacy belum diverifikasi |
 | `master_komponen` | `id`, `komponen_id`, `jenis_komponen`, `nomor_stiker`, `kondisi`, `boleh_dipakai`, `fungsi_terganggu`, `keterangan`, `status_penggunaan`, `updated_at`, `updated_by` |
 | Jenis | `Kepala`, `Batang`, `Tabung` |
 | Kondisi | `OK`, `Rusak Ringan`, `Rusak Berat`, `Service`, `Hilang` |
@@ -244,7 +283,7 @@ Referensi yang diperiksa:
 
 **INT-01 — Identitas:** lookup mengikuti format barcode sebenarnya dan identitas master. Relasi baru memakai ID master yang stabil; stiker/jenis tetap tersedia untuk kompatibilitas riwayat lama. Keunikan stiker dan format barcode harus diuji dengan sampel ketiga jenis.
 
-**INT-02 — Batas mutasi:** hanya kondisi, kelayakan, gangguan fungsi, keterangan yang relevan, metadata perubahan, dan riwayat maintenance yang boleh ditulis. `status_penggunaan`, pemasangan, order, alokasi, dan reservasi tidak boleh diubah sebagai efek samping, termasuk melalui trigger database.
+**INT-02 — Batas mutasi:** maintenance boleh menulis kondisi, kelayakan, gangguan fungsi, keterangan yang relevan, metadata perubahan, dan riwayat maintenance. Operasi order/invoice/pemasangan hanya menulis field dan relasi yang sudah diverifikasi pada kontrak backend. `status_penggunaan` tidak boleh berubah sebagai efek samping.
 
 **INT-03 — Atomisitas:** perubahan master, riwayat, audit kondisi sebelumnya/sesudahnya, dan penyelesaian tugas berkala bila relevan harus berada dalam satu transaksi server. Jika satu bagian gagal, semua dibatalkan.
 
@@ -262,11 +301,12 @@ Referensi yang diperiksa:
 
 1. `submitCheckingKomponen` dan `completeServiceKomponen` menghitung status melalui `_deriveStatus` lalu menulis `status_penggunaan`. Menggunakan fungsi tersebut tanpa penyesuaian akan melanggar batas aplikasi baru. Endpoint/transaksi baru perlu mempertahankan status penggunaan dan diuji terhadap trigger serta semua pembaca terkait.
 2. Fungsi tersebut melakukan insert riwayat dan update master sebagai dua permintaan terpisah. Pola ini belum memenuhi transaksi atomik yang dibutuhkan produk baru.
-3. Route checking/service lama hanya mengizinkan Admin dan Tim Service. Aplikasi baru juga mengizinkan Tim Pemasangan. Hak akses database live harus diperiksa; mengubah navigasi klien saja tidak cukup.
+3. Route checking/service lama hanya mengizinkan Admin dan Tim Service. Aplikasi baru menggunakan workspace Tim Lapangan untuk kebutuhan maintenance dan pekerjaan lapangan. Hak akses database live harus diperiksa; mengubah navigasi klien saja tidak cukup.
 4. Antrean servis lama difilter berdasarkan `status_penggunaan = Service`. Aplikasi baru tidak boleh bergantung pada filter ini untuk mengizinkan pencatatan servis.
 5. Model riwayat lama belum membuktikan adanya periode bulanan, ID permintaan, relasi stabil ke ID master, dan kondisi sebelumnya. Jangan menganggap kemampuan tersebut sudah ada hanya karena layar riwayat tersedia.
 
-Temuan ini adalah batas integrasi yang perlu ditangani pada tahap fondasi, bukan laporan bug yang sudah diperbaiki. Meskipun aplikasi baru tidak memiliki alur pemasangan, perubahan kondisi pada database bersama tetap terlihat oleh aplikasi MGRS dan dapat memengaruhi keputusan kelayakan yang sudah ada di sana.
+Temuan ini adalah batas integrasi yang perlu ditangani pada tahap fondasi, bukan laporan bug yang sudah diperbaiki. Meskipun aplikasi baru menambahkan konteks order/pasangan dan konfirmasi pemasangan, setiap relasi baru harus diverifikasi pada database bersama dan tidak boleh mengubah status operasional secara diam-diam.
+
 
 ### 4.5 Keamanan dan privasi
 
@@ -287,8 +327,8 @@ Temuan ini adalah batas integrasi yang perlu ditangani pada tahap fondasi, bukan
 
 | Skenario wajib | Hasil yang diharapkan |
 | --- | --- |
-| Login tiga role yang disepakati | Baca dan tulis maintenance diperbolehkan |
-| PIC Pemasangan, akun nonaktif, atau tanpa sesi | Akses yang dilindungi ditolak server |
+| Login Admin, PIC MGRS, dan Tim Lapangan | Workspace sesuai role; Admin dapat berpindah workspace; operasi yang dilindungi tetap diverifikasi server |
+| Role legacy yang belum dipetakan, akun nonaktif, atau tanpa sesi | Akses yang dilindungi ditolak server |
 | Scan masing-masing jenis, kode manual, barcode tidak dikenal | Detail tepat atau pesan kesalahan yang sesuai |
 | Kamera ditolak, frame berulang, keluar dari scanner | Input manual tersedia; tidak ada aksi ganda; kamera berhenti |
 | Pemeriksaan OK dan rusak, servis berhasil atau belum berhasil | Nilai dan riwayat sesuai input serta validasi |
@@ -296,13 +336,14 @@ Temuan ini adalah batas integrasi yang perlu ditangani pada tahap fondasi, bukan
 | Respons putus setelah transaksi berhasil, lalu coba lagi | Satu transaksi dan satu riwayat |
 | Dua petugas/aplikasi mengubah komponen bersamaan | Konflik terdeteksi, tidak menimpa tanpa peninjauan |
 | Master berstatus penggunaan Dipakai/Tersedia/Service/Hilang | Pemeriksaan tidak mengubah status penggunaan maupun relasi operasional |
+| Order/pasangan dengan dan tanpa pilihan unit | Konfirmasi menyimpan pilihan eksplisit tanpa memilih unit diam-diam |
 | Sebelum Sabtu, Sabtu 00.00, Minggu akhir hari, Senin 00.00 | Status dan kelayakan penyelesaian periode benar |
 | Bulan dengan lima Sabtu, Februari kabisat/nonkabisat, ganti tahun | Sabtu keempat dan pasangan Minggu benar |
 | Pemeriksaan manual sebelum jadwal, servis, buka detail saja | Tidak otomatis menyelesaikan tugas bulanan |
 | Hasil pemeriksaan rusak, tetapi pemeriksaan fisik selesai | Tugas selesai, kondisi tetap sesuai hasil |
 | Dua kali cek pada periode sama, dua periode terlambat | Hitungan per periode tidak ganda; satu pemeriksaan tidak menutup dua periode |
 | Komponen baru sesudah pembukaan periode, aktivasi di tengah bulan | Tidak mengubah target beku atau menciptakan tunggakan retroaktif |
-| Baca hasil dari MGRS lama setelah update baru | Kondisi dan riwayat tetap kompatibel; tidak ada perubahan pemasangan/alokasi |
+| Baca hasil dari MGRS lama setelah update baru | Kondisi dan riwayat tetap kompatibel; tidak ada perubahan operasional diam-diam |
 
 ## 5. Risks & Roadmap
 
@@ -311,7 +352,7 @@ Temuan ini adalah batas integrasi yang perlu ditangani pada tahap fondasi, bukan
 | Risiko | Dampak | Penanganan |
 | --- | --- | --- |
 | Trigger/service lama mengubah status penggunaan | Efek samping pada operasional MGRS | Audit write path dan trigger; uji invariant sebelum aktivasi |
-| RLS menolak Tim Pemasangan atau terlalu longgar | Fitur gagal atau akses melampaui kebutuhan | Verifikasi tiga role di server dengan kasus positif dan negatif |
+| RLS menolak pemetaan role produk atau terlalu longgar | Fitur gagal atau akses melampaui kebutuhan | Verifikasi Admin, PIC MGRS, dan Tim Lapangan di server dengan kasus positif dan negatif |
 | Pembaruan dari beberapa aplikasi | Kondisi terbaru tertimpa | Transaksi dan pemeriksaan versi lintas penulis |
 | Riwayat tersimpan tetapi master gagal | Data tidak konsisten | Satu transaksi server dan idempotensi |
 | Riwayat lama hanya terhubung melalui stiker | Salah relasi bila stiker berubah/tidak unik | Audit identitas; gunakan ID stabil pada relasi baru |
@@ -323,18 +364,18 @@ Temuan ini adalah batas integrasi yang perlu ditangani pada tahap fondasi, bukan
 
 **Tahap 0 — Fondasi dan kontrak integrasi**
 
-- Tinjau usulan detail MVP dalam PRD, khususnya pemeriksaan di luar jendela, target bulanan, dan kelayakan.
+- Tinjau usulan detail MVP dalam PRD, khususnya pemeriksaan di luar jendela, target bulanan, kelayakan, dan konteks order/pasangan.
 - Tetapkan perangkat/platform, framework, metode distribusi, serta target performa pilot.
 - Verifikasi database live secara read-only: tabel, field, enum, constraint, indeks, keunikan kode, trigger, RLS, dan seluruh jalur penulisan yang relevan.
-- Tentukan perubahan backend terkecil untuk transaksi kondisi/riwayat, akses Tim Pemasangan, konflik, idempotensi, dan jadwal bulanan.
+- Tentukan perubahan backend terkecil untuk transaksi kondisi/riwayat, pemetaan akses Tim Lapangan, konteks order/pasangan, konfirmasi pemasangan, konflik, idempotensi, dan jadwal bulanan.
 - Siapkan lingkungan uji. Keluaran: kontrak integrasi dan rencana implementasi yang dapat ditinjau; belum mengubah produksi.
 
-**MVP — Scan, kondisi, pemeriksaan, servis, dan jadwal**
+**MVP — Dua workspace dan pekerjaan lapangan**
 
-- Implementasi login tiga role, scan/manual, detail, form pemeriksaan, form servis, serta riwayat.
+- Implementasi login dan akses workspace Admin, PIC MGRS, dan Tim Lapangan; scan/manual, detail, form pemeriksaan, form servis, order/pasangan, konfirmasi pemasangan, invoice, serta riwayat.
 - Implementasi periode bulanan, daftar target, dan penyelesaian tugas dengan label terlambat.
 - Verifikasi seluruh acceptance criteria dan matriks QA pada perangkat target serta database uji.
-- Pilot dengan perwakilan tiga role dan sampel ketiga jenis komponen. Rilis jika seluruh gerbang penerimaan terpenuhi.
+- Pilot dengan perwakilan role produk dan sampel ketiga jenis komponen. Rilis jika seluruh gerbang penerimaan terpenuhi.
 
 **v1.1 — Peningkatan berdasarkan pilot**
 
@@ -346,9 +387,10 @@ Kandidat: draft offline/sinkronisasi, ekspor rekap, dan analisis kerusakan berul
 
 ### 5.3 Definisi selesai MVP
 
-- Seluruh fungsi MVP dapat dijalankan end-to-end oleh ketiga role pada perangkat target.
-- Tidak ada perubahan status penggunaan atau data pemasangan/alokasi akibat pencatatan maintenance.
-- Kondisi, riwayat, audit, dan status tugas yang relevan tersimpan atomik serta tahan pengulangan permintaan.
+- Seluruh fungsi MVP dapat dijalankan end-to-end oleh Admin, PIC MGRS, dan Tim Lapangan pada perangkat target.
+- Workspace dan operasi dibatasi sesuai role; Admin dapat menggunakan dua workspace.
+- Tidak ada perubahan status penggunaan atau data operasional akibat pencatatan maintenance maupun konfirmasi yang tidak diizinkan kontrak.
+- Kondisi, riwayat, audit, order/pasangan, invoice, dan status tugas yang relevan tersimpan atomik serta tahan pengulangan permintaan sesuai kontrak masing-masing.
 - Aturan Sabtu keempat dan Minggu berikutnya terbukti melalui pengujian kalender dan tampilan jadwal.
 - Kegagalan jaringan, sesi kedaluwarsa, kode tidak dikenal, dan konflik data memiliki hasil yang teruji.
 - Bukti test, build, QA perangkat, dan verifikasi integrasi dicatat terpisah. Saat ini dokumen ini belum menyatakan salah satunya lulus.
@@ -357,16 +399,16 @@ Kandidat: draft offline/sinkronisasi, ekspor rekap, dan analisis kerusakan berul
 
 | Keputusan | Posisi dokumen ini |
 | --- | --- |
-| Platform dan framework | Belum dipilih; tentukan dari perangkat lapangan |
+| Platform dan framework | Flutter Android dipertahankan untuk redesign ini |
 | Anggaran dan tenggat | Belum diberikan; tidak ada estimasi komitmen dalam PRD |
 | Rincian jadwal dan akses | Aturan utama disepakati; rincian pada 2.1 dan 2.5 adalah usulan MVP |
 | Checklist, foto, pengingat, offline | Ditunda dari MVP agar cakupan tetap kecil |
 | Kebijakan nilai kondisi dan kelayakan | Pertahankan enum lama; validasi usulan harus dicocokkan dengan aturan backend |
-| Skema jadwal dan endpoint transaksi | Kebutuhan ditetapkan; desain final menunggu audit database |
+| Skema jadwal, order, invoice, dan endpoint transaksi | Kebutuhan ditetapkan; desain final menunggu audit database |
 
 ### 5.5 Pemeriksaan dokumen
 
 - Keputusan pengguna dibedakan dari usulan dan ketidakpastian teknis.
-- Ketiga jenis komponen, tiga role, database bersama, dan batas tanpa pemasangan tercakup.
-- Waktu kalender, terlambat, duplikasi, akses server, dan efek samping kode lama memiliki kriteria penerimaan.
+- Ketiga jenis komponen, tiga role produk, database bersama, dan dua workspace tercakup.
+- Waktu kalender, terlambat, duplikasi, akses server, konflik, dan efek samping kode lama memiliki kriteria penerimaan.
 - Tidak ada stack, migrasi produksi, atau hasil pengujian aplikasi yang dinyatakan sebagai fakta tanpa bukti.
