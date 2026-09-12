@@ -26,8 +26,8 @@ class Component {
               .toString(),
       'note': (json['note'] ?? json['keterangan'])?.toString(),
       'version': (json['version'] ?? json['id'] ?? '').toString(),
-      'lastCheckingAt':
-          (json['lastCheckingAt'] ?? json['updated_at'])?.toString(),
+      'lastCheckingAt': (json['lastCheckingAt'] ?? json['updated_at'])
+          ?.toString(),
       'lastServiceAt': json['lastServiceAt']?.toString(),
     });
   }

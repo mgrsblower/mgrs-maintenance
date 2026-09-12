@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../app/app_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../app/gateway.dart';
@@ -45,9 +46,9 @@ class _ScanScreenState extends State<ScanScreen>
   bool _showFocusRing = false;
 
   static bool get _isTestEnvironment {
-    return WidgetsBinding.instance.runtimeType
-        .toString()
-        .contains('TestWidgetsFlutterBinding');
+    return WidgetsBinding.instance.runtimeType.toString().contains(
+      'TestWidgetsFlutterBinding',
+    );
   }
 
   @override
@@ -58,7 +59,8 @@ class _ScanScreenState extends State<ScanScreen>
     scanning = widget.initialComponent == null;
     camera = MobileScannerController(
       autoStart: widget.initialComponent == null,
-      lensType: CameraLensType.normal, // Default ke Lensa Utama 1x (Bukan Ultra Wide 0.5x)
+      lensType: CameraLensType
+          .normal, // Default ke Lensa Utama 1x (Bukan Ultra Wide 0.5x)
       facing: CameraFacing.back,
       detectionSpeed: DetectionSpeed.noDuplicates,
     );
@@ -100,8 +102,9 @@ class _ScanScreenState extends State<ScanScreen>
         );
         await camera.resetZoomScale();
       } else if (mode == '2x') {
-        final supported =
-            await camera.getSupportedLenses(facing: CameraFacing.back);
+        final supported = await camera.getSupportedLenses(
+          facing: CameraFacing.back,
+        );
         if (supported.contains(CameraLensType.zoom)) {
           await camera.switchCamera(
             const SelectCamera(lensType: CameraLensType.zoom),
@@ -152,24 +155,36 @@ class _ScanScreenState extends State<ScanScreen>
 
   Widget _buildLensOption(String label) {
     final isSelected = _activeLensMode == label;
-    return PressableScale(
-      onTap: () => _switchLensMode(label),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 44,
-        height: 32,
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFBBF24) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
+    return Semantics(
+      button: true,
+      label: 'Lensa $label',
+      selected: isSelected,
+      child: SizedBox(
+        width: 48,
+        height: 48,
         child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: isSelected ? const Color(0xFF0F172A) : Colors.white,
+          child: PressableScale(
+            onTap: () => _switchLensMode(label),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 44,
+              height: 32,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? const Color(0xFFFBBF24)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Center(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: isSelected ? AppTokens.ink : Colors.white,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -384,10 +399,11 @@ class _ScanScreenState extends State<ScanScreen>
                         final t = _laserAnimation.value;
                         // Moves between 10% and 90% (28px to 252px)
                         final posY = 28.0 + t * (280.0 - 56.0);
-                        final opacity = (t < 0.1
-                                ? (t / 0.1)
-                                : (t > 0.9 ? ((1.0 - t) / 0.1) : 1.0))
-                            .clamp(0.0, 1.0);
+                        final opacity =
+                            (t < 0.1
+                                    ? (t / 0.1)
+                                    : (t > 0.9 ? ((1.0 - t) / 0.1) : 1.0))
+                                .clamp(0.0, 1.0);
 
                         return Positioned(
                           top: posY,
@@ -402,14 +418,12 @@ class _ScanScreenState extends State<ScanScreen>
                                 borderRadius: BorderRadius.circular(2),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.white
-                                        .withValues(alpha: 0.95),
+                                    color: Colors.white.withValues(alpha: 0.95),
                                     blurRadius: 10,
                                     spreadRadius: 1,
                                   ),
                                   BoxShadow(
-                                    color: Colors.white
-                                        .withValues(alpha: 0.6),
+                                    color: Colors.white.withValues(alpha: 0.6),
                                     blurRadius: 20,
                                     spreadRadius: 2,
                                   ),
@@ -429,14 +443,8 @@ class _ScanScreenState extends State<ScanScreen>
           // 4. Touch-to-Focus Animated Ring (Apple Camera Yellow Target)
           if (_focusPoint != null && _showFocusRing)
             Positioned(
-              left: (_focusPoint!.dx - 32).clamp(
-                0.0,
-                screenSize.width - 64,
-              ),
-              top: (_focusPoint!.dy - 32).clamp(
-                0.0,
-                screenSize.height - 64,
-              ),
+              left: (_focusPoint!.dx - 32).clamp(0.0, screenSize.width - 64),
+              top: (_focusPoint!.dy - 32).clamp(0.0, screenSize.height - 64),
               child: IgnorePointer(
                 child: TweenAnimationBuilder<double>(
                   tween: Tween(begin: 1.3, end: 1.0),
@@ -519,48 +527,64 @@ class _ScanScreenState extends State<ScanScreen>
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    PressableScale(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.45),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
+                    Tooltip(
+                      message: 'Tutup pemindai',
+                      child: Semantics(
+                        button: true,
+                        label: 'Tutup pemindai',
+                        child: PressableScale(
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            width: AppTokens.minTouchTarget,
+                            height: AppTokens.minTouchTarget,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.45),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.close_rounded,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                            ),
                           ),
-                        ),
-                        child: const Center(
-                          child: Icon(Icons.close_rounded,
-                              color: Colors.white, size: 22),
                         ),
                       ),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 7),
+                        horizontal: 14,
+                        vertical: 7,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.55),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2)),
+                          color: Colors.white.withValues(alpha: 0.2),
+                        ),
                       ),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           CircleAvatar(
-                              radius: 3.5, backgroundColor: Color(0xFF10B981)),
+                            radius: 3.5,
+                            backgroundColor: AppTokens.success,
+                          ),
                           SizedBox(width: 7),
                           Text(
                             'Scanner Cepat Lapangan',
                             style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
@@ -578,38 +602,54 @@ class _ScanScreenState extends State<ScanScreen>
                         final isUnavailable =
                             torchState == TorchState.unavailable;
 
-                        return PressableScale(
-                          onTap: isUnavailable
-                              ? null
-                              : () => camera.toggleTorch(),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: isOn
-                                  ? const Color(0xFFFBBF24)
-                                      .withValues(alpha: 0.3)
-                                  : Colors.black.withValues(alpha: 0.45),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isOn
-                                    ? const Color(0xFFFBBF24)
-                                    : Colors.white.withValues(alpha: 0.2),
-                                width: isOn ? 1.5 : 1.0,
-                              ),
-                            ),
-                            child: Center(
-                              child: Icon(
-                                isOn
-                                    ? Icons.flash_on_rounded
-                                    : Icons.flash_off_rounded,
-                                color: isOn
-                                    ? const Color(0xFFFBBF24)
-                                    : (isUnavailable
-                                        ? Colors.white38
-                                        : Colors.white),
-                                size: 20,
+                        return Tooltip(
+                          message: isUnavailable
+                              ? 'Lampu kilat tidak tersedia'
+                              : (isOn
+                                    ? 'Matikan lampu kilat'
+                                    : 'Nyalakan lampu kilat'),
+                          child: Semantics(
+                            button: true,
+                            label: isUnavailable
+                                ? 'Lampu kilat tidak tersedia'
+                                : (isOn
+                                      ? 'Matikan lampu kilat'
+                                      : 'Nyalakan lampu kilat'),
+                            child: PressableScale(
+                              onTap: isUnavailable
+                                  ? null
+                                  : () => camera.toggleTorch(),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                width: AppTokens.minTouchTarget,
+                                height: AppTokens.minTouchTarget,
+                                decoration: BoxDecoration(
+                                  color: isOn
+                                      ? const Color(
+                                          0xFFFBBF24,
+                                        ).withValues(alpha: 0.3)
+                                      : Colors.black.withValues(alpha: 0.45),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isOn
+                                        ? const Color(0xFFFBBF24)
+                                        : Colors.white.withValues(alpha: 0.2),
+                                    width: isOn ? 1.5 : 1.0,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    isOn
+                                        ? Icons.flash_on_rounded
+                                        : Icons.flash_off_rounded,
+                                    color: isOn
+                                        ? const Color(0xFFFBBF24)
+                                        : (isUnavailable
+                                              ? Colors.white38
+                                              : Colors.white),
+                                    size: 20,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -663,7 +703,7 @@ class _ScanScreenState extends State<ScanScreen>
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFCBD5E1),
+                  color: AppTokens.mist,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -682,10 +722,9 @@ class _ScanScreenState extends State<ScanScreen>
                   Text(
                     'Mencari data komponen...',
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF334155),
+                      color: AppTokens.graphite,
                     ),
                   ),
                 ],
@@ -694,15 +733,15 @@ class _ScanScreenState extends State<ScanScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEF2F2),
+                  color: AppTokens.dangerSurface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFFECACA)),
+                  border: Border.all(color: AppTokens.dangerSurface),
                 ),
                 child: Row(
                   children: [
                     const Icon(
                       Icons.error_outline_rounded,
-                      color: Color(0xFFDC2626),
+                      color: AppTokens.danger,
                       size: 22,
                     ),
                     const SizedBox(width: 10),
@@ -710,10 +749,9 @@ class _ScanScreenState extends State<ScanScreen>
                       child: Text(
                         failureMessage(error),
                         style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF991B1B),
+                          color: AppTokens.danger,
                         ),
                       ),
                     ),
@@ -723,7 +761,7 @@ class _ScanScreenState extends State<ScanScreen>
               const SizedBox(height: 14),
               SizedBox(
                 width: double.infinity,
-                height: 44,
+                height: 48,
                 child: ElevatedButton.icon(
                   onPressed: () {
                     setState(() {
@@ -735,13 +773,10 @@ class _ScanScreenState extends State<ScanScreen>
                   icon: const Icon(Icons.refresh_rounded, size: 18),
                   label: const Text(
                     'Pindai Ulang',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF147CC1),
+                    backgroundColor: AppTokens.magenta,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -753,27 +788,22 @@ class _ScanScreenState extends State<ScanScreen>
               const Icon(
                 Icons.qr_code_scanner_rounded,
                 size: 32,
-                color: Color(0xFF147CC1),
+                color: AppTokens.magenta,
               ),
               const SizedBox(height: 8),
               const Text(
                 'Arahkan Kamera ke Barcode Komponen',
                 style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF0F172A),
+                  color: AppTokens.ink,
                 ),
               ),
               const SizedBox(height: 4),
               const Text(
                 'Sistem akan memeriksa nomor stiker resmi unit blower MGRS.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 12,
-                  color: Color(0xFF64748B),
-                ),
+                style: TextStyle(fontSize: 12, color: AppTokens.stone),
               ),
             ],
           ],
@@ -786,17 +816,15 @@ class _ScanScreenState extends State<ScanScreen>
     final isService = comp.condition == 'Service';
     final isRusakBerat = comp.condition == 'Rusak Berat';
     final badgeColor = isOk
-        ? const Color(0xFF10B981)
-        : (isService || isRusakBerat
-            ? const Color(0xFFEF4444)
-            : const Color(0xFFF59E0B));
+        ? AppTokens.success
+        : (isService || isRusakBerat ? AppTokens.danger : AppTokens.warning);
     final badgeText = isOk
         ? 'LAYAK PAKAI'
         : (isService
-            ? 'PERLU SERVIS'
-            : (isRusakBerat ? 'GANGGUAN FUNGSI' : 'PERLU TINDAKAN'));
-    final lastCheckText = comp.lastCheckingAt != null &&
-            comp.lastCheckingAt!.length >= 10
+              ? 'PERLU SERVIS'
+              : (isRusakBerat ? 'GANGGUAN FUNGSI' : 'PERLU TINDAKAN'));
+    final lastCheckText =
+        comp.lastCheckingAt != null && comp.lastCheckingAt!.length >= 10
         ? 'Pemeriksaan Terakhir: ${comp.lastCheckingAt!.substring(0, 10)}'
         : 'Pemeriksaan Terakhir: Belum pernah diperiksa';
     final noteText = comp.note != null && comp.note!.trim().isNotEmpty
@@ -830,7 +858,7 @@ class _ScanScreenState extends State<ScanScreen>
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFCBD5E1),
+                color: AppTokens.mist,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -846,35 +874,37 @@ class _ScanScreenState extends State<ScanScreen>
                   Text(
                     comp.code,
                     style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
+                      color: AppTokens.ink,
                     ),
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
+                      color: AppTokens.mistLight,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       comp.kind,
                       style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF2563EB),
+                        color: AppTokens.ink,
                       ),
                     ),
                   ),
                 ],
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: badgeColor,
                   borderRadius: BorderRadius.circular(20),
@@ -890,7 +920,6 @@ class _ScanScreenState extends State<ScanScreen>
                     Text(
                       badgeText,
                       style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
@@ -905,33 +934,32 @@ class _ScanScreenState extends State<ScanScreen>
           const SizedBox(height: 4),
           Text(
             lastCheckText,
-            style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 12,
-              color: Color(0xFF64748B),
-            ),
+            style: const TextStyle(fontSize: 12, color: AppTokens.stone),
           ),
           if (_effectiveReadOnly) ...[
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
+                color: AppTokens.mistLight,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: AppTokens.mist),
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.remove_red_eye_outlined, size: 13, color: Color(0xFF64748B)),
+                  Icon(
+                    Icons.remove_red_eye_outlined,
+                    size: 13,
+                    color: AppTokens.stone,
+                  ),
                   SizedBox(width: 6),
                   Text(
                     'Mode Pantau Status • Hanya Baca',
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF475569),
+                      color: AppTokens.graphite,
                     ),
                   ),
                 ],
@@ -944,9 +972,9 @@ class _ScanScreenState extends State<ScanScreen>
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
+              color: AppTokens.white,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(color: AppTokens.mist),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -957,10 +985,9 @@ class _ScanScreenState extends State<ScanScreen>
                     Text(
                       'CATATAN KONDISI FISIK',
                       style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF64748B),
+                        color: AppTokens.stone,
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -970,9 +997,8 @@ class _ScanScreenState extends State<ScanScreen>
                 Text(
                   noteText,
                   style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
                     fontSize: 12,
-                    color: Color(0xFF334155),
+                    color: AppTokens.graphite,
                     height: 1.4,
                   ),
                 ),
@@ -1003,8 +1029,8 @@ class _ScanScreenState extends State<ScanScreen>
                 height: 46,
                 decoration: BoxDecoration(
                   color: comp.condition != 'OK'
-                      ? const Color(0xFFDC2626)
-                      : const Color(0xFF147CC1),
+                      ? AppTokens.danger
+                      : AppTokens.magenta,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -1023,7 +1049,6 @@ class _ScanScreenState extends State<ScanScreen>
                           ? 'Catat Servis Unit Ini'
                           : 'Perbarui Kondisi Unit',
                       style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -1058,14 +1083,13 @@ class _ScanScreenState extends State<ScanScreen>
                       label: const Text(
                         'Buka Detail',
                         style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF0F172A),
-                        side: const BorderSide(color: Color(0xFFE2E8F0)),
+                        foregroundColor: AppTokens.ink,
+                        side: const BorderSide(color: AppTokens.mist),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -1078,7 +1102,7 @@ class _ScanScreenState extends State<ScanScreen>
               Expanded(
                 child: PressableScale(
                   child: SizedBox(
-                    height: 44,
+                    height: 48,
                     child: ElevatedButton.icon(
                       onPressed: () {
                         setState(() {
@@ -1087,19 +1111,21 @@ class _ScanScreenState extends State<ScanScreen>
                         });
                         unawaited(camera.start());
                       },
-                      icon: const Icon(Icons.crop_free_rounded,
-                          color: Colors.white, size: 16),
+                      icon: const Icon(
+                        Icons.crop_free_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
                       label: const Text(
                         'Pindai Berikutnya',
                         style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF334155),
+                        backgroundColor: AppTokens.graphite,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -1124,7 +1150,7 @@ class _ScanScreenState extends State<ScanScreen>
         error.errorCode == MobileScannerErrorCode.permissionDenied;
 
     return Container(
-      color: const Color(0xFF0F172A),
+      color: AppTokens.ink,
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
@@ -1135,12 +1161,12 @@ class _ScanScreenState extends State<ScanScreen>
             height: 68,
             decoration: BoxDecoration(
               color: isPermissionDenied
-                  ? const Color(0xFFFEF2F2)
+                  ? AppTokens.dangerSurface
                   : Colors.white.withValues(alpha: 0.08),
               shape: BoxShape.circle,
               border: Border.all(
                 color: isPermissionDenied
-                    ? const Color(0xFFFECACA)
+                    ? AppTokens.dangerSurface
                     : Colors.white.withValues(alpha: 0.15),
               ),
             ),
@@ -1149,9 +1175,7 @@ class _ScanScreenState extends State<ScanScreen>
                 isPermissionDenied
                     ? Icons.no_photography_outlined
                     : Icons.videocam_off_outlined,
-                color: isPermissionDenied
-                    ? const Color(0xFFDC2626)
-                    : Colors.white70,
+                color: isPermissionDenied ? AppTokens.danger : Colors.white70,
                 size: 32,
               ),
             ),
@@ -1163,7 +1187,6 @@ class _ScanScreenState extends State<ScanScreen>
                 : 'Kamera Tidak Tersedia',
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
               fontSize: 18,
               fontWeight: FontWeight.w800,
               color: Colors.white,
@@ -1177,7 +1200,6 @@ class _ScanScreenState extends State<ScanScreen>
                 : 'Kamera perangkat sedang digunakan oleh aplikasi lain atau tidak didukung.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
               fontSize: 13,
               fontWeight: FontWeight.w500,
               color: Colors.white.withValues(alpha: 0.7),
@@ -1190,24 +1212,25 @@ class _ScanScreenState extends State<ScanScreen>
               unawaited(camera.start());
               setState(() {});
             },
-            icon: const Icon(Icons.refresh_rounded,
-                size: 18, color: Colors.white),
+            icon: const Icon(
+              Icons.refresh_rounded,
+              size: 18,
+              color: Colors.white,
+            ),
             label: Text(
               isPermissionDenied
                   ? 'Beri Izin / Coba Lagi'
                   : 'Hubungkan Ulang Kamera',
               style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
               ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF147CC1),
+              backgroundColor: AppTokens.magenta,
               elevation: 0,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),

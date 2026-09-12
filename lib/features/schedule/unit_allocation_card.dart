@@ -1,12 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import '../../app/app_theme.dart';
 import '../../app/gateway.dart';
 import 'component_picker_sheet.dart';
 import 'order_model.dart';
 import 'unit_allocation_model.dart';
 
-/// Card to manage and view optional unit allocations (Kepala + Batang + Tabung)
-/// for an order, with wear-and-tear usage tracking to balance equipment usage.
+OperationalColors _operationalColors(BuildContext context) =>
+    Theme.of(context).extension<OperationalColors>() ??
+    const OperationalColors(
+      success: AppTokens.successSurface,
+      onSuccess: AppTokens.success,
+      warning: AppTokens.warningSurface,
+      onWarning: AppTokens.warning,
+      danger: AppTokens.dangerSurface,
+      onDanger: AppTokens.danger,
+    );
+
 class UnitAllocationCard extends StatefulWidget {
   const UnitAllocationCard({
     super.key,
@@ -50,8 +60,9 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
 
   void _initUnits() {
     final existing = List<AllocatedUnit>.from(widget.order.allocatedUnits);
-    final targetCount = widget.order.jumlahUnit > 0 ? widget.order.jumlahUnit : 1;
-
+    final targetCount = widget.order.jumlahUnit > 0
+        ? widget.order.jumlahUnit
+        : 1;
     while (existing.length < targetCount) {
       existing.add(AllocatedUnit(unitIndex: existing.length + 1));
     }
@@ -68,9 +79,7 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
         });
       }
     } catch (_) {
-      if (mounted) {
-        setState(() => _isLoadingUsage = false);
-      }
+      if (mounted) setState(() => _isLoadingUsage = false);
     }
   }
 
@@ -78,34 +87,27 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
     setState(() => _isSaving = true);
     try {
       final orderanId = widget.order.orderanId ?? widget.order.id;
-      await widget.gateway.saveOrderUnitAllocation(
-        orderanId,
-        _units,
-      );
+      await widget.gateway.saveOrderUnitAllocation(orderanId, _units);
       widget.onAllocationChanged?.call(_units);
-    } catch (e) {
+    } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal menyimpan unit: $e'), backgroundColor: Colors.red),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal menyimpan unit: $error')));
       }
     } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
   Future<void> _pickComponent(int unitIndex, String kind) async {
     if (!widget.isEditable) return;
-
     final current = switch (kind) {
       'Kepala' => _units[unitIndex].kepalaSticker,
       'Batang' => _units[unitIndex].batangSticker,
       'Tabung' => _units[unitIndex].tabungSticker,
       _ => null,
     };
-
     final selected = await showComponentPickerSheet(
       context,
       gateway: widget.gateway,
@@ -113,27 +115,31 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
       usageCounts: _usageCounts,
       currentSticker: current,
     );
-
     if (selected == null) return;
-
     final cleanSelected = selected.isEmpty ? null : selected;
-
     setState(() {
       final oldUnit = _units[unitIndex];
       _units[unitIndex] = switch (kind) {
-        'Kepala' => oldUnit.copyWith(kepalaSticker: cleanSelected, clearKepala: cleanSelected == null),
-        'Batang' => oldUnit.copyWith(batangSticker: cleanSelected, clearBatang: cleanSelected == null),
-        'Tabung' => oldUnit.copyWith(tabungSticker: cleanSelected, clearTabung: cleanSelected == null),
+        'Kepala' => oldUnit.copyWith(
+          kepalaSticker: cleanSelected,
+          clearKepala: cleanSelected == null,
+        ),
+        'Batang' => oldUnit.copyWith(
+          batangSticker: cleanSelected,
+          clearBatang: cleanSelected == null,
+        ),
+        'Tabung' => oldUnit.copyWith(
+          tabungSticker: cleanSelected,
+          clearTabung: cleanSelected == null,
+        ),
         _ => oldUnit,
       };
     });
-
     await _saveCurrentAllocation();
   }
 
   void _clearComponent(int unitIndex, String kind) {
     if (!widget.isEditable) return;
-
     setState(() {
       final oldUnit = _units[unitIndex];
       _units[unitIndex] = switch (kind) {
@@ -143,148 +149,129 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
         _ => oldUnit,
       };
     });
-
     _saveCurrentAllocation();
   }
 
   Future<void> _applyRecommendation() async {
     if (!widget.isEditable) return;
-
     setState(() => _isRecommending = true);
     try {
       final kepalaList = await _fetchAvailableComponents('Kepala');
       final batangList = await _fetchAvailableComponents('Batang');
       final tabungList = await _fetchAvailableComponents('Tabung');
-
-      // Set of stickers already assigned in this order
       final assignedStickers = <String>{};
-      for (final u in _units) {
-        if (u.kepalaSticker != null) assignedStickers.add(u.kepalaSticker!);
-        if (u.batangSticker != null) assignedStickers.add(u.batangSticker!);
-        if (u.tabungSticker != null) assignedStickers.add(u.tabungSticker!);
+      for (final unit in _units) {
+        if (unit.kepalaSticker != null) {
+          assignedStickers.add(unit.kepalaSticker!);
+        }
+        if (unit.batangSticker != null) {
+          assignedStickers.add(unit.batangSticker!);
+        }
+        if (unit.tabungSticker != null) {
+          assignedStickers.add(unit.tabungSticker!);
+        }
       }
-
       final newUnits = List<AllocatedUnit>.from(_units);
-
-      for (var i = 0; i < newUnits.length; i++) {
-        var u = newUnits[i];
-
-        if (u.kepalaSticker == null) {
+      for (var index = 0; index < newUnits.length; index++) {
+        var unit = newUnits[index];
+        if (unit.kepalaSticker == null) {
           final candidate = kepalaList.firstWhere(
-            (s) => !assignedStickers.contains(s),
+            (sticker) => !assignedStickers.contains(sticker),
             orElse: () => '',
           );
           if (candidate.isNotEmpty) {
             assignedStickers.add(candidate);
-            u = u.copyWith(kepalaSticker: candidate);
+            unit = unit.copyWith(kepalaSticker: candidate);
           }
         }
-
-        if (u.batangSticker == null) {
+        if (unit.batangSticker == null) {
           final candidate = batangList.firstWhere(
-            (s) => !assignedStickers.contains(s),
+            (sticker) => !assignedStickers.contains(sticker),
             orElse: () => '',
           );
           if (candidate.isNotEmpty) {
             assignedStickers.add(candidate);
-            u = u.copyWith(batangSticker: candidate);
+            unit = unit.copyWith(batangSticker: candidate);
           }
         }
-
-        if (u.tabungSticker == null) {
+        if (unit.tabungSticker == null) {
           final candidate = tabungList.firstWhere(
-            (s) => !assignedStickers.contains(s),
+            (sticker) => !assignedStickers.contains(sticker),
             orElse: () => '',
           );
           if (candidate.isNotEmpty) {
             assignedStickers.add(candidate);
-            u = u.copyWith(tabungSticker: candidate);
+            unit = unit.copyWith(tabungSticker: candidate);
           }
         }
-
-        newUnits[i] = u;
+        newUnits[index] = unit;
       }
-
-      setState(() {
-        _units = newUnits;
-      });
-
+      setState(() => _units = newUnits);
       await _saveCurrentAllocation();
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✨ Berhasil mengisi unit dengan komponen tersegar!'),
-            backgroundColor: Color(0xFF16A34A),
+            content: Text('Berhasil mengisi unit dengan komponen tersegar!'),
           ),
         );
       }
-    } catch (e) {
+    } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal merekomendasikan unit: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Gagal merekomendasikan unit: $error')),
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => _isRecommending = false);
-      }
+      if (mounted) setState(() => _isRecommending = false);
     }
   }
 
   Future<List<String>> _fetchAvailableComponents(String kind) async {
     final raw = await widget.gateway.fetchComponents(kind: kind);
     final usable = raw.where((item) {
-      final boleh = item['boleh_dipakai']?.toString().trim().toLowerCase();
-      final kondisi = item['kondisi']?.toString().trim().toLowerCase();
-      return (boleh == 'ya' || boleh == 'true') && kondisi != 'rusak berat';
+      final allowed = item['boleh_dipakai']?.toString().trim().toLowerCase();
+      final condition = item['kondisi']?.toString().trim().toLowerCase();
+      return (allowed == 'ya' || allowed == 'true') &&
+          condition != 'rusak berat';
     }).toList();
-
     usable.sort((a, b) {
-      final stikerA = a['nomor_stiker']?.toString() ?? '';
-      final stikerB = b['nomor_stiker']?.toString() ?? '';
-      final countA = _usageCounts[stikerA] ?? 0;
-      final countB = _usageCounts[stikerB] ?? 0;
-      if (countA != countB) return countA.compareTo(countB);
-      return stikerA.compareTo(stikerB);
+      final stickerA = a['nomor_stiker']?.toString() ?? '';
+      final stickerB = b['nomor_stiker']?.toString() ?? '';
+      final countA = _usageCounts[stickerA] ?? 0;
+      final countB = _usageCounts[stickerB] ?? 0;
+      return countA != countB
+          ? countA.compareTo(countB)
+          : stickerA.compareTo(stickerB);
     });
-
     return usable
         .map((item) => item['nomor_stiker']?.toString().trim() ?? '')
-        .where((s) => s.isNotEmpty)
+        .where((sticker) => sticker.isNotEmpty)
         .toList();
   }
 
   Future<void> _showScanDialog() async {
-    final textCtrl = TextEditingController();
-
+    final textController = TextEditingController();
     final result = await showDialog<String>(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.qr_code_scanner, color: Color(0xFF2563EB)),
-            SizedBox(width: 8),
-            Text('Scan Barcode Komponen', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ],
-        ),
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Scan Barcode Komponen'),
         content: SizedBox(
           width: 320,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: const BorderRadius.all(
+                  Radius.circular(AppTokens.controlRadius),
+                ),
                 child: SizedBox(
                   height: 180,
                   child: MobileScanner(
                     onDetect: (capture) {
-                      final barcodes = capture.barcodes;
-                      for (final barcode in barcodes) {
-                        final val = barcode.rawValue?.trim().toUpperCase();
-                        if (val != null && val.isNotEmpty) {
-                          Navigator.of(dialogCtx).pop(val);
+                      for (final barcode in capture.barcodes) {
+                        final value = barcode.rawValue?.trim().toUpperCase();
+                        if (value != null && value.isNotEmpty) {
+                          Navigator.of(dialogContext).pop(value);
                           return;
                         }
                       }
@@ -292,20 +279,21 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              const Text('Atau ketik kode stiker:', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-              const SizedBox(height: 6),
+              const SizedBox(height: AppTokens.space12),
+              Text(
+                'Atau ketik kode stiker:',
+                style: Theme.of(context).textTheme.labelMedium,
+              ),
+              const SizedBox(height: AppTokens.space8),
               TextField(
-                controller: textCtrl,
+                controller: textController,
                 textCapitalization: TextCapitalization.characters,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: 'Contoh: K-01, B-02, T-03',
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                onSubmitted: (val) {
-                  if (val.trim().isNotEmpty) {
-                    Navigator.of(dialogCtx).pop(val.trim().toUpperCase());
+                onSubmitted: (value) {
+                  if (value.trim().isNotEmpty) {
+                    Navigator.of(dialogContext).pop(value.trim().toUpperCase());
                   }
                 },
               ),
@@ -314,13 +302,15 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Batal'),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () {
-              if (textCtrl.text.trim().isNotEmpty) {
-                Navigator.of(dialogCtx).pop(textCtrl.text.trim().toUpperCase());
+              if (textController.text.trim().isNotEmpty) {
+                Navigator.of(
+                  dialogContext,
+                ).pop(textController.text.trim().toUpperCase());
               }
             },
             child: const Text('Gunakan'),
@@ -328,57 +318,50 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
         ],
       ),
     );
-
+    textController.dispose();
     if (result == null || result.isEmpty) return;
-
     _assignScannedCode(result);
   }
 
   void _assignScannedCode(String code) {
-    String? kind;
-    if (code.startsWith('K')) {
-      kind = 'Kepala';
-    } else if (code.startsWith('B')) {
-      kind = 'Batang';
-    } else if (code.startsWith('T')) {
-      kind = 'Tabung';
-    }
-
+    final kind = code.startsWith('K')
+        ? 'Kepala'
+        : code.startsWith('B')
+        ? 'Batang'
+        : code.startsWith('T')
+        ? 'Tabung'
+        : null;
     if (kind == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Kode "$code" tidak dikenali. Format harus K-xx, B-xx, atau T-xx.'),
-          backgroundColor: Colors.orange.shade800,
+          content: Text(
+            'Kode "$code" tidak dikenali. Format harus K-xx, B-xx, atau T-xx.',
+          ),
         ),
       );
       return;
     }
-
-    // Find first unit where this slot is empty
-    int targetIndex = -1;
-    for (var i = 0; i < _units.length; i++) {
-      final val = switch (kind) {
-        'Kepala' => _units[i].kepalaSticker,
-        'Batang' => _units[i].batangSticker,
-        'Tabung' => _units[i].tabungSticker,
+    var targetIndex = -1;
+    for (var index = 0; index < _units.length; index++) {
+      final value = switch (kind) {
+        'Kepala' => _units[index].kepalaSticker,
+        'Batang' => _units[index].batangSticker,
+        'Tabung' => _units[index].tabungSticker,
         _ => null,
       };
-      if (val == null || val.isEmpty) {
-        targetIndex = i;
+      if (value == null || value.isEmpty) {
+        targetIndex = index;
         break;
       }
     }
-
     if (targetIndex == -1) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Semua unit sudah memiliki komponen $kind ($code)'),
-          backgroundColor: Colors.orange.shade800,
         ),
       );
       return;
     }
-
     setState(() {
       final oldUnit = _units[targetIndex];
       _units[targetIndex] = switch (kind) {
@@ -388,281 +371,198 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
         _ => oldUnit,
       };
     });
-
     _saveCurrentAllocation();
-
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('✅ $kind Unit ${targetIndex + 1} diatur ke $code'),
-        backgroundColor: const Color(0xFF16A34A),
-      ),
+      SnackBar(content: Text('$kind Unit ${targetIndex + 1} diatur ke $code')),
     );
   }
 
-  Color _badgeBgColor(int count) {
-    if (count <= 5) return const Color(0xFFDCFCE7);
-    if (count <= 15) return const Color(0xFFFEF3C7);
-    return const Color(0xFFF1F5F9);
-  }
-
-  Color _badgeTextColor(int count) {
-    if (count <= 5) return const Color(0xFF166534);
-    if (count <= 15) return const Color(0xFF92400E);
-    return const Color(0xFF475569);
+  ({Color surface, Color ink}) _usageTone(BuildContext context, int count) {
+    final operational = _operationalColors(context);
+    final colors = Theme.of(context).colorScheme;
+    if (count <= 5) {
+      return (surface: operational.success, ink: operational.onSuccess);
+    }
+    if (count <= 15) {
+      return (surface: operational.warning, ink: operational.onWarning);
+    }
+    return (surface: colors.surfaceContainer, ink: colors.onSurfaceVariant);
   }
 
   @override
   Widget build(BuildContext context) {
-    final completeUnits = _units.where((u) => u.isComplete).length;
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final operational = _operationalColors(context);
+    final completeUnits = _units.where((unit) => unit.isComplete).length;
     final totalUnits = _units.length;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header Row
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.inventory_2_outlined,
-                  color: Color(0xFF2563EB),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Text(
-                          'Alokasi Unit Blower',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            'Opsional',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                        ),
-                      ],
+    final complete = completeUnits == totalUnits && totalUnits > 0;
+    final partial = completeUnits > 0 || _units.any((unit) => !unit.isEmpty);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppTokens.space16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (widget.isEditable) ...[
+              const SizedBox(height: AppTokens.space12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _isRecommending ? null : _applyRecommendation,
+                      icon: _isRecommending
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.auto_awesome_rounded),
+                      label: const Text('Rekomendasi Tersegar'),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$completeUnits dari $totalUnits unit lengkap',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: completeUnits == totalUnits && totalUnits > 0
-                            ? const Color(0xFF16A34A)
-                            : const Color(0xFF64748B),
-                        fontWeight: completeUnits == totalUnits && totalUnits > 0
-                            ? FontWeight.w600
-                            : FontWeight.normal,
-                      ),
+                  ),
+                  const SizedBox(width: AppTokens.space8),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: _showScanDialog,
+                      icon: const Icon(Icons.qr_code_scanner_rounded),
+                      label: const Text('Scan Barcode'),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              if (_isSaving)
-                const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
             ],
-          ),
-
-          // Action buttons for editable users
-          if (widget.isEditable) ...[
-            const SizedBox(height: 14),
             Row(
               children: [
+                Icon(
+                  Icons.inventory_2_outlined,
+                  color: colors.onSurfaceVariant,
+                ),
+                const SizedBox(width: AppTokens.space12),
                 Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _isRecommending ? null : _applyRecommendation,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF2563EB),
-                      side: const BorderSide(color: Color(0xFFBFDBFE)),
-                      backgroundColor: const Color(0xFFF0FDF4),
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    icon: _isRecommending
-                        ? const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.auto_awesome_rounded, size: 16, color: Color(0xFF16A34A)),
-                    label: const Text(
-                      'Rekomendasi Tersegar',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF166534)),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  onPressed: _showScanDialog,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF0F172A),
-                    side: const BorderSide(color: Color(0xFFCBD5E1)),
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  icon: const Icon(Icons.qr_code_scanner_rounded, size: 16),
-                  label: const Text(
-                    'Scan Barcode',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
-            ),
-          ],
-
-          const SizedBox(height: 14),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
-          const SizedBox(height: 12),
-
-          // Units List
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _units.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final unit = _units[index];
-              return _buildUnitItem(index, unit);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUnitItem(int index, AllocatedUnit unit) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Unit title & completion status
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Unit ${index + 1}',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
-                ),
-              ),
-              if (unit.isComplete)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFDCFCE7),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.check_circle, size: 11, color: Color(0xFF166534)),
-                      SizedBox(width: 3),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Alokasi Unit Blower',
+                              style: theme.textTheme.titleMedium,
+                            ),
+                          ),
+                          const Chip(label: Text('Opsional')),
+                        ],
+                      ),
                       Text(
-                        'Lengkap',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF166534),
+                        '$completeUnits dari $totalUnits unit lengkap',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: complete
+                              ? operational.onSuccess
+                              : partial
+                              ? operational.onWarning
+                              : colors.onSurfaceVariant,
                         ),
                       ),
                     ],
                   ),
-                )
-              else if (!unit.isEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text(
-                    'Sebagian',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF92400E),
-                    ),
-                  ),
                 ),
+                if (_isSaving)
+                  const SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppTokens.space12),
+            const Divider(),
+            const SizedBox(height: AppTokens.space12),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _units.length,
+              separatorBuilder: (_, _) =>
+                  const SizedBox(height: AppTokens.space12),
+              itemBuilder: (context, index) =>
+                  _buildUnitItem(context, index, _units[index]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUnitItem(BuildContext context, int index, AllocatedUnit unit) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final operational = _operationalColors(context);
+    final tone = unit.isComplete
+        ? (surface: operational.success, ink: operational.onSuccess)
+        : !unit.isEmpty
+        ? (surface: operational.warning, ink: operational.onWarning)
+        : (surface: colors.surfaceContainer, ink: colors.onSurfaceVariant);
+    return Container(
+      padding: const EdgeInsets.all(AppTokens.space12),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border.all(color: colors.outline),
+        borderRadius: const BorderRadius.all(
+          Radius.circular(AppTokens.controlRadius),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Unit ${index + 1}',
+                  style: theme.textTheme.titleMedium,
+                ),
+              ),
+              Chip(
+                label: Text(
+                  unit.isComplete
+                      ? 'Lengkap'
+                      : unit.isEmpty
+                      ? 'Kosong'
+                      : 'Sebagian',
+                ),
+                backgroundColor: tone.surface,
+                labelStyle: theme.textTheme.labelMedium?.copyWith(
+                  color: tone.ink,
+                ),
+                side: BorderSide(color: tone.ink),
+              ),
             ],
           ),
-          const SizedBox(height: 10),
-
-          // 3 Component slots (Kepala, Batang, Tabung)
+          const SizedBox(height: AppTokens.space8),
           Row(
             children: [
               Expanded(
                 child: _buildComponentSlot(
-                  unitIndex: index,
-                  kind: 'Kepala',
-                  sticker: unit.kepalaSticker,
+                  context,
+                  index,
+                  'Kepala',
+                  unit.kepalaSticker,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppTokens.space8),
               Expanded(
                 child: _buildComponentSlot(
-                  unitIndex: index,
-                  kind: 'Batang',
-                  sticker: unit.batangSticker,
+                  context,
+                  index,
+                  'Batang',
+                  unit.batangSticker,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppTokens.space8),
               Expanded(
                 child: _buildComponentSlot(
-                  unitIndex: index,
-                  kind: 'Tabung',
-                  sticker: unit.tabungSticker,
+                  context,
+                  index,
+                  'Tabung',
+                  unit.tabungSticker,
                 ),
               ),
             ],
@@ -672,110 +572,91 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
     );
   }
 
-  Widget _buildComponentSlot({
-    required int unitIndex,
-    required String kind,
-    required String? sticker,
-  }) {
-    final count = sticker != null ? (_usageCounts[sticker] ?? 0) : null;
-    final isAssigned = sticker != null && sticker.isNotEmpty;
-
+  Widget _buildComponentSlot(
+    BuildContext context,
+    int unitIndex,
+    String kind,
+    String? sticker,
+  ) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final count = sticker == null ? null : (_usageCounts[sticker] ?? 0);
+    final assigned = sticker?.isNotEmpty == true;
+    final tone = count == null ? null : _usageTone(context, count);
     return InkWell(
       onTap: widget.isEditable ? () => _pickComponent(unitIndex, kind) : null,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: const BorderRadius.all(
+        Radius.circular(AppTokens.badgeRadius),
+      ),
       child: Container(
-        height: 72,
-        padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 8),
+        constraints: const BoxConstraints(minHeight: 72),
+        padding: const EdgeInsets.all(AppTokens.space8),
         decoration: BoxDecoration(
-          color: isAssigned ? Colors.white : const Color(0xFFF1F5F9),
-          borderRadius: BorderRadius.circular(8),
+          color: assigned ? colors.surface : colors.surfaceContainer,
           border: Border.all(
-            color: isAssigned ? const Color(0xFFCBD5E1) : const Color(0xFFE2E8F0),
-            style: BorderStyle.solid,
+            color: assigned ? colors.outline : colors.outlineVariant,
+          ),
+          borderRadius: const BorderRadius.all(
+            Radius.circular(AppTokens.badgeRadius),
           ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Kind label
-            Text(
-              kind,
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF64748B),
-              ),
-            ),
-
-            // Sticker code or placeholder
-            if (isAssigned) ...[
+            Text(kind, style: theme.textTheme.labelMedium),
+            if (assigned) ...[
               Row(
                 children: [
                   Expanded(
                     child: Text(
-                      sticker,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F172A),
-                      ),
+                      sticker!,
+                      style: theme.textTheme.titleMedium,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   if (widget.isEditable)
-                    GestureDetector(
-                      onTap: () => _clearComponent(unitIndex, kind),
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        child: const Icon(Icons.close, size: 13, color: Color(0xFF94A3B8)),
+                    IconButton(
+                      tooltip: 'Kosongkan $kind',
+                      onPressed: () => _clearComponent(unitIndex, kind),
+                      icon: const Icon(Icons.close),
+                      constraints: const BoxConstraints(
+                        minWidth: AppTokens.minTouchTarget,
+                        minHeight: AppTokens.minTouchTarget,
                       ),
+                      padding: EdgeInsets.zero,
                     ),
                 ],
               ),
-              if (count != null && !_isLoadingUsage) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                  decoration: BoxDecoration(
-                    color: _badgeBgColor(count),
-                    borderRadius: BorderRadius.circular(4),
+              if (count != null && !_isLoadingUsage)
+                Chip(
+                  label: Text('${count}x pakai'),
+                  backgroundColor: tone!.surface,
+                  labelStyle: theme.textTheme.labelMedium?.copyWith(
+                    color: tone.ink,
                   ),
-                  child: Text(
-                    '${count}x pakai',
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                      color: _badgeTextColor(count),
-                    ),
-                  ),
+                  side: BorderSide(color: tone.ink),
                 ),
-              ] else ...[
-                const SizedBox(height: 16),
-              ],
-            ] else ...[
+            ] else
               Row(
                 children: [
                   if (widget.isEditable) ...[
-                    const Icon(Icons.add, size: 12, color: Color(0xFF3B82F6)),
-                    const SizedBox(width: 2),
-                    const Text(
+                    Icon(
+                      Icons.add,
+                      size: AppTokens.space16,
+                      color: colors.primary,
+                    ),
+                    const SizedBox(width: AppTokens.space4),
+                    Text(
                       'Pilih',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF2563EB),
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: colors.primary,
                       ),
                     ),
-                  ] else ...[
-                    const Text(
-                      '-',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
-                    ),
-                  ],
+                  ] else
+                    Text('-', style: theme.textTheme.labelMedium),
                 ],
               ),
-              const SizedBox(height: 16),
-            ],
           ],
         ),
       ),

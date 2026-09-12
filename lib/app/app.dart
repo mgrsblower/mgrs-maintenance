@@ -31,9 +31,9 @@ class _MaintenanceAppState extends State<MaintenanceApp>
   late final StreamSubscription<void> subscription;
 
   static bool get _isTestEnvironment {
-    return WidgetsBinding.instance.runtimeType
-        .toString()
-        .contains('TestWidgetsFlutterBinding');
+    return WidgetsBinding.instance.runtimeType.toString().contains(
+      'TestWidgetsFlutterBinding',
+    );
   }
 
   late bool splashCompleted = _isTestEnvironment;
@@ -95,51 +95,52 @@ class _MaintenanceAppState extends State<MaintenanceApp>
     debugShowCheckedModeBanner: false,
     theme: maintenanceTheme(),
     home: !splashCompleted
-        ? SplashScreen(
-            onFinish: () => setState(() => splashCompleted = true),
-          )
+        ? SplashScreen(onFinish: () => setState(() => splashCompleted = true))
         : (user == null
-            ? LoginScreen(gateway: widget.gateway, onSignedIn: reload)
-            : MaintenanceHome(gateway: widget.gateway, user: user!)),
-    builder: (context, child) => Stack(
-      children: [
-        ?child,
-        if (splashCompleted && (checking || error != null))
-          Positioned.fill(
-            child: Material(
-              color: AppTokens.canvas,
-              child: SafeArea(
-                child: checking
-                    ? (user != null
-                        ? const HomeSkeletonScreen()
-                        : const Center(child: CircularProgressIndicator()))
-                    : PageBody(
-                        children: [
-                          const SizedBox(height: 48),
-                          Text(
-                            failureMessage(error),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 24),
-                          FilledButton(
-                            onPressed: reload,
-                            child: const Text('Coba lagi'),
-                          ),
-                          if (user != null)
-                            TextButton(
-                              onPressed: () async {
-                                await widget.gateway.signOut();
-                                await reload();
-                              },
-                              child: const Text('Keluar'),
+              ? LoginScreen(gateway: widget.gateway, onSignedIn: reload)
+              : MaintenanceHome(gateway: widget.gateway, user: user!)),
+    builder: (context, child) {
+      final colors = Theme.of(context).colorScheme;
+      return Stack(
+        children: [
+          ?child,
+          if (splashCompleted && (checking || error != null))
+            Positioned.fill(
+              child: Material(
+                color: colors.surfaceContainerLow,
+                child: SafeArea(
+                  child: checking
+                      ? (user != null
+                            ? const HomeSkeletonScreen()
+                            : const Center(child: CircularProgressIndicator()))
+                      : PageBody(
+                          children: [
+                            const SizedBox(height: AppTokens.minTouchTarget),
+                            Text(
+                              failureMessage(error),
+                              textAlign: TextAlign.center,
                             ),
-                        ],
-                      ),
+                            const SizedBox(height: AppTokens.space24),
+                            FilledButton(
+                              onPressed: reload,
+                              child: const Text('Coba lagi'),
+                            ),
+                            if (user != null)
+                              TextButton(
+                                onPressed: () async {
+                                  await widget.gateway.signOut();
+                                  await reload();
+                                },
+                                child: const Text('Keluar'),
+                              ),
+                          ],
+                        ),
+                ),
               ),
             ),
-          ),
-      ],
-    ),
+        ],
+      );
+    },
   );
 }
 
@@ -213,20 +214,13 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
       tab = 0;
     });
     _pageController.jumpToPage(0);
-    _fadeController.forward(from: 0.0);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           newMode == AdminAppMode.pic
               ? 'Beralih ke Mode PIC (Orderan & Invoice)'
               : 'Beralih ke Mode Servis (Teknisi Maintenance)',
-          style: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontWeight: FontWeight.w600,
-          ),
         ),
-        backgroundColor: const Color(0xFF18181B),
-        behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -248,11 +242,37 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
     );
   }
 
+  Widget _roleTransition(
+    Widget child,
+    Animation<double> animation,
+    bool disableAnimations,
+  ) {
+    if (disableAnimations) return child;
+    final eased = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+    );
+    return FadeTransition(
+      opacity: eased,
+      child: AnimatedBuilder(
+        animation: eased,
+        child: child,
+        builder: (context, child) => Transform.translate(
+          offset: Offset(0, AppTokens.space4 * (1 - eased.value)),
+          child: child,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final disableAnimations = MediaQuery.disableAnimationsOf(context);
+    final roleTransitionDuration = disableAnimations
+        ? Duration.zero
+        : const Duration(milliseconds: 180);
     final isPic = effectiveIsPic;
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final scrimHeight = 98.0 + bottomInset;
 
     final children = isPic
         ? [
@@ -260,27 +280,19 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
               gateway: widget.gateway,
               user: widget.user,
               adminMode: widget.user.isAdmin ? _adminMode : null,
-              onSwitchAdminMode:
-                  widget.user.isAdmin ? _switchAdminMode : null,
+              onSwitchAdminMode: widget.user.isAdmin ? _switchAdminMode : null,
               onOpenOrdersTab: () => _onNavigateToTab(1),
               onOpenInvoicesTab: () => _onNavigateToTab(2),
             ),
-            UpcomingOrdersScreen(
-              gateway: widget.gateway,
-              user: widget.user,
-            ),
-            InvoiceListScreen(
-              gateway: widget.gateway,
-              user: widget.user,
-            ),
+            UpcomingOrdersScreen(gateway: widget.gateway, user: widget.user),
+            InvoiceListScreen(gateway: widget.gateway, user: widget.user),
           ]
         : [
             HomeScreen(
               gateway: widget.gateway,
               user: widget.user,
               adminMode: widget.user.isAdmin ? _adminMode : null,
-              onSwitchAdminMode:
-                  widget.user.isAdmin ? _switchAdminMode : null,
+              onSwitchAdminMode: widget.user.isAdmin ? _switchAdminMode : null,
               showBottomNav: false,
               onNavigateToTab: _onNavigateToTab,
               onOpenScanner: openScannerModal,
@@ -300,43 +312,25 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
           ];
 
     return Scaffold(
-      extendBody: true,
-      backgroundColor: const Color(0xFFFBFBFB),
-      body: Stack(
-        children: [
-          FadeTransition(
-            opacity: _fadeAnimation,
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (index) => setState(() => tab = index),
-              physics: const BouncingScrollPhysics(),
-              children: children,
-            ),
-          ),
-          // Native iOS style bottom gradient scrim (fades content softly beneath floating navbar)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: scrimHeight,
-            child: IgnorePointer(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      const Color(0xFFFBFBFB).withValues(alpha: 0.96),
-                      const Color(0xFFFBFBFB).withValues(alpha: 0.65),
-                      const Color(0xFFFBFBFB).withValues(alpha: 0.0),
-                    ],
-                    stops: const [0.0, 0.50, 1.0],
-                  ),
-                ),
+      backgroundColor: colors.surfaceContainerLow,
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: PageView(
+          controller: _pageController,
+          onPageChanged: (index) => setState(() => tab = index),
+          physics: const BouncingScrollPhysics(),
+          children: [
+            for (final child in children)
+              AnimatedSwitcher(
+                duration: roleTransitionDuration,
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeOutCubic,
+                transitionBuilder: (child, animation) =>
+                    _roleTransition(child, animation, disableAnimations),
+                child: KeyedSubtree(key: ValueKey<bool>(isPic), child: child),
               ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: tab,

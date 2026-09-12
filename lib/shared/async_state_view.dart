@@ -32,18 +32,27 @@ class AsyncStateView<T> extends StatelessWidget {
   Widget build(BuildContext context) => FutureBuilder<T>(
     future: future,
     builder: (context, snapshot) {
+      final colors = Theme.of(context).colorScheme;
+      final textTheme = Theme.of(context).textTheme;
       if (snapshot.connectionState != ConnectionState.done) {
-        return const Center(child: CircularProgressIndicator());
+        return Center(child: CircularProgressIndicator(color: colors.primary));
       }
       if (snapshot.hasError) {
-        return PageBody(
-          children: [
-            const Icon(Icons.cloud_off_outlined, size: 40),
-            const SizedBox(height: 16),
-            Text(failureMessage(snapshot.error), textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            OutlinedButton(onPressed: retry, child: const Text('Coba lagi')),
-          ],
+        return Semantics(
+          liveRegion: true,
+          child: PageBody(
+            children: [
+              Icon(Icons.cloud_off_outlined, color: colors.error, size: 40),
+              const SizedBox(height: AppTokens.space16),
+              Text(
+                failureMessage(snapshot.error),
+                textAlign: TextAlign.center,
+                style: textTheme.bodyMedium?.copyWith(color: colors.error),
+              ),
+              const SizedBox(height: AppTokens.space16),
+              FilledButton(onPressed: retry, child: const Text('Coba lagi')),
+            ],
+          ),
         );
       }
       return builder(snapshot.data as T);
@@ -87,7 +96,10 @@ String usableDisplayLabel(Object? value) {
   if (value == true || value == 'true' || value == 'Ya' || value == 'ya') {
     return 'Layak Digunakan';
   }
-  if (value == false || value == 'false' || value == 'Tidak' || value == 'tidak') {
+  if (value == false ||
+      value == 'false' ||
+      value == 'Tidak' ||
+      value == 'tidak') {
     return 'Tidak Boleh Digunakan';
   }
   return value.toString();
@@ -103,8 +115,18 @@ String periodDisplayLabel(String? periodId) {
     final monthNum = int.tryParse(parts[1]);
     if (monthNum != null && monthNum >= 1 && monthNum <= 12) {
       const months = [
-        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        'Januari',
+        'Februari',
+        'Maret',
+        'April',
+        'Mei',
+        'Juni',
+        'Juli',
+        'Agustus',
+        'September',
+        'Oktober',
+        'November',
+        'Desember',
       ];
       return '${months[monthNum - 1]} $year';
     }
@@ -117,20 +139,24 @@ class InfoLine extends StatelessWidget {
   final String label;
   final String value;
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.labelMedium?.copyWith(color: AppTokens.muted),
-        ),
-        const SizedBox(height: 4),
-        Text(value),
-      ],
-    ),
-  );
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppTokens.space12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: textTheme.labelMedium?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: AppTokens.space4),
+          Text(value),
+        ],
+      ),
+    );
+  }
 }

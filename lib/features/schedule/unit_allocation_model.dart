@@ -46,8 +46,10 @@ class AllocatedUnit {
 }
 
 abstract final class UnitAllocationParser {
-  static final RegExp allocationPattern =
-      RegExp(r'\[UNIT_ALOKASI:\s*([^\]]+)\]', caseSensitive: false);
+  static final RegExp allocationPattern = RegExp(
+    r'\[UNIT_ALOKASI:\s*([^\]]+)\]',
+    caseSensitive: false,
+  );
 
   static List<AllocatedUnit> parse(String? rawNote, {int? totalUnits}) {
     final note = rawNote ?? '';
@@ -61,9 +63,15 @@ abstract final class UnitAllocationParser {
         final unitStr = rawUnits[i].trim();
         if (unitStr.isEmpty) continue;
         final parts = unitStr.split('+');
-        final k = parts.isNotEmpty && parts[0].trim() != '-' ? parts[0].trim() : null;
-        final b = parts.length > 1 && parts[1].trim() != '-' ? parts[1].trim() : null;
-        final t = parts.length > 2 && parts[2].trim() != '-' ? parts[2].trim() : null;
+        final k = parts.isNotEmpty && parts[0].trim() != '-'
+            ? parts[0].trim()
+            : null;
+        final b = parts.length > 1 && parts[1].trim() != '-'
+            ? parts[1].trim()
+            : null;
+        final t = parts.length > 2 && parts[2].trim() != '-'
+            ? parts[2].trim()
+            : null;
         parsedMap[i + 1] = AllocatedUnit(
           unitIndex: i + 1,
           kepalaSticker: k,
@@ -91,17 +99,28 @@ abstract final class UnitAllocationParser {
     final nonEmpty = units.where((u) => !u.isEmpty).toList();
     if (nonEmpty.isEmpty) return '';
 
-    final parts = units.map((u) {
-      final k = u.kepalaSticker?.trim().isNotEmpty == true ? u.kepalaSticker!.trim() : '-';
-      final b = u.batangSticker?.trim().isNotEmpty == true ? u.batangSticker!.trim() : '-';
-      final t = u.tabungSticker?.trim().isNotEmpty == true ? u.tabungSticker!.trim() : '-';
-      return '$k+$b+$t';
-    }).join(' | ');
+    final parts = units
+        .map((u) {
+          final k = u.kepalaSticker?.trim().isNotEmpty == true
+              ? u.kepalaSticker!.trim()
+              : '-';
+          final b = u.batangSticker?.trim().isNotEmpty == true
+              ? u.batangSticker!.trim()
+              : '-';
+          final t = u.tabungSticker?.trim().isNotEmpty == true
+              ? u.tabungSticker!.trim()
+              : '-';
+          return '$k+$b+$t';
+        })
+        .join(' | ');
 
     return '[UNIT_ALOKASI: $parts]';
   }
 
-  static String updateNoteWithAllocation(String? existingNote, List<AllocatedUnit> units) {
+  static String updateNoteWithAllocation(
+    String? existingNote,
+    List<AllocatedUnit> units,
+  ) {
     final note = (existingNote ?? '').replaceAll(allocationPattern, '').trim();
     final tag = serialize(units);
     if (tag.isEmpty) return note;
