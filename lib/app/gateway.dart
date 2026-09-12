@@ -82,8 +82,12 @@ class UserProfile {
   };
 
   bool get isAdmin => role == 'Admin';
-  bool get isPic => role == 'PIC Pemasangan';
-  bool get isTechnician => role == 'Tim Service' || role == 'Tim Pemasangan';
+  bool get isPic => role == 'PIC Pemasangan' || role == 'PIC MGRS';
+  bool get isTechnician =>
+      role == 'Tim Service' ||
+      role == 'Tim Pemasangan' ||
+      role == 'Tim Lapangan' ||
+      productRole == ProductRole.timLapangan;
   bool get canManageOrders => isAdmin || isPic;
 
   String get displayName {

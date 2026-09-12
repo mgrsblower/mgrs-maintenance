@@ -163,12 +163,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                       !_order!.isCompletedOrCancelled,
                                 ),
                                 const SizedBox(height: 16),
+                                _buildInstallationContextCard(context),
+                                const SizedBox(height: 16),
                               ],
                               _buildCustomerCard(context),
                               const SizedBox(height: 16),
                               _buildEventNotesCard(context),
-                              const SizedBox(height: 16),
-                              _buildInvoiceCard(context),
+                              if (widget.user?.canManageOrders == true) ...[
+                                const SizedBox(height: 16),
+                                _buildInvoiceCard(context),
+                              ],
                               const SizedBox(height: 24),
                             ],
                           ),
@@ -657,6 +661,169 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  // Installation Context: Shows order identity, pasangan context, and explicit boundary
+  Widget _buildInstallationContextCard(BuildContext context) {
+    final order = _order;
+    if (order == null) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final hasUnits = order.allocatedUnits.isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.build_circle_outlined,
+                  color: Color(0xFF2563EB),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Konteks Pemasangan Lapangan',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    Text(
+                      '${order.displayCode} · Target ${order.jumlahUnit} Unit',
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 12,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: const Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  size: 18,
+                  color: Color(0xFF64748B),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Konfirmasi pemasangan belum tersedia',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Backend saat ini hanya mendukung alokasi unit fisik dan pelaporan kondisi blower. Konfirmasi pasangan/pemasangan formal belum memiliki kontrak server.',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 11.5,
+                          color: Color(0xFF64748B),
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            'Status Pemilihan Unit:',
+            style: TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF334155),
+            ),
+          ),
+          const SizedBox(height: 6),
+          if (!hasUnits)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFFEF3C7)),
+              ),
+              child: const Text(
+                'Unit tidak dipilih',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                  color: Color(0xFF92400E),
+                ),
+              ),
+            )
+          else
+            ...order.allocatedUnits.map(
+              (u) {
+                final parts = [
+                  if (u.kepalaSticker != null) 'Kepala: ${u.kepalaSticker}',
+                  if (u.batangSticker != null) 'Batang: ${u.batangSticker}',
+                  if (u.tabungSticker != null) 'Tabung: ${u.tabungSticker}',
+                ];
+                final desc = parts.isNotEmpty ? parts.join(', ') : 'Unit tidak dipilih';
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Text(
+                    'Unit ${u.unitIndex}: $desc',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                );
+              },
+            ),
         ],
       ),
     );
