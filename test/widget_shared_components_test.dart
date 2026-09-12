@@ -165,6 +165,22 @@ void main() {
     expect(find.text('Tidak ada order'), findsNothing);
   });
 
+  testWidgets('explicit predicate can keep a nullable null value', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: maintenanceTheme(),
+        home: AsyncStateView<String?>(
+          future: Future<String?>.value(null),
+          retry: () {},
+          isEmpty: (_) => false,
+          builder: (value) => Text(value ?? 'Nilai null dipertahankan'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Nilai null dipertahankan'), findsOneWidget);
+  });
+
   testWidgets('async state view renders error and permission states',
       (tester) async {
     final permission = Completer<String>();
@@ -252,6 +268,29 @@ void main() {
       tester.getSize(find.byKey(const Key('passive-pressable'))),
       const Size(12, 20),
     );
+  });
+
+  testWidgets('disabled pressable keeps its target and disabled semantics',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: maintenanceTheme(),
+        home: PressableScale(
+          key: const Key('disabled-pressable'),
+          enabled: false,
+          onTap: () {},
+          child: const SizedBox(width: 12, height: 20),
+        ),
+      ),
+    );
+    final size = tester.getSize(find.byKey(const Key('disabled-pressable')));
+    expect(size.width, greaterThanOrEqualTo(48));
+    expect(size.height, greaterThanOrEqualTo(48));
+    final semantics = tester.getSemantics(
+      find.byKey(const Key('disabled-pressable')),
+    );
+    expect(semantics.flagsCollection.isButton, isTrue);
+    expect(semantics.flagsCollection.isEnabled, isNot(isTrue));
   });
 
   testWidgets('save action bar owns submitting and retry presentation',

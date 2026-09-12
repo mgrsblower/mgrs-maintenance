@@ -193,11 +193,37 @@ TextTheme _textTheme(bool isDark) {
       letterSpacing: -1,
       color: color,
     ),
+    displayMedium: TextStyle(
+      fontSize: 36,
+      height: 1.1,
+      fontWeight: FontWeight.w600,
+      letterSpacing: -0.75,
+      color: color,
+    ),
+    displaySmall: TextStyle(
+      fontSize: 34,
+      height: 1.1,
+      fontWeight: FontWeight.w600,
+      letterSpacing: -0.5,
+      color: color,
+    ),
     headlineLarge: TextStyle(
       fontSize: 32,
       height: 1.15,
       fontWeight: FontWeight.w600,
       letterSpacing: -0.5,
+      color: color,
+    ),
+    headlineMedium: TextStyle(
+      fontSize: 28,
+      height: 1.2,
+      fontWeight: FontWeight.w600,
+      color: color,
+    ),
+    headlineSmall: TextStyle(
+      fontSize: 24,
+      height: 1.2,
+      fontWeight: FontWeight.w600,
       color: color,
     ),
     titleLarge: TextStyle(
@@ -206,8 +232,21 @@ TextTheme _textTheme(bool isDark) {
       fontWeight: FontWeight.w600,
       color: color,
     ),
+    titleMedium: TextStyle(
+      fontSize: 20,
+      height: 1.25,
+      fontWeight: FontWeight.w600,
+      color: color,
+    ),
+    titleSmall: TextStyle(
+      fontSize: 16,
+      height: 1.3,
+      fontWeight: FontWeight.w600,
+      color: color,
+    ),
     bodyLarge: TextStyle(fontSize: 17, height: 1.4, color: color),
     bodyMedium: TextStyle(fontSize: 16, height: 1.4, color: color),
+    bodySmall: TextStyle(fontSize: 14, height: 1.4, color: color),
     labelLarge: TextStyle(
       fontSize: 14,
       height: 1.25,
@@ -216,6 +255,12 @@ TextTheme _textTheme(bool isDark) {
     ),
     labelMedium: TextStyle(
       fontSize: 13,
+      height: 1.25,
+      fontWeight: FontWeight.w600,
+      color: isDark ? AppTokens.inkOnDark : AppTokens.inkMuted,
+    ),
+    labelSmall: TextStyle(
+      fontSize: 12,
       height: 1.25,
       fontWeight: FontWeight.w600,
       color: isDark ? AppTokens.inkOnDark : AppTokens.inkMuted,

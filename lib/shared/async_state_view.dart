@@ -63,8 +63,14 @@ class AsyncStateView<T> extends StatelessWidget {
             ErrorStateView(onRetry: retry, error: failure);
       }
       final value = snapshot.data;
-      if (value == null ||
-          (isEmpty != null ? isEmpty!(value) : _isEmpty(value))) {
+      if (isEmpty != null) {
+        final typedValue = value as T;
+        if (isEmpty!(typedValue)) {
+          return empty?.call() ?? const EmptyStateView();
+        }
+        return builder(typedValue);
+      }
+      if (value == null || _isEmpty(value)) {
         return empty?.call() ?? const EmptyStateView();
       }
       return builder(value);
@@ -188,7 +194,7 @@ class StatePanel extends StatelessWidget {
   Widget build(BuildContext context) => PageBody(
     children: [
       const SizedBox(height: 32),
-      Icon(icon, size: 40, semanticLabel: title),
+      ExcludeSemantics(child: Icon(icon, size: 40)),
       if (showProgress) ...[
         const SizedBox(height: 16),
         const Center(child: CircularProgressIndicator()),

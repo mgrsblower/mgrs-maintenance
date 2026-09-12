@@ -12,9 +12,11 @@ class ConditionBadge extends StatelessWidget {
         ? AppTokens.warning
         : AppTokens.danger;
     return Tooltip(
+      excludeFromSemantics: true,
       message: 'Kondisi: $value',
       child: Semantics(
         container: true,
+        excludeSemantics: true,
         label: 'Kondisi: $value',
         child: Chip(
           avatar: Icon(

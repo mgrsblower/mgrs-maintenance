@@ -89,7 +89,7 @@ class _PressableScaleState extends State<PressableScale>
 
   @override
   Widget build(BuildContext context) {
-    if (!_isInteractive) return widget.child;
+    if (!_hasAction) return widget.child;
 
     final reducedMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
@@ -110,17 +110,17 @@ class _PressableScaleState extends State<PressableScale>
     final material = Material(
       type: MaterialType.transparency,
       child: InkWell(
-        onTap: widget.onTap,
-        onLongPress: widget.onLongPress,
-        onTapDown: _handleTapDown,
-        onTapUp: _handleTapUp,
-        onTapCancel: _handleTapCancel,
+        onTap: _isInteractive ? widget.onTap : null,
+        onLongPress: _isInteractive ? widget.onLongPress : null,
+        onTapDown: _isInteractive ? _handleTapDown : null,
+        onTapUp: _isInteractive ? _handleTapUp : null,
+        onTapCancel: _isInteractive ? _handleTapCancel : null,
         child: interactiveSurface,
       ),
     );
     final semantics = Semantics(
       button: true,
-      enabled: true,
+      enabled: _isInteractive,
       child: material,
     );
     return widget.tooltip == null
