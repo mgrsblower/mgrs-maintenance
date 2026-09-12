@@ -2,7 +2,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../app/gateway.dart';
 import '../../shared/async_state_view.dart';
-import '../../shared/bottom_nav_bar.dart';
 import '../../shared/pressable.dart';
 import '../components/component_detail_screen.dart';
 
@@ -252,15 +251,8 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
         ],
       ),
     ),
-      bottomNavigationBar: widget.showBottomNav
-          ? AppBottomNavBar(
-              currentIndex: 1,
-              onNavigateToTab: widget.onNavigateToTab,
-              onOpenScanner: widget.onOpenScanner,
-            )
-          : null,
-    );
-  }
+  );
+}
 
   // Header: "Komponen MGRS" + "{count} item terdaftar • Kepala, Batang, Tabung" + Filter Icon button
   Widget _buildHeader(BuildContext context) {

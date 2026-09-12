@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../app/gateway.dart';
-import '../../shared/bottom_nav_bar.dart';
 import '../../shared/pressable.dart';
 import '../maintenance/checking_screen.dart';
 import '../components/component.dart';
@@ -290,13 +289,6 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
           ],
         ),
       ),
-      bottomNavigationBar: widget.showBottomNav
-          ? AppBottomNavBar(
-              currentIndex: 2,
-              onNavigateToTab: widget.onNavigateToTab,
-              onOpenScanner: widget.onOpenScanner,
-            )
-          : null,
     );
   }
 
