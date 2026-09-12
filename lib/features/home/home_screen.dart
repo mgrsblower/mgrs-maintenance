@@ -1,11 +1,23 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../app/app_theme.dart';
 import '../../app/gateway.dart';
 import '../../shared/bottom_nav_bar.dart';
-import '../../shared/pressable.dart';
 import '../schedule/order_detail_screen.dart';
 import '../schedule/order_model.dart';
 import '../schedule/upcoming_orders_screen.dart';
+
+const _fallbackOperationalColors = OperationalColors(
+  success: AppTokens.successSurface,
+  onSuccess: AppTokens.success,
+  warning: AppTokens.warningSurface,
+  onWarning: AppTokens.warning,
+  danger: AppTokens.dangerSurface,
+  onDanger: AppTokens.danger,
+);
+
+OperationalColors _operationalColors(BuildContext context) =>
+    Theme.of(context).extension<OperationalColors>() ??
+    _fallbackOperationalColors;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -53,8 +65,9 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _loadMetrics({bool forceRefresh = false}) async {
     setState(() => _loading = true);
     try {
-      final list =
-          await widget.gateway.fetchComponents(forceRefresh: forceRefresh);
+      final list = await widget.gateway.fetchComponents(
+        forceRefresh: forceRefresh,
+      );
       if (!mounted) return;
       int ok = 0;
       int service = 0;
@@ -72,8 +85,9 @@ class _HomeScreenState extends State<HomeScreen>
 
       String countdown = '0';
       try {
-        final tasks = await widget.gateway
-            .fetchTasksSummary(forceRefresh: forceRefresh);
+        final tasks = await widget.gateway.fetchTasksSummary(
+          forceRefresh: forceRefresh,
+        );
         if (tasks.isNotEmpty) {
           final period = tasks['period'];
           if (period is Map) {
@@ -81,8 +95,7 @@ class _HomeScreenState extends State<HomeScreen>
             if (opensAtStr != null) {
               final opensAt = DateTime.tryParse(opensAtStr);
               if (opensAt != null) {
-                final now = DateTime.now();
-                final diff = opensAt.difference(now).inDays;
+                final diff = opensAt.difference(DateTime.now()).inDays;
                 countdown = diff > 0 ? '$diff' : '0';
               }
             }
@@ -92,8 +105,10 @@ class _HomeScreenState extends State<HomeScreen>
 
       List<OrderanSewa> upcoming = [];
       try {
-        final all = await widget.gateway
-            .fetchUpcomingOrders(limit: 20, forceRefresh: forceRefresh);
+        final all = await widget.gateway.fetchUpcomingOrders(
+          limit: 20,
+          forceRefresh: forceRefresh,
+        );
         upcoming = all.where((o) => o.isUpcoming).take(5).toList();
       } catch (_) {}
 
@@ -114,41 +129,38 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final colors = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFFBFBFB),
+      backgroundColor: colors.surfaceContainerLow,
       body: SafeArea(
         bottom: false,
-        child: Column(
-          children: [
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: () => _loadMetrics(forceRefresh: true),
-                color: const Color(0xFF2563EB),
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(
-                    parent: BouncingScrollPhysics(),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 10),
-                        _buildUserHeader(context),
-                        const SizedBox(height: 14),
-                        _buildWeeklyProgressBento(context),
-                        const SizedBox(height: 20),
-                        _buildUnitStatusSection(context),
-                        const SizedBox(height: 20),
-                        _buildUpcomingOrdersSection(context),
-                        const SizedBox(height: 110), // Spacing for floating navbar
-                      ],
-                    ),
-                  ),
+        child: RefreshIndicator(
+          onRefresh: () => _loadMetrics(forceRefresh: true),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: AppTokens.space16),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: AppTokens.maxContentWidth,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: AppTokens.space16),
+                    _buildUserHeader(context),
+                    const SizedBox(height: AppTokens.space16),
+                    _buildWeeklyProgressBento(context),
+                    const SizedBox(height: AppTokens.space24),
+                    _buildUnitStatusSection(context),
+                    const SizedBox(height: AppTokens.space24),
+                    _buildUpcomingOrdersSection(context),
+                    const SizedBox(height: 110),
+                  ],
                 ),
               ),
             ),
-          ],
+          ),
         ),
       ),
       bottomNavigationBar: widget.showBottomNav
@@ -161,98 +173,68 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // 1. User Header: Avatar "SR" + "Selamat Pagi! Salman Alfarras" + Bell Icon
   Widget _buildUserHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
-          child: PressableScale(
+          child: InkWell(
             onTap: () => _showUserProfileBottomSheet(context),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE2E8F0),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
+            borderRadius: BorderRadius.circular(AppTokens.controlRadius),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: AppTokens.minTouchTarget,
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: colors.secondaryContainer,
+                    foregroundColor: colors.onSecondaryContainer,
                     child: Text(
                       widget.user.initials,
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF334155),
-                      ),
+                      style: theme.textTheme.labelLarge,
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Text(
-                            'Selamat Pagi!',
-                            style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF64748B),
+                  const SizedBox(width: AppTokens.space12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Selamat Pagi!',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colors.onSurfaceVariant,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            size: 16,
-                            color: Color(0xFF94A3B8),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        widget.user.displayName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF0F172A),
-                          letterSpacing: -0.3,
+                            const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 18,
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                        Text(
+                          widget.user.displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        PressableScale(
-          onTap: () {},
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.notifications_none_rounded,
-                color: Color(0xFF334155),
-                size: 20,
+                ],
               ),
             ),
           ),
+        ),
+        const SizedBox(width: AppTokens.space8),
+        IconButton.outlined(
+          onPressed: () {},
+          icon: const Icon(Icons.notifications_none_rounded),
+          tooltip: 'Notifikasi',
         ),
       ],
     );
@@ -262,368 +244,190 @@ class _HomeScreenState extends State<HomeScreen>
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      showDragHandle: true,
       builder: (sheetContext) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Drag Handle
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFCBD5E1),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 18),
-
-              // Sheet Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Profil Pengguna',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.of(sheetContext).pop(),
-                    icon: const Icon(Icons.close_rounded,
-                        size: 20, color: Color(0xFF64748B)),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-
-              // User Info Card
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Row(
+        final theme = Theme.of(sheetContext);
+        final colors = theme.colorScheme;
+        final operational = _operationalColors(sheetContext);
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              AppTokens.space24,
+              0,
+              AppTokens.space24,
+              AppTokens.space32,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
                   children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1C3E66),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF1C3E66).withValues(alpha: 0.25),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          widget.user.initials,
-                          style: const TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
+                    Expanded(
+                      child: Text(
+                        'Profil Pengguna',
+                        style: theme.textTheme.titleLarge,
                       ),
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.user.displayName,
-                            style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF0F172A),
+                    IconButton(
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                      icon: const Icon(Icons.close_rounded),
+                      tooltip: 'Tutup',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppTokens.space16),
+                Card(
+                  margin: EdgeInsets.zero,
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppTokens.space16),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 26,
+                          backgroundColor: colors.secondary,
+                          foregroundColor: colors.onSecondary,
+                          child: Text(
+                            widget.user.initials,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: colors.onSecondary,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Row(
+                        ),
+                        const SizedBox(width: AppTokens.space12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFEFF6FF),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: const Color(0xFFBFDBFE)),
-                                ),
-                                child: Text(
-                                  widget.user.role,
-                                  style: const TextStyle(
-                                    fontFamily: 'Plus Jakarta Sans',
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF2563EB),
-                                  ),
-                                ),
+                              Text(
+                                widget.user.displayName,
+                                style: theme.textTheme.titleMedium,
                               ),
-                              if (widget.user.username != null) ...[
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    '@${widget.user.username}',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontFamily: 'Plus Jakarta Sans',
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: Color(0xFF64748B),
+                              const SizedBox(height: AppTokens.space8),
+                              Wrap(
+                                spacing: AppTokens.space8,
+                                runSpacing: AppTokens.space4,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  Semantics(
+                                    label:
+                                        'Label peran inventaris: ${widget.user.role}',
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: AppTokens.space8,
+                                        vertical: AppTokens.space4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: colors.secondaryContainer,
+                                        borderRadius: BorderRadius.circular(
+                                          AppTokens.badgeRadius,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        widget.user.role,
+                                        style: theme.textTheme.labelSmall
+                                            ?.copyWith(
+                                              color:
+                                                  colors.onSecondaryContainer,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                  if (widget.user.username != null)
+                                    Text(
+                                      '@${widget.user.username}',
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: colors.onSurfaceVariant,
+                                          ),
+                                    ),
+                                ],
+                              ),
                             ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-
-              // Status Box
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.check_circle_rounded,
-                        size: 15, color: Color(0xFF16A34A)),
-                    const SizedBox(width: 8),
-                    Text(
-                      widget.user.isAdmin
-                          ? 'Sistem MGRS • Akun Administrator'
-                          : 'Sistem MGRS • Terhubung',
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF334155),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Mode Tampilan Operasional (Admin Only)
-              if (widget.user.isAdmin && widget.onSwitchAdminMode != null) ...[
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+                const SizedBox(height: AppTokens.space12),
+                Container(
+                  padding: const EdgeInsets.all(AppTokens.space12),
+                  decoration: BoxDecoration(
+                    color: operational.success,
+                    borderRadius: BorderRadius.circular(
+                      AppTokens.controlRadius,
+                    ),
+                  ),
+                  child: Row(
                     children: [
-                      const Row(
-                        children: [
-                          Icon(Icons.admin_panel_settings_rounded,
-                              size: 16, color: Color(0xFF0F172A)),
-                          SizedBox(width: 6),
-                          Text(
-                            'Mode Tampilan (Khusus Admin)',
-                            style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF0F172A),
-                            ),
+                      Icon(
+                        Icons.check_circle_rounded,
+                        color: operational.onSuccess,
+                      ),
+                      const SizedBox(width: AppTokens.space8),
+                      Expanded(
+                        child: Text(
+                          widget.user.isAdmin
+                              ? 'Sistem MGRS • Akun Administrator'
+                              : 'Sistem MGRS • Terhubung',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: operational.onSuccess,
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 5),
-                      const Text(
-                        'Pilih peran tampilan operasional yang ingin Anda akses:',
-                        style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 11,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        height: 38,
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE2E8F0),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: PressableScale(
-                                onTap: () {
-                                  Navigator.of(sheetContext).pop();
-                                  widget.onSwitchAdminMode!(AdminAppMode.pic);
-                                },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: widget.adminMode == AdminAppMode.pic
-                                        ? Colors.white
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(8),
-                                    boxShadow: widget.adminMode == AdminAppMode.pic
-                                        ? const [
-                                            BoxShadow(
-                                              color: Color(0x10000000),
-                                              blurRadius: 4,
-                                              offset: Offset(0, 1),
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.event_note_rounded,
-                                        size: 14,
-                                        color: widget.adminMode == AdminAppMode.pic
-                                            ? const Color(0xFF0F172A)
-                                            : const Color(0xFF64748B),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        'Mode PIC',
-                                        style: TextStyle(
-                                          fontFamily: 'Plus Jakarta Sans',
-                                          fontSize: 11.5,
-                                          fontWeight: widget.adminMode == AdminAppMode.pic
-                                              ? FontWeight.w700
-                                              : FontWeight.w500,
-                                          color: widget.adminMode == AdminAppMode.pic
-                                              ? const Color(0xFF0F172A)
-                                              : const Color(0xFF64748B),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: PressableScale(
-                                onTap: () {
-                                  Navigator.of(sheetContext).pop();
-                                  widget.onSwitchAdminMode!(AdminAppMode.service);
-                                },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: widget.adminMode == AdminAppMode.service
-                                        ? Colors.white
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(8),
-                                    boxShadow: widget.adminMode == AdminAppMode.service
-                                        ? const [
-                                            BoxShadow(
-                                              color: Color(0x10000000),
-                                              blurRadius: 4,
-                                              offset: Offset(0, 1),
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.build_rounded,
-                                        size: 14,
-                                        color: widget.adminMode == AdminAppMode.service
-                                            ? const Color(0xFF0F172A)
-                                            : const Color(0xFF64748B),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        'Mode Servis',
-                                        style: TextStyle(
-                                          fontFamily: 'Plus Jakarta Sans',
-                                          fontSize: 11.5,
-                                          fontWeight: widget.adminMode == AdminAppMode.service
-                                              ? FontWeight.w700
-                                              : FontWeight.w500,
-                                          color: widget.adminMode == AdminAppMode.service
-                                              ? const Color(0xFF0F172A)
-                                              : const Color(0xFF64748B),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
                       ),
                     ],
+                  ),
+                ),
+                if (widget.user.isAdmin &&
+                    widget.onSwitchAdminMode != null) ...[
+                  const SizedBox(height: AppTokens.space16),
+                  Text(
+                    'Mode Tampilan (Khusus Admin)',
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: AppTokens.space4),
+                  Text(
+                    'Pilih peran tampilan operasional yang ingin Anda akses:',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: AppTokens.space12),
+                  SegmentedButton<AdminAppMode>(
+                    segments: const [
+                      ButtonSegment(
+                        value: AdminAppMode.pic,
+                        icon: Icon(Icons.event_note_rounded),
+                        label: Text('Mode PIC'),
+                      ),
+                      ButtonSegment(
+                        value: AdminAppMode.service,
+                        icon: Icon(Icons.build_rounded),
+                        label: Text('Mode Servis'),
+                      ),
+                    ],
+                    selected: {widget.adminMode ?? AdminAppMode.service},
+                    showSelectedIcon: false,
+                    onSelectionChanged: (selection) {
+                      Navigator.of(sheetContext).pop();
+                      widget.onSwitchAdminMode!(selection.first);
+                    },
+                  ),
+                ],
+                const SizedBox(height: AppTokens.space24),
+                OutlinedButton.icon(
+                  onPressed: () => _confirmLogout(context, sheetContext),
+                  icon: const Icon(Icons.logout_rounded),
+                  label: const Text('Keluar dari Akun'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: colors.error,
+                    side: BorderSide(color: colors.error),
                   ),
                 ),
               ],
-              const SizedBox(height: 18),
-
-              // Logout Button
-              PressableScale(
-                onTap: () => _confirmLogout(context, sheetContext),
-                child: Container(
-                  width: double.infinity,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF2F2),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFFECACA)),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.logout_rounded,
-                          color: Color(0xFFDC2626), size: 18),
-                      SizedBox(width: 8),
-                      Text(
-                        'Keluar dari Akun',
-                        style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFFDC2626),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         );
       },
@@ -634,35 +438,12 @@ class _HomeScreenState extends State<HomeScreen>
     showDialog<void>(
       context: screenContext,
       builder: (dialogCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Konfirmasi Keluar',
-          style: TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontWeight: FontWeight.w800,
-            fontSize: 18,
-          ),
-        ),
-        content: const Text(
-          'Apakah Anda yakin ingin keluar dari akun MGRS?',
-          style: TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontSize: 14,
-            color: Color(0xFF475569),
-          ),
-        ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        title: const Text('Konfirmasi Keluar'),
+        content: const Text('Apakah Anda yakin ingin keluar dari akun MGRS?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(),
-            child: const Text(
-              'Batal',
-              style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF64748B),
-              ),
-            ),
+            child: const Text('Batal'),
           ),
           FilledButton(
             onPressed: () async {
@@ -671,332 +452,85 @@ class _HomeScreenState extends State<HomeScreen>
               await widget.gateway.signOut();
             },
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFDC2626),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+              backgroundColor: Theme.of(dialogCtx).colorScheme.error,
+              foregroundColor: Theme.of(dialogCtx).colorScheme.onError,
             ),
-            child: const Text(
-              'Ya, Keluar',
-              style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            child: const Text('Ya, Keluar'),
           ),
         ],
       ),
     );
   }
 
-  // 2. Bento Card: Lime #CEF284 + "Pengingat!" chip + "Pengecekan Unit Berkala" + Circular Progress "6 Hari Lagi"
   Widget _buildWeeklyProgressBento(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFCEF284),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFBCE66E), width: 1.2),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.auto_awesome, size: 12, color: Color(0xFF22380E)),
-                      SizedBox(width: 5),
-                      Text(
-                        'Pengingat!',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF22380E),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Pengecekan Unit\nBerkala',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF1A330E),
-                    height: 1.25,
-                    letterSpacing: -0.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Circular Progress Widget
-          SizedBox(
-            width: 86,
-            height: 86,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                CustomPaint(
-                  size: const Size(86, 86),
-                  painter: _CircularCountdownPainter(),
-                ),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _countdownDays,
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF1B350F),
-                        height: 1.0,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      'Hari Lagi',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF527032),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 3. Status Unit Blower (Total 24 mesin aktif dipantau + Live Data badge + 3 gradient cards)
-  Widget _buildUnitStatusSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    final theme = Theme.of(context);
+    final operational = _operationalColors(context);
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(AppTokens.space16),
+        child: Row(
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Status Unit Blower',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF0F172A),
-                      letterSpacing: -0.3,
+                  Semantics(
+                    label: 'Pengingat inventaris',
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppTokens.space8,
+                        vertical: AppTokens.space4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: operational.warning,
+                        borderRadius: BorderRadius.circular(
+                          AppTokens.badgeRadius,
+                        ),
+                      ),
+                      child: Text(
+                        'Pengingat!',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: operational.onWarning,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: AppTokens.space12),
                   Text(
-                    _totalMonitored == 0 && !_loading
-                        ? 'Belum ada unit terdata'
-                        : 'Total $_totalMonitored mesin aktif dipantau',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF64748B),
-                    ),
+                    'Pengecekan Unit\nBerkala',
+                    style: theme.textTheme.titleLarge,
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppTokens.space16),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              width: 88,
+              height: 88,
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(20),
+                shape: BoxShape.circle,
+                color: operational.warning,
               ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
+              alignment: Alignment.center,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircleAvatar(radius: 3, backgroundColor: Color(0xFF10B981)),
-                  SizedBox(width: 5),
                   Text(
-                    'Data Terkini',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF334155),
+                    _countdownDays,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      color: operational.onWarning,
+                    ),
+                  ),
+                  Text(
+                    'Hari Lagi',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: operational.onWarning,
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // 3 Vibrant Solid Status Cards
-        Row(
-          children: [
-            // Card 1: Beroperasi (Vibrant Emerald Solid)
-            Expanded(
-              child: _buildGradientStatusCard(
-                icon: Icons.check_rounded,
-                percentage: _totalMonitored > 0
-                    ? '${((_operatingCount / _totalMonitored) * 100).round()}%'
-                    : '0%',
-                count: '$_operatingCount',
-                title: 'Beroperasi',
-                subtitle: 'Kondisi prima',
-                solidColor: const Color(0xFF059669),
-              ),
-            ),
-            const SizedBox(width: 10),
-            // Card 2: Perlu Servis (Vibrant Amber Solid)
-            Expanded(
-              child: _buildGradientStatusCard(
-                icon: Icons.build_rounded,
-                percentage: _totalMonitored > 0
-                    ? '${((_serviceCount / _totalMonitored) * 100).round()}%'
-                    : '0%',
-                count: '$_serviceCount',
-                title: 'Perlu Servis',
-                subtitle: 'Jadwal dekat',
-                solidColor: const Color(0xFFD97706),
-              ),
-            ),
-            const SizedBox(width: 10),
-            // Card 3: Kendala (Vibrant Rose Solid)
-            Expanded(
-              child: _buildGradientStatusCard(
-                icon: Icons.warning_amber_rounded,
-                percentage: _totalMonitored > 0
-                    ? '${((_problemCount / _totalMonitored) * 100).round()}%'
-                    : '0%',
-                count: '$_problemCount',
-                title: 'Kendala',
-                subtitle: 'Cek fisik',
-                solidColor: const Color(0xFFE11D48),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildGradientStatusCard({
-    required IconData icon,
-    required String percentage,
-    required String count,
-    required String title,
-    required String subtitle,
-    required Color solidColor,
-  }) {
-    return PressableScale(
-      child: Container(
-        height: 120,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
-        decoration: BoxDecoration(
-          color: solidColor,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: solidColor.withValues(alpha: 0.28),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.22),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(icon, color: Colors.white, size: 15),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.24),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    percentage,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  count,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    height: 1.1,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white.withValues(alpha: 0.85),
-                  ),
-                ),
-              ],
             ),
           ],
         ),
@@ -1004,54 +538,212 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // 4. Orderan Mendatang (Section title + dynamic count badge + "Lihat Semua" + dynamic Order Cards)
-  Widget _buildUpcomingOrdersSection(BuildContext context) {
+  Widget _buildUnitStatusSection(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final operational = _operationalColors(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Expanded(
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Flexible(
+                  Text('Status Unit Blower', style: theme.textTheme.titleLarge),
+                  const SizedBox(height: AppTokens.space4),
+                  Text(
+                    _totalMonitored == 0 && !_loading
+                        ? 'Belum ada unit terdata'
+                        : 'Total $_totalMonitored mesin aktif dipantau',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Semantics(
+              label: 'Status data inventaris terkini',
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppTokens.space8,
+                  vertical: AppTokens.space4,
+                ),
+                decoration: BoxDecoration(
+                  color: operational.success,
+                  borderRadius: BorderRadius.circular(AppTokens.badgeRadius),
+                ),
+                child: Text(
+                  'Data Terkini',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: operational.onSuccess,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppTokens.space12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final width = (constraints.maxWidth - AppTokens.space16) / 3;
+            return Wrap(
+              spacing: AppTokens.space8,
+              runSpacing: AppTokens.space8,
+              children: [
+                _buildStatusCard(
+                  context,
+                  width,
+                  Icons.check_rounded,
+                  _operatingCount,
+                  'Beroperasi',
+                  'Kondisi prima',
+                  _totalMonitored,
+                  operational.success,
+                  operational.onSuccess,
+                ),
+                _buildStatusCard(
+                  context,
+                  width,
+                  Icons.build_rounded,
+                  _serviceCount,
+                  'Perlu Servis',
+                  'Jadwal dekat',
+                  _totalMonitored,
+                  operational.warning,
+                  operational.onWarning,
+                ),
+                _buildStatusCard(
+                  context,
+                  width,
+                  Icons.warning_amber_rounded,
+                  _problemCount,
+                  'Kendala',
+                  'Cek fisik',
+                  _totalMonitored,
+                  operational.danger,
+                  operational.onDanger,
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusCard(
+    BuildContext context,
+    double width,
+    IconData icon,
+    int count,
+    String title,
+    String subtitle,
+    int total,
+    Color badgeBackground,
+    Color badgeForeground,
+  ) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final percentage = total > 0 ? '${((count / total) * 100).round()}%' : '0%';
+    return SizedBox(
+      width: width,
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(AppTokens.space12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 20, color: badgeForeground),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTokens.space4,
+                      vertical: AppTokens.space4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: badgeBackground,
+                      borderRadius: BorderRadius.circular(
+                        AppTokens.badgeRadius,
+                      ),
+                    ),
                     child: Text(
-                      'Orderan Mendatang',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 16,
+                      percentage,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: badgeForeground,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF0F172A),
-                        letterSpacing: -0.3,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                ],
+              ),
+              const SizedBox(height: AppTokens.space12),
+              Text('$count', style: theme.textTheme.headlineSmall),
+              const SizedBox(height: AppTokens.space4),
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelLarge,
+              ),
+              Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUpcomingOrdersSection(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Wrap(
+                spacing: AppTokens.space8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text('Orderan Mendatang', style: theme.textTheme.titleLarge),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTokens.space8,
+                      vertical: AppTokens.space4,
+                    ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(20),
+                      color: colors.secondaryContainer,
+                      borderRadius: BorderRadius.circular(
+                        AppTokens.badgeRadius,
+                      ),
                     ),
                     child: Text(
                       '${_upcomingOrders.length}',
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF475569),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colors.onSecondaryContainer,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () {
+            TextButton(
+              onPressed: () {
                 Navigator.of(context).push<void>(
                   MaterialPageRoute(
                     builder: (_) => UpcomingOrdersScreen(
@@ -1061,98 +753,73 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                 );
               },
-              child: const Text(
-                'Lihat Semua',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF2563EB),
-                ),
-              ),
+              child: const Text('Lihat Semua'),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        if (_upcomingOrders.isNotEmpty) ...[
-          ..._upcomingOrders.take(3).map((order) {
-            return _buildOrderCard(context, order);
-          }),
-        ] else ...[
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: const Column(
-              children: [
-                Icon(Icons.event_available_rounded,
-                    size: 32, color: Color(0xFF94A3B8)),
-                SizedBox(height: 8),
-                Text(
-                  'Tidak ada orderan mendatang saat ini',
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF334155),
+        const SizedBox(height: AppTokens.space12),
+        if (_upcomingOrders.isNotEmpty)
+          ..._upcomingOrders
+              .take(3)
+              .map((order) => _buildOrderCard(context, order))
+        else
+          Card(
+            margin: EdgeInsets.zero,
+            child: Padding(
+              padding: const EdgeInsets.all(AppTokens.space24),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.event_available_rounded,
+                    size: 32,
+                    color: colors.outline,
                   ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'Jadwal pemasangan diperbarui otomatis saat ada orderan baru.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 11,
-                    color: Color(0xFF64748B),
+                  const SizedBox(height: AppTokens.space8),
+                  Text(
+                    'Tidak ada orderan mendatang saat ini',
+                    style: theme.textTheme.titleSmall,
                   ),
-                ),
-              ],
+                  const SizedBox(height: AppTokens.space4),
+                  Text(
+                    'Jadwal pemasangan diperbarui otomatis saat ada orderan baru.',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
       ],
     );
   }
 
   Widget _buildOrderCard(BuildContext context, OrderanSewa order) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final operational = _operationalColors(context);
     final hasMaps =
         order.linkGmaps != null && order.linkGmaps!.trim().isNotEmpty;
     final hasWa = order.cleanWhatsapp.isNotEmpty;
-
     final isPast = order.isPast;
-    final String statusText;
-    final Color statusBg;
-    final Color statusBorder;
-    final Color statusColor;
-    final Color dotColor;
-
-    if (isPast) {
-      statusText = order.isCompletedOrCancelled
-          ? (order.statusOrderan ?? 'Selesai')
-          : 'Selesai / Lewat';
-      statusBg = const Color(0xFFF1F5F9);
-      statusBorder = const Color(0xFFCBD5E1);
-      statusColor = const Color(0xFF475569);
-      dotColor = const Color(0xFF94A3B8);
-    } else {
-      statusText =
-          (order.statusOrderan != null && order.statusOrderan!.isNotEmpty)
+    final statusText = isPast
+        ? (order.isCompletedOrCancelled
+              ? (order.statusOrderan ?? 'Selesai')
+              : 'Selesai / Lewat')
+        : ((order.statusOrderan != null && order.statusOrderan!.isNotEmpty)
               ? order.statusOrderan!
-              : 'Terjadwal';
-      statusBg = const Color(0xFFECFDF5);
-      statusBorder = const Color(0xFFA7F3D0);
-      statusColor = const Color(0xFF059669);
-      dotColor = const Color(0xFF10B981);
-    }
+              : 'Terjadwal');
+    final statusBackground = isPast
+        ? colors.secondaryContainer
+        : operational.success;
+    final statusForeground = isPast
+        ? colors.onSecondaryContainer
+        : operational.onSuccess;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: PressableScale(
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppTokens.space12),
+      child: InkWell(
         onTap: () {
           Navigator.of(context).push<void>(
             MaterialPageRoute(
@@ -1164,268 +831,133 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           );
         },
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x06000000),
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
+        borderRadius: BorderRadius.circular(AppTokens.cardRadius),
+        child: Padding(
+          padding: const EdgeInsets.all(AppTokens.space16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Header: [ ● ORD-XXX • 10 Unit (1 Hari) ]  ...  [ Terjadwal ]
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 7,
-                          height: 7,
-                          decoration: BoxDecoration(
-                            color: dotColor,
-                            borderRadius: BorderRadius.circular(2),
+                    child: Text.rich(
+                      TextSpan(
+                        text: order.displayCode,
+                        children: [
+                          TextSpan(
+                            text: ' • ${order.jumlahUnit} Unit',
+                            style: TextStyle(color: colors.onSurfaceVariant),
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text.rich(
-                            TextSpan(
-                              text: order.displayCode,
-                              style: const TextStyle(
-                                fontFamily: 'Plus Jakarta Sans',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF0F172A),
-                              ),
-                              children: [
-                                const TextSpan(
-                                  text: ' • ',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.normal,
-                                    color: Color(0xFF94A3B8),
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: '${order.jumlahUnit} Unit',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF475569),
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: ' (${order.durasiSewaText})',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFF64748B),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          TextSpan(
+                            text: ' (${order.durasiSewaText})',
+                            style: TextStyle(color: colors.onSurfaceVariant),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelLarge,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: statusBg,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: statusBorder),
-                    ),
-                    child: Text(
-                      statusText,
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w700,
-                        color: statusColor,
+                  const SizedBox(width: AppTokens.space8),
+                  Semantics(
+                    label: 'Status order: $statusText',
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppTokens.space8,
+                        vertical: AppTokens.space4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusBackground,
+                        borderRadius: BorderRadius.circular(
+                          AppTokens.badgeRadius,
+                        ),
+                      ),
+                      child: Text(
+                        statusText,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: statusForeground,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
-
-              // 2. Body: Nama Event (Bold)
-              Text(
-                order.namaEvent,
-                style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
-                  letterSpacing: -0.2,
-                ),
-              ),
-
-              // Detail Klien
+              const SizedBox(height: AppTokens.space12),
+              Text(order.namaEvent, style: theme.textTheme.titleMedium),
               if (order.namaClient != null && order.namaClient!.isNotEmpty) ...[
-                const SizedBox(height: 3),
+                const SizedBox(height: AppTokens.space4),
                 Text(
                   'Klien: ${order.namaClient}${order.nomorWhatsapp != null && order.nomorWhatsapp!.isNotEmpty ? ' • ${order.nomorWhatsapp}' : ''}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF64748B),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
                   ),
                 ),
               ],
-
-              // Alamat Venue
               if (order.alamat != null && order.alamat!.isNotEmpty) ...[
-                const SizedBox(height: 4),
+                const SizedBox(height: AppTokens.space8),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.location_on_outlined,
-                        size: 14, color: Color(0xFF64748B)),
-                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.location_on_outlined,
+                      size: 18,
+                      color: colors.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: AppTokens.space4),
                     Expanded(
                       child: Text(
                         order.alamat!,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 11.5,
-                          color: Color(0xFF64748B),
-                          height: 1.35,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
                         ),
                       ),
                     ),
                   ],
                 ),
               ],
-
-              const SizedBox(height: 10),
-
-              // 3. Footer: [ Kamis, 10 Sep 2026 ]  ...  [ Maps ] [ WA ]
-              Container(
-                padding: const EdgeInsets.only(top: 8),
-                decoration: const BoxDecoration(
-                  border: Border(
-                    top: BorderSide(color: Color(0xFFF1F5F9)),
+              const SizedBox(height: AppTokens.space12),
+              const Divider(height: 1),
+              const SizedBox(height: AppTokens.space8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today_rounded,
+                    size: 16,
+                    color: colors.onSurfaceVariant,
                   ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.calendar_today_rounded,
-                            size: 12,
-                            color: Color(0xFF64748B),
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              order.dayDateYear,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontFamily: 'Plus Jakarta Sans',
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF475569),
-                              ),
-                            ),
-                          ),
-                        ],
+                  const SizedBox(width: AppTokens.space8),
+                  Expanded(
+                    child: Text(
+                      order.dayDateYear,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: colors.onSurfaceVariant,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (hasMaps)
-                          PressableScale(
-                            onTap: () => order.launchMaps(),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 9, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEFF6FF),
-                                borderRadius: BorderRadius.circular(8),
-                                border:
-                                    Border.all(color: const Color(0xFFBFDBFE)),
-                              ),
-                              child: const Row(
-                                children: [
-                                  Icon(Icons.near_me_rounded,
-                                      size: 12, color: Color(0xFF2563EB)),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'Maps',
-                                    style: TextStyle(
-                                      fontFamily: 'Plus Jakarta Sans',
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF2563EB),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        if (hasMaps && hasWa) const SizedBox(width: 6),
-                        if (hasWa)
-                          PressableScale(
-                            onTap: () => order.launchWhatsApp(),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 9, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF0FDF4),
-                                borderRadius: BorderRadius.circular(8),
-                                border:
-                                    Border.all(color: const Color(0xFFBBF7D0)),
-                              ),
-                              child: const Row(
-                                children: [
-                                  Icon(Icons.chat_rounded,
-                                      size: 12, color: Color(0xFF16A34A)),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'WA',
-                                    style: TextStyle(
-                                      fontFamily: 'Plus Jakarta Sans',
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF16A34A),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        if (!hasMaps && !hasWa)
-                          const Icon(Icons.chevron_right_rounded,
-                              size: 18, color: Color(0xFF94A3B8)),
-                      ],
+                  ),
+                  if (hasMaps)
+                    IconButton(
+                      onPressed: order.launchMaps,
+                      icon: const Icon(Icons.near_me_rounded),
+                      tooltip: 'Maps',
                     ),
-                  ],
-                ),
+                  if (hasWa)
+                    IconButton(
+                      onPressed: order.launchWhatsApp,
+                      icon: const Icon(Icons.chat_rounded),
+                      tooltip: 'WA',
+                    ),
+                  if (!hasMaps && !hasWa)
+                    const Icon(Icons.chevron_right_rounded),
+                ],
               ),
             ],
           ),
@@ -1433,51 +965,4 @@ class _HomeScreenState extends State<HomeScreen>
       ),
     );
   }
-}
-
-// Custom Painter for countdown circular ring in Bento Card
-class _CircularCountdownPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-
-    // Background track ring
-    final trackPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 10;
-    canvas.drawCircle(center, 35, trackPaint);
-
-    // Inner filled circle with opacity
-    final innerPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.45)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(center, 25, innerPaint);
-
-    // Inner border stroke
-    final innerStroke = Paint()
-      ..color = const Color(0xFFCEF284)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
-    canvas.drawCircle(center, 25, innerStroke);
-
-    // Progress Arc #78C423
-    final progressPaint = Paint()
-      ..color = const Color(0xFF78C423)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 10
-      ..strokeCap = StrokeCap.round;
-
-    // Draw arc ~ 270 degrees
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: 35),
-      -math.pi / 2,
-      math.pi * 1.5,
-      false,
-      progressPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

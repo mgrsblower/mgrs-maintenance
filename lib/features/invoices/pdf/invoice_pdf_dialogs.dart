@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
+import '../../../app/app_theme.dart';
 import '../../schedule/order_model.dart';
 import '../invoice_model.dart';
 import 'invoice_pdf_download.dart';
@@ -18,100 +19,61 @@ class InvoicePdfExportHelper {
     NavigatorState? progressNavigator;
     var progressDialogClosed = false;
 
-    // 1. Tampilkan Progress Modal Dialog persis seperti di mgrs_flutter
     final progressDialog = showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
         progressNavigator = Navigator.of(dialogContext);
+        final theme = Theme.of(dialogContext);
         return PopScope(
           canPop: false,
           child: Dialog(
             key: const Key('invoice-pdf-progress-dialog'),
-            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-            backgroundColor: Colors.white,
-            elevation: 8,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: AppTokens.space24,
+              vertical: AppTokens.space24,
             ),
             child: SizedBox(
               width: 320,
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(AppTokens.space24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFF4F4F5),
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: const SizedBox(
-                        key: Key('invoice-pdf-progress-indicator'),
-                        width: 28,
-                        height: 28,
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF18181B),
-                          strokeWidth: 2.5,
-                        ),
+                    SizedBox(
+                      key: const Key('invoice-pdf-progress-indicator'),
+                      width: 40,
+                      height: 40,
+                      child: CircularProgressIndicator(
+                        color: theme.colorScheme.primary,
+                        strokeWidth: 3,
                       ),
                     ),
-                    const SizedBox(height: 18),
-                    const Text(
+                    const SizedBox(height: AppTokens.space16),
+                    Text(
                       'Mengekspor PDF...',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF18181B),
-                      ),
+                      style: theme.textTheme.titleMedium,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: AppTokens.space4),
                     Text(
                       invoice.invoiceReference,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF71717A),
-                      ),
+                      style: theme.textTheme.bodyMedium,
                     ),
-                    const Text(
+                    Text(
                       'sedang diproses',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 12,
-                        color: Color(0xFFA1A1AA),
-                      ),
+                      style: theme.textTheme.bodySmall,
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: AppTokens.space24),
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton(
                         key: const Key('invoice-pdf-progress-action'),
                         onPressed: null,
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size.fromHeight(42),
-                          backgroundColor: const Color(0xFFF4F4F5),
-                          disabledBackgroundColor: const Color(0xFFF4F4F5),
-                          disabledForegroundColor: const Color(0xFFA1A1AA),
-                          shape: const StadiumBorder(),
-                        ),
-                        child: const Text(
-                          'Memproses...',
-                          style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        child: const Text('Memproses...'),
                       ),
                     ),
                   ],
@@ -138,9 +100,11 @@ class InvoicePdfExportHelper {
       );
 
       final result = await service.export(payload: payload, fileName: fileName);
-      final fileLocation = await downloadInvoicePdf(result.bytes, result.fileName);
+      final fileLocation = await downloadInvoicePdf(
+        result.bytes,
+        result.fileName,
+      );
 
-      // Tutup dialog progress
       if (progressNavigator?.mounted ?? false) {
         progressNavigator!.pop();
         await progressDialog;
@@ -149,7 +113,6 @@ class InvoicePdfExportHelper {
 
       if (!context.mounted) return;
 
-      // 2. Tampilkan Success Dialog persis seperti di mgrs_flutter
       await showInvoicePdfSuccessDialog(
         context: context,
         invoice: invoice,
@@ -157,7 +120,6 @@ class InvoicePdfExportHelper {
         fileName: result.fileName,
       );
     } catch (e) {
-      // Tutup dialog progress jika masih terbuka
       if (!progressDialogClosed && (progressNavigator?.mounted ?? false)) {
         progressNavigator!.pop();
         await progressDialog;
@@ -165,11 +127,16 @@ class InvoicePdfExportHelper {
       }
 
       if (!context.mounted) return;
+      final theme = Theme.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal mengekspor PDF: $e'),
-          backgroundColor: const Color(0xFF9F2F2D),
-          duration: const Duration(seconds: 4),
+          content: Text(
+            'Gagal mengekspor PDF: $e',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onErrorContainer,
+            ),
+          ),
+          backgroundColor: theme.colorScheme.errorContainer,
         ),
       );
     } finally {
@@ -195,170 +162,183 @@ class InvoicePdfExportHelper {
         canPop: false,
         child: Dialog(
           key: const Key('invoice-pdf-success-dialog'),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          backgroundColor: Colors.white,
-          elevation: 8,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: AppTokens.space24,
+            vertical: AppTokens.space24,
           ),
           child: SizedBox(
             width: 320,
             child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: <Widget>[
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFEDF3EC),
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: const Icon(
-                      Icons.check_rounded,
-                      key: Key('invoice-pdf-success-icon'),
-                      size: 28,
-                      color: Color(0xFF346538),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  const Text(
-                    'Sukses',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF18181B),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    invoice.invoiceReference,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF71717A),
-                    ),
-                  ),
-                  const Text(
-                    'Berhasil Export PDF',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 12,
-                      color: Color(0xFF346538),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF4F4F5),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFE4E4E7)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.folder_outlined,
-                            size: 14, color: Color(0xFF71717A)),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            _storageLocationDescription(),
-                            style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF52525B),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
+              padding: const EdgeInsets.all(AppTokens.space24),
+              child: Builder(
+                builder: (context) {
+                  final theme = Theme.of(context);
+                  final colors = theme.colorScheme;
+                  final operational = theme.extension<OperationalColors>();
+                  final successSurface =
+                      operational?.success ?? colors.surfaceContainer;
+                  final successInk = operational?.onSuccess ?? colors.onSurface;
+                  final dangerSurface =
+                      operational?.danger ?? colors.errorContainer;
+                  final dangerInk =
+                      operational?.onDanger ?? colors.onErrorContainer;
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: <Widget>[
-                      Expanded(
-                        child: FilledButton(
-                          key: const Key('invoice-pdf-open-action'),
-                          onPressed: fileLocation == null
-                              ? null
-                              : () async {
-                                  try {
-                                    await pdfService.previewPdf(fileLocation);
-                                  } catch (e) {
-                                    if (!dialogContext.mounted) return;
-                                    ScaffoldMessenger.of(dialogContext).showSnackBar(
-                                      SnackBar(
-                                        content: Text(e.toString()),
-                                        backgroundColor: const Color(0xFF9F2F2D),
-                                        duration: const Duration(seconds: 4),
-                                      ),
-                                    );
-                                  }
-                                },
-                          style: FilledButton.styleFrom(
-                            minimumSize: const Size.fromHeight(42),
-                            backgroundColor: const Color(0xFF18181B),
-                            foregroundColor: Colors.white,
-                            shape: const StadiumBorder(),
-                          ),
-                          child: const Text(
-                            'Buka File',
-                            style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: successSurface,
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(
+                          Icons.check_rounded,
+                          key: const Key('invoice-pdf-success-icon'),
+                          size: 28,
+                          color: successInk,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      _InvoicePdfCircleAction(
-                        key: const Key('invoice-pdf-share-action'),
-                        icon: Icons.share_rounded,
-                        label: 'Bagikan PDF invoice',
-                        backgroundColor: const Color(0xFF346538),
-                        onPressed: fileLocation == null
-                            ? null
-                            : () async {
-                                try {
-                                  await pdfService.sharePdf(
-                                    fileLocation,
-                                    title: fileName ?? invoice.invoiceReference,
-                                  );
-                                } catch (e) {
-                                  if (!dialogContext.mounted) return;
-                                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                                    SnackBar(
-                                      content: Text(e.toString()),
-                                      backgroundColor: const Color(0xFF9F2F2D),
-                                      duration: const Duration(seconds: 4),
-                                    ),
-                                  );
-                                }
-                              },
+                      const SizedBox(height: AppTokens.space16),
+                      Text(
+                        'Sukses',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.titleMedium,
                       ),
-                      const SizedBox(width: 8),
-                      _InvoicePdfCircleAction(
-                        key: const Key('invoice-pdf-close-action'),
-                        icon: Icons.close_rounded,
-                        label: 'Tutup dialog export PDF',
-                        backgroundColor: const Color(0xFF9F2F2D),
-                        onPressed: () => Navigator.of(dialogContext).pop(),
+                      const SizedBox(height: AppTokens.space4),
+                      Text(
+                        invoice.invoiceReference,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      Text(
+                        'Berhasil Export PDF',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: successInk,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: AppTokens.space16),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(AppTokens.space12),
+                        decoration: BoxDecoration(
+                          color: colors.surfaceContainer,
+                          borderRadius: BorderRadius.circular(
+                            AppTokens.controlRadius,
+                          ),
+                          border: Border.all(color: colors.outlineVariant),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.folder_outlined,
+                              size: 20,
+                              color: colors.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: AppTokens.space8),
+                            Expanded(
+                              child: Text(
+                                _storageLocationDescription(),
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppTokens.space24),
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: FilledButton(
+                              key: const Key('invoice-pdf-open-action'),
+                              onPressed: fileLocation == null
+                                  ? null
+                                  : () async {
+                                      try {
+                                        await pdfService.previewPdf(
+                                          fileLocation,
+                                        );
+                                      } catch (e) {
+                                        if (!dialogContext.mounted) return;
+                                        ScaffoldMessenger.of(
+                                          dialogContext,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              e.toString(),
+                                              style: theme.textTheme.bodyMedium
+                                                  ?.copyWith(
+                                                    color:
+                                                        colors.onErrorContainer,
+                                                  ),
+                                            ),
+                                            backgroundColor:
+                                                colors.errorContainer,
+                                          ),
+                                        );
+                                      }
+                                    },
+                              child: const Text('Buka File'),
+                            ),
+                          ),
+                          const SizedBox(width: AppTokens.space8),
+                          _InvoicePdfCircleAction(
+                            key: const Key('invoice-pdf-share-action'),
+                            icon: Icons.share_rounded,
+                            label: 'Bagikan PDF invoice',
+                            backgroundColor:
+                                operational?.success ?? colors.surfaceContainer,
+                            iconColor:
+                                operational?.onSuccess ?? colors.onSurface,
+                            onPressed: fileLocation == null
+                                ? null
+                                : () async {
+                                    try {
+                                      await pdfService.sharePdf(
+                                        fileLocation,
+                                        title:
+                                            fileName ??
+                                            invoice.invoiceReference,
+                                      );
+                                    } catch (e) {
+                                      if (!dialogContext.mounted) return;
+                                      ScaffoldMessenger.of(
+                                        dialogContext,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            e.toString(),
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
+                                                  color:
+                                                      colors.onErrorContainer,
+                                                ),
+                                          ),
+                                          backgroundColor:
+                                              colors.errorContainer,
+                                        ),
+                                      );
+                                    }
+                                  },
+                          ),
+                          const SizedBox(width: AppTokens.space8),
+                          _InvoicePdfCircleAction(
+                            key: const Key('invoice-pdf-close-action'),
+                            icon: Icons.close_rounded,
+                            label: 'Tutup dialog export PDF',
+                            backgroundColor: dangerSurface,
+                            iconColor: dangerInk,
+                            onPressed: () => Navigator.of(dialogContext).pop(),
+                          ),
+                        ],
                       ),
                     ],
-                  ),
-                ],
+                  );
+                },
               ),
             ),
           ),
@@ -373,6 +353,7 @@ class _InvoicePdfCircleAction extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.backgroundColor,
+    required this.iconColor,
     required this.onPressed,
     super.key,
   });
@@ -380,24 +361,28 @@ class _InvoicePdfCircleAction extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color backgroundColor;
+  final Color iconColor;
   final VoidCallback? onPressed;
 
   @override
-  Widget build(BuildContext context) => Tooltip(
-        message: label,
-        child: IconButton(
-          onPressed: onPressed,
-          icon: Icon(icon, color: Colors.white, size: 18),
-          style: IconButton.styleFrom(
-            minimumSize: const Size(42, 42),
-            maximumSize: const Size(42, 42),
-            backgroundColor: backgroundColor,
-            disabledBackgroundColor: const Color(0xFFE4E4E7),
-            disabledForegroundColor: Colors.white,
-            shape: const CircleBorder(),
-          ),
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: label,
+      child: IconButton(
+        onPressed: onPressed,
+        icon: Icon(icon, color: iconColor, size: 20),
+        style: IconButton.styleFrom(
+          minimumSize: const Size.square(AppTokens.minTouchTarget),
+          maximumSize: const Size.square(AppTokens.minTouchTarget),
+          backgroundColor: backgroundColor,
+          disabledBackgroundColor: colors.surfaceContainer,
+          disabledForegroundColor: colors.onSurfaceVariant,
+          shape: const CircleBorder(),
         ),
-      );
+      ),
+    );
+  }
 }
 
 String _storageLocationDescription() {
@@ -409,4 +394,3 @@ String _storageLocationDescription() {
   } catch (_) {}
   return 'Tersimpan di folder Downloads/MGRS';
 }
-

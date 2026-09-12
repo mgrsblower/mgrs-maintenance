@@ -54,13 +54,13 @@ class InvoicePdfPayload {
     final customerName = currentInput?.customerName.trim().isNotEmpty == true
         ? currentInput!.customerName.trim()
         : invoice.customerName.trim().isNotEmpty
-            ? invoice.customerName.trim()
-            : _customerName(order);
+        ? invoice.customerName.trim()
+        : _customerName(order);
     final customerPhone = currentInput?.customerPhone.trim().isNotEmpty == true
         ? currentInput!.customerPhone.trim()
         : invoice.customerPhone.trim().isNotEmpty
-            ? invoice.customerPhone.trim()
-            : order?.nomorWhatsapp?.trim() ?? '';
+        ? invoice.customerPhone.trim()
+        : order?.nomorWhatsapp?.trim() ?? '';
     final shouldShowRentalDays = rentalDays > 1;
     final tableAmount =
         quantity * unitPrice * (shouldShowRentalDays ? rentalDays : 1);
@@ -118,24 +118,24 @@ class InvoicePdfPayload {
   final bool shouldShowRentalDays;
 
   Map<String, Object?> toJson() => <String, Object?>{
-        'reference': reference,
-        'date': date,
-        'dueDate': dueDate,
-        'customerName': customerName,
-        'customerPhone': customerPhone,
-        'description': description,
-        'quantity': quantity,
-        'rentalDays': rentalDays,
-        'unitPrice': unitPrice,
-        'tableAmount': tableAmount,
-        'adjustments': adjustments,
-        'totalAmount': totalAmount,
-        'paidAmount': paidAmount,
-        'remainingAmount': remainingAmount,
-        'bankNote': bankNote,
-        'noteDate': noteDate,
-        'shouldShowRentalDays': shouldShowRentalDays,
-      };
+    'reference': reference,
+    'date': date,
+    'dueDate': dueDate,
+    'customerName': customerName,
+    'customerPhone': customerPhone,
+    'description': description,
+    'quantity': quantity,
+    'rentalDays': rentalDays,
+    'unitPrice': unitPrice,
+    'tableAmount': tableAmount,
+    'adjustments': adjustments,
+    'totalAmount': totalAmount,
+    'paidAmount': paidAmount,
+    'remainingAmount': remainingAmount,
+    'bankNote': bankNote,
+    'noteDate': noteDate,
+    'shouldShowRentalDays': shouldShowRentalDays,
+  };
 }
 
 String _customerName(OrderanSewa? order) {
@@ -201,8 +201,8 @@ class InvoicePdfExportService {
     http.Client? client,
     Uri? exportUrl,
     this.timeout = const Duration(seconds: 30),
-  })  : _client = client ?? http.Client(),
-        exportUrl = exportUrl ?? Uri.parse(defaultInvoiceExportUrl);
+  }) : _client = client ?? http.Client(),
+       exportUrl = exportUrl ?? Uri.parse(defaultInvoiceExportUrl);
 
   final http.Client _client;
   final Uri exportUrl;
@@ -262,9 +262,7 @@ class InvoicePdfExportService {
         'Ekspor PDF melebihi batas waktu (timeout). Silakan coba lagi.',
       );
     } on Object catch (e) {
-      throw InvoicePdfExportException(
-        'Ekspor PDF gagal: $e',
-      );
+      throw InvoicePdfExportException('Ekspor PDF gagal: $e');
     }
   }
 
