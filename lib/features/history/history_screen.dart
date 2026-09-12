@@ -10,8 +10,14 @@ const activityLabels = {
 };
 
 class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key, required this.gateway, this.componentId});
+  const HistoryScreen({
+    super.key,
+    required this.gateway,
+    required this.user,
+    this.componentId,
+  });
   final MaintenanceGateway gateway;
+  final UserProfile user;
   final String? componentId;
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();

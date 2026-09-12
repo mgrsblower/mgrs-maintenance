@@ -5,6 +5,10 @@ import 'package:mgrs_maintenance/app/app_theme.dart';
 import 'package:mgrs_maintenance/app/gateway.dart';
 import 'package:mgrs_maintenance/features/components/asset_catalog_screen.dart';
 import 'package:mgrs_maintenance/features/invoices/invoice_list_screen.dart';
+import 'package:mgrs_maintenance/features/history/history_screen.dart';
+import 'package:mgrs_maintenance/features/home/home_screen.dart';
+import 'package:mgrs_maintenance/features/scan/scan_screen.dart';
+import 'package:mgrs_maintenance/features/schedule/schedule_screen.dart';
 
 class _ShellGateway extends MaintenanceGateway {
   _ShellGateway({this.currentProfile});
@@ -119,6 +123,26 @@ void main() {
     expect(find.text('Pindai komponen'), findsOneWidget);
     expect(find.text('Pengingat!'), findsNothing);
     expect(find.textContaining('mesin aktif dipantau'), findsNothing);
+    final homeScreen = tester.widget<HomeScreen>(find.byType(HomeScreen));
+    expect(identical(homeScreen.gateway, gateway), isTrue);
+    expect(homeScreen.user, same(user));
+
+    await tester.tap(find.text('Pindai komponen'));
+    await tester.pumpAndSettle();
+    final scanScreen = tester.widget<ScanScreen>(find.byType(ScanScreen));
+    expect(identical(scanScreen.gateway, gateway), isTrue);
+    expect(scanScreen.user, same(user));
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Berkala'));
+    await tester.pumpAndSettle();
+    final scheduleScreen = tester.widget<ScheduleScreen>(
+      find.byType(ScheduleScreen),
+    );
+    expect(identical(scheduleScreen.gateway, gateway), isTrue);
+    expect(scheduleScreen.user, same(user));
+
 
     await tester.tap(find.text('Komponen'));
     await tester.pumpAndSettle();
@@ -126,8 +150,16 @@ void main() {
       find.byType(AssetCatalogScreen),
     );
     expect(identical(componentsScreen.gateway, gateway), isTrue);
-  });
+    expect(componentsScreen.user, same(user));
 
+    await tester.tap(find.text('Riwayat'));
+    await tester.pumpAndSettle();
+    final historyScreen = tester.widget<HistoryScreen>(
+      find.byType(HistoryScreen),
+    );
+    expect(identical(historyScreen.gateway, gateway), isTrue);
+    expect(historyScreen.user, same(user));
+  });
   testWidgets('Admin switcher exposes two workspaces and resets destination', (
     tester,
   ) async {

@@ -14,14 +14,14 @@ class ComponentDetailScreen extends StatefulWidget {
     required this.id,
     this.taskId,
     this.periodId,
-    this.user,
+    required this.user,
     this.readOnly = false,
   });
 
   final MaintenanceGateway gateway;
   final String id;
   final String? taskId, periodId;
-  final UserProfile? user;
+  final UserProfile user;
   final bool readOnly;
 
   @override
@@ -29,7 +29,7 @@ class ComponentDetailScreen extends StatefulWidget {
 }
 
 class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
-  bool get isReadOnly => widget.readOnly || (widget.user?.isPic ?? false);
+  bool get isReadOnly => widget.readOnly || widget.user.isPic;
   late Future<Component> future;
   late Future<List<Map<String, Object?>>> futureHistory;
   Future<List<Map<String, Object?>>>? _orderUsageFuture;
@@ -860,6 +860,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                         appBar: AppBar(title: const Text('Riwayat Komponen')),
                         body: HistoryScreen(
                           gateway: widget.gateway,
+                          user: widget.user,
                           componentId: widget.id,
                         ),
                       ),

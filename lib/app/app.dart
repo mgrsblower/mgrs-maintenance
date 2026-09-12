@@ -240,14 +240,21 @@ class _MaintenanceHomeState extends State<MaintenanceHome> {
             user: widget.user,
             onSignOut: _signOut,
           ),
-        1 => ScheduleScreen(gateway: widget.gateway),
+        1 => ScheduleScreen(
+            gateway: widget.gateway,
+            user: widget.user,
+          ),
         2 => AssetCatalogScreen(
             gateway: widget.gateway,
+            user: widget.user,
             showBottomNav: false,
             onNavigateToTab: _selectDestination,
             onOpenScanner: _openScanner,
           ),
-        3 => HistoryScreen(gateway: widget.gateway),
+        3 => HistoryScreen(
+            gateway: widget.gateway,
+            user: widget.user,
+          ),
         _ => const SizedBox.shrink(),
       };
 

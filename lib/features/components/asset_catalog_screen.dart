@@ -10,12 +10,14 @@ class AssetCatalogScreen extends StatefulWidget {
   const AssetCatalogScreen({
     super.key,
     required this.gateway,
+    required this.user,
     required this.onNavigateToTab,
     required this.onOpenScanner,
     this.showBottomNav = true,
   });
 
   final MaintenanceGateway gateway;
+  final UserProfile user;
   final void Function(int tabIndex) onNavigateToTab;
   final VoidCallback onOpenScanner;
   final bool showBottomNav;
@@ -504,6 +506,7 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
                   MaterialPageRoute(
                     builder: (_) => ComponentDetailScreen(
                       gateway: widget.gateway,
+                      user: widget.user,
                       id: item['id'] as String,
                     ),
                   ),

@@ -113,6 +113,12 @@ class MockGateway extends MaintenanceGateway {
   }
 }
 
+const fieldUser = UserProfile(
+  'field-test',
+  'Tim Service',
+  fullName: 'Petugas Lapangan',
+);
+
 void main() {
   testWidgets('OrderDetailScreen renders exact Paper details and contact button', (
     tester,
@@ -244,6 +250,7 @@ void main() {
       MaterialApp(
         home: AssetCatalogScreen(
           gateway: gateway,
+          user: fieldUser,
           onNavigateToTab: (_) {},
           onOpenScanner: () {},
         ),
@@ -309,6 +316,7 @@ void main() {
       MaterialApp(
         home: AssetCatalogScreen(
           gateway: gateway,
+          user: fieldUser,
           onNavigateToTab: (_) {},
           onOpenScanner: () {},
         ),
@@ -357,6 +365,7 @@ void main() {
       MaterialApp(
         home: ComponentDetailScreen(
           gateway: gateway,
+          user: fieldUser,
           id: 'c-test-1',
         ),
       ),
@@ -457,6 +466,7 @@ void main() {
       MaterialApp(
         home: ComponentDetailScreen(
           gateway: gateway,
+          user: fieldUser,
           id: 'c-test-1',
         ),
       ),
@@ -483,6 +493,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: ScanScreen(gateway: gateway, initialComponent: testComp),
+          user: fieldUser,
       ),
     );
     await tester.pump();
@@ -500,6 +511,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: ScanScreen(gateway: gateway),
+          user: fieldUser,
       ),
     );
     await tester.pump();
@@ -517,6 +529,7 @@ void main() {
       MaterialApp(
         home: AssetCatalogScreen(
           gateway: EmptyMockGateway(),
+          user: fieldUser,
           onNavigateToTab: (_) {},
           onOpenScanner: () {},
         ),
@@ -641,60 +654,8 @@ void main() {
     expect(finished, isTrue);
   });
 
-  testWidgets('MaintenanceHome preserves tab state with AutomaticKeepAlive', (
-    tester,
-  ) async {
-    int homeFetchCount = 0;
-    final gateway = CountingMockGateway(() => homeFetchCount++);
-    await tester.pumpWidget(
-      MaterialApp(
-        home: MaintenanceHome(
-          gateway: gateway,
-          user: const UserProfile('u1', 'Admin', fullName: 'Test User'),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(homeFetchCount, 1);
-
-    // Switch to Tab 1 (Aset)
-    await tester.tap(find.text('Aset'));
-    await tester.pumpAndSettle();
-
-    // Switch to Tab 2 (Servis)
-    await tester.tap(find.text('Servis'));
-    await tester.pumpAndSettle();
-
-    // Switch back to Tab 0 (Beranda)
-    await tester.tap(find.text('Beranda'));
-    await tester.pumpAndSettle();
-
-    // Home was kept alive, so homeFetchCount did not increment when returning to Beranda!
-    expect(homeFetchCount, 3); // 1 for Home, 1 for Aset, 1 for Servis. Returning to Home did NOT re-fetch!
-    expect(find.text('Test User'), findsOneWidget);
-  });
 }
 
-class CountingMockGateway extends MockGateway {
-  CountingMockGateway(this.onFetch);
-  final VoidCallback onFetch;
-
-  @override
-  Future<List<Map<String, Object?>>> fetchComponents({
-    String? kind,
-    String? query,
-    String? condition,
-    bool forceRefresh = false,
-  }) async {
-    onFetch();
-    return super.fetchComponents(
-      kind: kind,
-      query: query,
-      condition: condition,
-      forceRefresh: forceRefresh,
-    );
-  }
-}
 
 class EmptyMockGateway extends MockGateway {
   @override

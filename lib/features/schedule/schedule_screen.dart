@@ -4,8 +4,13 @@ import '../../shared/async_state_view.dart';
 import '../components/component_detail_screen.dart';
 
 class ScheduleScreen extends StatefulWidget {
-  const ScheduleScreen({super.key, required this.gateway});
+  const ScheduleScreen({
+    super.key,
+    required this.gateway,
+    required this.user,
+  });
   final MaintenanceGateway gateway;
+  final UserProfile user;
   @override
   State<ScheduleScreen> createState() => _ScheduleScreenState();
 }
@@ -104,6 +109,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
       MaterialPageRoute(
         builder: (_) => ComponentDetailScreen(
           gateway: widget.gateway,
+          user: widget.user,
           id: id,
           taskId: incomplete ? item['id'] as String : null,
           periodId: item['periodId'] as String,

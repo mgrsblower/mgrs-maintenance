@@ -504,14 +504,20 @@ class SupabaseGateway extends MaintenanceGateway {
             'id,orderan_id,tanggal_pemasangan,nama_event,nama_client,alamat,nomor_whatsapp,link_gmaps,nama_pic,jumlah_unit,status_orderan,catatan_orderan,created_at',
           )
           .order('tanggal_pemasangan', ascending: true)
-          .limit(limit);
+          .limit(limit)
+          .timeout(const Duration(seconds: 15));
       final list = res
           .map((item) => OrderanSewa.fromJson(jsonObject(item)))
           .toList();
       _saveToCache(cacheKey, list);
       return list;
-    } catch (_) {
-      return const [];
+    } on PostgrestException catch (e) {
+      if (e.message == 'unauthenticated' || e.message == 'forbidden') {
+        await signOut();
+      }
+      throw AppFailure(e.message);
+    } on TimeoutException {
+      throw const AppFailure('network');
     }
   }
 

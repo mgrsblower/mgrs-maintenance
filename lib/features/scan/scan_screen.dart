@@ -13,13 +13,13 @@ class ScanScreen extends StatefulWidget {
   const ScanScreen({
     super.key,
     required this.gateway,
+    required this.user,
     this.initialComponent,
-    this.user,
     this.readOnly = false,
   });
   final MaintenanceGateway gateway;
+  final UserProfile user;
   final Component? initialComponent;
-  final UserProfile? user;
   final bool readOnly;
 
   @override
@@ -28,8 +28,7 @@ class ScanScreen extends StatefulWidget {
 
 class _ScanScreenState extends State<ScanScreen>
     with WidgetsBindingObserver, SingleTickerProviderStateMixin {
-  bool get _effectiveReadOnly =>
-      widget.readOnly || (widget.user?.isPic ?? false);
+  bool get _effectiveReadOnly => widget.readOnly || widget.user.isPic;
   late final MobileScannerController camera;
   late final AnimationController _laserController;
   late final Animation<double> _laserAnimation;
