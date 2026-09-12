@@ -18,11 +18,7 @@ OperationalColors _operationalColors(BuildContext context) =>
     );
 
 class UpcomingOrdersScreen extends StatefulWidget {
-  const UpcomingOrdersScreen({
-    super.key,
-    required this.gateway,
-    this.user,
-  });
+  const UpcomingOrdersScreen({super.key, required this.gateway, this.user});
 
   final MaintenanceGateway gateway;
   final UserProfile? user;
@@ -69,7 +65,8 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
     } catch (_) {
       if (mounted) {
         setState(() {
-          error = 'Daftar orderan belum dapat dimuat. Periksa koneksi internet lalu coba lagi.';
+          error =
+              'Daftar orderan belum dapat dimuat. Periksa koneksi internet lalu coba lagi.';
           isLoading = false;
         });
       }
@@ -97,10 +94,8 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
     if (widget.user == null) return;
     final created = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => CreateOrderScreen(
-          gateway: widget.gateway,
-          user: widget.user!,
-        ),
+        builder: (_) =>
+            CreateOrderScreen(gateway: widget.gateway, user: widget.user!),
       ),
     );
     if (created == true) loadOrders();
@@ -133,8 +128,12 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
               onTap: () => setState(() => activeFilter = filter),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                constraints: const BoxConstraints(minHeight: AppTokens.minTouchTarget),
-                padding: const EdgeInsets.symmetric(horizontal: AppTokens.space8),
+                constraints: const BoxConstraints(
+                  minHeight: AppTokens.minTouchTarget,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppTokens.space8,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected ? colors.secondary : colors.surface,
                   borderRadius: const BorderRadius.all(
@@ -221,21 +220,21 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                 child: isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : error != null
-                        ? _buildErrorView(context)
-                        : list.isEmpty
-                            ? _buildEmptyView(context)
-                            : ListView.builder(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                padding: const EdgeInsets.fromLTRB(
-                                  AppTokens.space16,
-                                  AppTokens.space8,
-                                  AppTokens.space16,
-                                  AppTokens.space32,
-                                ),
-                                itemCount: list.length,
-                                itemBuilder: (context, index) =>
-                                    _buildOrderCard(context, list[index]),
-                              ),
+                    ? _buildErrorView(context)
+                    : list.isEmpty
+                    ? _buildEmptyView(context)
+                    : ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(
+                          AppTokens.space16,
+                          AppTokens.space8,
+                          AppTokens.space16,
+                          AppTokens.space32,
+                        ),
+                        itemCount: list.length,
+                        itemBuilder: (context, index) =>
+                            _buildOrderCard(context, list[index]),
+                      ),
               ),
             ),
           ],
@@ -301,22 +300,22 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
     final statusText = order.isCancelled
         ? 'Dibatalkan'
         : isPast
-            ? (order.isCompletedOrCancelled
-                ? (order.statusOrderan ?? 'Selesai')
-                : 'Selesai / Lewat')
-            : (order.statusOrderan?.isNotEmpty == true
-                ? order.statusOrderan!
-                : 'Terjadwal');
+        ? (order.isCompletedOrCancelled
+              ? (order.statusOrderan ?? 'Selesai')
+              : 'Selesai / Lewat')
+        : (order.statusOrderan?.isNotEmpty == true
+              ? order.statusOrderan!
+              : 'Terjadwal');
     final statusSurface = order.isCancelled
         ? operational.danger
         : isPast
-            ? colors.surfaceContainer
-            : operational.success;
+        ? colors.surfaceContainer
+        : operational.success;
     final statusInk = order.isCancelled
         ? operational.onDanger
         : isPast
-            ? colors.onSurfaceVariant
-            : operational.onSuccess;
+        ? colors.onSurfaceVariant
+        : operational.onSuccess;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppTokens.space12),
@@ -437,7 +436,11 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
         const SizedBox(height: AppTokens.space32),
-        Icon(Icons.event_busy_rounded, size: 48, color: colors.onSurfaceVariant),
+        Icon(
+          Icons.event_busy_rounded,
+          size: 48,
+          color: colors.onSurfaceVariant,
+        ),
         const SizedBox(height: AppTokens.space12),
         Center(
           child: Text(

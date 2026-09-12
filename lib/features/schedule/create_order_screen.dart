@@ -54,11 +54,27 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
   static String _formatDateFull(DateTime date) {
     const days = [
-      'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+      'Minggu',
     ];
     const months = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
     ];
     return '${days[date.weekday - 1]}, ${date.day} ${months[date.month - 1]} ${date.year}';
   }
@@ -100,7 +116,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       await widget.gateway.createOrderWithInvoice(payload);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Orderan $orderanId dan Invoice berhasil dibuat!')),
+        SnackBar(
+          content: Text('Orderan $orderanId dan Invoice berhasil dibuat!'),
+        ),
       );
       Navigator.of(context).pop(true);
     } catch (error) {
@@ -143,7 +161,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         controller: _eventNameController,
                         label: 'Nama Acara / Event *',
                         hint: 'Misal: Pernikahan Budi & Ani, Konser Musik',
-                        validator: (value) => value == null || value.trim().isEmpty
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
                             ? 'Harap isi nama acara'
                             : null,
                       ),
@@ -152,7 +171,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         controller: _clientNameController,
                         label: 'Nama Klien / Penyelenggara *',
                         hint: 'Misal: Ibu Sarah / PT Maju Jaya',
-                        validator: (value) => value == null || value.trim().isEmpty
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
                             ? 'Harap isi nama klien'
                             : null,
                       ),
@@ -162,7 +182,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         label: 'Nomor WhatsApp Klien *',
                         hint: 'Contoh: 08123456789',
                         keyboardType: TextInputType.phone,
-                        validator: (value) => value == null || value.trim().isEmpty
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
                             ? 'Harap isi nomor WhatsApp klien'
                             : null,
                       ),
@@ -182,7 +203,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                               unitSuffix: 'Unit',
                               min: 1,
                               max: 30,
-                              onChanged: (value) => setState(() => _unitCount = value),
+                              onChanged: (value) =>
+                                  setState(() => _unitCount = value),
                             ),
                           ),
                           const SizedBox(width: AppTokens.space12),
@@ -193,7 +215,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                               unitSuffix: 'Hari',
                               min: 1,
                               max: 14,
-                              onChanged: (value) => setState(() => _rentalDays = value),
+                              onChanged: (value) =>
+                                  setState(() => _rentalDays = value),
                             ),
                           ),
                         ],
@@ -208,7 +231,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         label: 'Alamat Lengkap Lokasi *',
                         hint: 'Nama gedung, jalan, nomor, patokan venue',
                         maxLines: 3,
-                        validator: (value) => value == null || value.trim().isEmpty
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
                             ? 'Harap isi alamat lokasi'
                             : null,
                       ),
@@ -261,12 +285,19 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Input Orderan Sewa', style: theme.textTheme.titleLarge),
-                Text('Jadwal Acara & Terbit Invoice', style: theme.textTheme.labelMedium),
+                Text(
+                  'Jadwal Acara & Terbit Invoice',
+                  style: theme.textTheme.labelMedium,
+                ),
               ],
             ),
           ),
           Chip(
-            avatar: Icon(Icons.circle, size: AppTokens.space8, color: colors.primary),
+            avatar: Icon(
+              Icons.circle,
+              size: AppTokens.space8,
+              color: colors.primary,
+            ),
             label: const Text('PIC Order'),
           ),
         ],
@@ -289,7 +320,12 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           const SizedBox(width: AppTokens.space8),
           Expanded(child: Text(title, style: theme.textTheme.titleMedium)),
           if (caption != null)
-            Text(caption, style: theme.textTheme.labelMedium?.copyWith(color: colors.primary)),
+            Text(
+              caption,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: colors.primary,
+              ),
+            ),
         ],
       ),
     );
@@ -358,7 +394,11 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 icon: const Icon(Icons.remove_rounded),
               ),
               Expanded(
-                child: Text('$value $unitSuffix', textAlign: TextAlign.center, style: theme.textTheme.titleMedium),
+                child: Text(
+                  '$value $unitSuffix',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleMedium,
+                ),
               ),
               IconButton(
                 tooltip: 'Tambah $title',
@@ -389,21 +429,33 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Estimasi Total Tagihan', style: theme.textTheme.labelMedium),
-                      Text('$_unitCount Unit × $_rentalDays Hari', style: theme.textTheme.titleMedium),
+                      Text(
+                        'Estimasi Total Tagihan',
+                        style: theme.textTheme.labelMedium,
+                      ),
+                      Text(
+                        '$_unitCount Unit × $_rentalDays Hari',
+                        style: theme.textTheme.titleMedium,
+                      ),
                     ],
                   ),
                 ),
                 Text(
                   InvoiceRecord.formatRupiah(_totalInvoiceAmount),
-                  style: theme.textTheme.titleMedium?.copyWith(color: colors.primary),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: colors.primary,
+                  ),
                 ),
               ],
             ),
             const Divider(height: AppTokens.space24),
             Row(
               children: [
-                Icon(Icons.info_outline_rounded, size: 18, color: colors.onSurfaceVariant),
+                Icon(
+                  Icons.info_outline_rounded,
+                  size: 18,
+                  color: colors.onSurfaceVariant,
+                ),
                 const SizedBox(width: AppTokens.space8),
                 Expanded(
                   child: Text(

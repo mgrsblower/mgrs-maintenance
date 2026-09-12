@@ -96,7 +96,9 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
   }
 
   static int _compareComponents(
-      Map<String, dynamic> a, Map<String, dynamic> b) {
+    Map<String, dynamic> a,
+    Map<String, dynamic> b,
+  ) {
     final weightA = _componentSortWeight(a);
     final weightB = _componentSortWeight(b);
     if (weightA != weightB) {
@@ -109,13 +111,18 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
 
   static int _compareCode(String a, String b) {
     final regex = RegExp(r'(\d+|\D+)');
-    final matchesA =
-        regex.allMatches(a.trim()).map((m) => m.group(0)!).toList();
-    final matchesB =
-        regex.allMatches(b.trim()).map((m) => m.group(0)!).toList();
+    final matchesA = regex
+        .allMatches(a.trim())
+        .map((m) => m.group(0)!)
+        .toList();
+    final matchesB = regex
+        .allMatches(b.trim())
+        .map((m) => m.group(0)!)
+        .toList();
 
-    final length =
-        matchesA.length < matchesB.length ? matchesA.length : matchesB.length;
+    final length = matchesA.length < matchesB.length
+        ? matchesA.length
+        : matchesB.length;
     for (int i = 0; i < length; i++) {
       final tokenA = matchesA[i];
       final tokenB = matchesB[i];
@@ -139,7 +146,8 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
       final matchesCat =
           activeCategory == 'Semua' || c['kind'] == activeCategory;
       final query = searchController.text.trim().toLowerCase();
-      final matchesSearch = query.isEmpty ||
+      final matchesSearch =
+          query.isEmpty ||
           (c['code'] as String).toLowerCase().contains(query) ||
           (c['description'] as String).toLowerCase().contains(query);
       return matchesCat && matchesSearch;
@@ -154,21 +162,21 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
       error = null;
     });
     try {
-      final rows =
-          await widget.gateway.fetchComponents(forceRefresh: forceRefresh);
+      final rows = await widget.gateway.fetchComponents(
+        forceRefresh: forceRefresh,
+      );
       if (!mounted) return;
       setState(() {
         final mapped = rows.map((r) {
           final cond = (r['kondisi'] ?? r['condition'] ?? 'OK').toString();
           final isOk = cond == 'OK' || cond == 'Layak Pakai';
-          final isService = cond == 'Service' ||
+          final isService =
+              cond == 'Service' ||
               cond == 'Rusak Berat' ||
               cond == 'Gangguan Fungsi';
           final color = isOk
               ? AppTokens.success
-              : (isService
-                  ? AppTokens.danger
-                  : AppTokens.warning);
+              : (isService ? AppTokens.danger : AppTokens.warning);
           final condLabel = conditionDisplayLabel(cond);
           final updated = (r['updated_at'] ?? '').toString();
           final dateStr = updated.length >= 10
@@ -181,10 +189,11 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
             'kind': (r['jenis_komponen'] ?? r['kind'] ?? 'Kepala').toString(),
             'condition': condLabel,
             'conditionColor': color,
-            'description': (r['keterangan'] ??
-                    r['note'] ??
-                    'Komponen operasional terdata di sistem MGRS.')
-                .toString(),
+            'description':
+                (r['keterangan'] ??
+                        r['note'] ??
+                        'Komponen operasional terdata di sistem MGRS.')
+                    .toString(),
             'inspector': dateStr,
           };
         }).toList();
@@ -234,23 +243,25 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SizedBox(height: 10),
-                      _buildHeader(context),
-                      const SizedBox(height: 14),
-                      _buildSearchBar(context),
-                      const SizedBox(height: 14),
-                      _buildCategoryChips(context),
-                      const SizedBox(height: 16),
-                      _buildComponentList(context, filtered),
-                      const SizedBox(height: 110), // Spacing for floating navbar
-                    ],
+                        _buildHeader(context),
+                        const SizedBox(height: 14),
+                        _buildSearchBar(context),
+                        const SizedBox(height: 14),
+                        _buildCategoryChips(context),
+                        const SizedBox(height: 16),
+                        _buildComponentList(context, filtered),
+                        const SizedBox(
+                          height: 110,
+                        ), // Spacing for floating navbar
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
       bottomNavigationBar: widget.showBottomNav
           ? AppBottomNavBar(
               currentIndex: 1,
@@ -272,7 +283,7 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
             const Text(
               'Komponen MGRS',
               style: TextStyle(
-                                fontSize: 20,
+                fontSize: 20,
                 fontWeight: FontWeight.w800,
                 color: AppTokens.ink,
                 letterSpacing: -0.4,
@@ -282,7 +293,7 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
             Text(
               '${components.length} item terdaftar • Kepala, Batang, Tabung',
               style: const TextStyle(
-                                fontSize: 12,
+                fontSize: 12,
                 fontWeight: FontWeight.w500,
                 color: AppTokens.stone,
               ),
@@ -330,14 +341,11 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
             child: TextField(
               controller: searchController,
               onChanged: (_) => setState(() => _visibleCount = _pageSize),
-              style: const TextStyle(
-                                fontSize: 13,
-                color: AppTokens.ink,
-              ),
+              style: const TextStyle(fontSize: 13, color: AppTokens.ink),
               decoration: const InputDecoration(
                 hintText: 'Cari Kode...',
                 hintStyle: TextStyle(
-                                    fontSize: 13,
+                  fontSize: 13,
                   fontWeight: FontWeight.w500,
                   color: AppTokens.stone,
                 ),
@@ -373,7 +381,10 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
                 constraints: const BoxConstraints(
                   minHeight: AppTokens.minTouchTarget,
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 7,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected ? AppTokens.ink : AppTokens.mistLight,
                   borderRadius: BorderRadius.circular(AppTokens.cardRadius),
@@ -384,7 +395,7 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
                 child: Text(
                   cat,
                   style: TextStyle(
-                                        fontSize: 12,
+                    fontSize: 12,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                     color: isSelected ? AppTokens.white : AppTokens.graphite,
                   ),
@@ -398,7 +409,10 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
   }
 
   // List of Component Cards
-  Widget _buildComponentList(BuildContext context, List<Map<String, dynamic>> items) {
+  Widget _buildComponentList(
+    BuildContext context,
+    List<Map<String, dynamic>> items,
+  ) {
     if (isLoading && components.isEmpty) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 48),
@@ -410,10 +424,7 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
               SizedBox(height: 14),
               Text(
                 'Memuat katalog aset...',
-                style: TextStyle(
-                                    fontSize: 13,
-                  color: AppTokens.stone,
-                ),
+                style: TextStyle(fontSize: 13, color: AppTokens.stone),
               ),
             ],
           ),
@@ -426,13 +437,17 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
         padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
         child: Column(
           children: [
-            const Icon(Icons.error_outline_rounded, size: 40, color: AppTokens.danger),
+            const Icon(
+              Icons.error_outline_rounded,
+              size: 40,
+              color: AppTokens.danger,
+            ),
             const SizedBox(height: 12),
             Text(
               failureMessage(error),
               textAlign: TextAlign.center,
               style: const TextStyle(
-                                fontSize: 13,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: AppTokens.danger,
               ),
@@ -462,12 +477,16 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.inventory_2_outlined, size: 44, color: AppTokens.stone),
+              Icon(
+                Icons.inventory_2_outlined,
+                size: 44,
+                color: AppTokens.stone,
+              ),
               SizedBox(height: 12),
               Text(
                 'Tidak ada komponen ditemukan',
                 style: TextStyle(
-                                    fontSize: 14,
+                  fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: AppTokens.ink,
                 ),
@@ -475,10 +494,7 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
               SizedBox(height: 4),
               Text(
                 'Coba ubah kata kunci pencarian atau kategori filter.',
-                style: TextStyle(
-                                    fontSize: 12,
-                  color: AppTokens.stone,
-                ),
+                style: TextStyle(fontSize: 12, color: AppTokens.stone),
               ),
             ],
           ),
@@ -519,17 +535,23 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
                       children: [
                         Text(
                           item['code'] as String,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
                                 fontWeight: FontWeight.w800,
                                 color: AppTokens.ink,
                                 letterSpacing: -0.2,
                               ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: item['conditionColor'] as Color,
-                            borderRadius: BorderRadius.circular(AppTokens.cardRadius),
+                            borderRadius: BorderRadius.circular(
+                              AppTokens.cardRadius,
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -546,7 +568,7 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
                               Text(
                                 item['condition'] as String,
                                 style: const TextStyle(
-                                                                    fontSize: 10,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.w700,
                                   color: AppTokens.white,
                                 ),
@@ -560,7 +582,7 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
                     Text(
                       item['description'] as String,
                       style: const TextStyle(
-                                                fontSize: 12,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: AppTokens.graphite,
                         height: 1.4,
@@ -588,7 +610,7 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
                               Text(
                                 item['inspector'] as String,
                                 style: const TextStyle(
-                                                                    fontSize: 10,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.w500,
                                   color: AppTokens.stone,
                                 ),
@@ -627,7 +649,7 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
                 Text(
                   'Memuat komponen selanjutnya...',
                   style: TextStyle(
-                                        fontSize: 12,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: AppTokens.stone,
                   ),
@@ -642,8 +664,10 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
               child: PressableScale(
                 onTap: _loadMore,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 9,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTokens.mistLight,
                     borderRadius: BorderRadius.circular(12),
@@ -652,13 +676,16 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.keyboard_arrow_down_rounded,
-                          size: 18, color: AppTokens.ink),
+                      const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 18,
+                        color: AppTokens.ink,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         'Muat Lebih Banyak (${items.length - _visibleCount} tersisa)',
                         style: const TextStyle(
-                                                    fontSize: 12,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: AppTokens.ink,
                         ),
@@ -676,7 +703,7 @@ class _AssetCatalogScreenState extends State<AssetCatalogScreen>
               child: Text(
                 'Menampilkan seluruh ${items.length} komponen',
                 style: const TextStyle(
-                                    fontSize: 11,
+                  fontSize: 11,
                   fontWeight: FontWeight.w500,
                   color: AppTokens.stone,
                 ),

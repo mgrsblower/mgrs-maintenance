@@ -285,14 +285,14 @@ class _CheckingScreenState extends State<CheckingScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppTokens.white,
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(color: AppTokens.mistLight),
                 ),
                 child: const Center(
                   child: Icon(
                     Icons.chevron_left_rounded,
-                    color: Color(0xFF0F172A),
+                    color: AppTokens.ink,
                     size: 24,
                   ),
                 ),
@@ -307,7 +307,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF0F172A),
+                    color: AppTokens.ink,
                     letterSpacing: -0.3,
                   ),
                 ),
@@ -318,7 +318,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF64748B),
+                    color: AppTokens.stone,
                   ),
                 ),
               ],
@@ -330,8 +330,8 @@ class _CheckingScreenState extends State<CheckingScreen> {
           decoration: BoxDecoration(
             color: widget.service
                 ? AppTokens.mistLight
-                : const Color(0xFFF0FDF4),
-            borderRadius: BorderRadius.circular(20),
+                : AppTokens.successSurface,
+            borderRadius: BorderRadius.circular(AppTokens.badgeRadius),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -340,9 +340,9 @@ class _CheckingScreenState extends State<CheckingScreen> {
                 radius: 3,
                 backgroundColor: widget.service
                     ? AppTokens.magenta
-                    : const Color(0xFF16A34A),
+                    : AppTokens.success,
               ),
-              const SizedBox(width: 5),
+              const SizedBox(width: AppTokens.space4),
               Text(
                 widget.service ? 'Perbaikan' : 'Rutin',
                 style: TextStyle(
@@ -350,7 +350,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   fontWeight: FontWeight.w700,
                   color: widget.service
                       ? AppTokens.magenta
-                      : const Color(0xFF15803D),
+                      : AppTokens.success,
                 ),
               ),
             ],
@@ -363,11 +363,11 @@ class _CheckingScreenState extends State<CheckingScreen> {
   // Component Identity Card
   Widget _buildComponentIdentityCard(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppTokens.space16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        color: AppTokens.white,
+        borderRadius: BorderRadius.circular(AppTokens.cardRadius),
+        border: Border.all(color: AppTokens.mistLight),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -379,7 +379,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                 height: 42,
                 decoration: BoxDecoration(
                   color: widget.service
-                      ? const Color(0xFFFEF2F2)
+                      ? AppTokens.dangerSurface
                       : AppTokens.mistLight,
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -389,13 +389,13 @@ class _CheckingScreenState extends State<CheckingScreen> {
                         ? Icons.build_circle_outlined
                         : Icons.check_circle_outline,
                     color: widget.service
-                        ? const Color(0xFFEF4444)
+                        ? AppTokens.danger
                         : AppTokens.magenta,
                     size: 22,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppTokens.space12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -404,16 +404,16 @@ class _CheckingScreenState extends State<CheckingScreen> {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
+                      color: AppTokens.ink,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: AppTokens.space4),
                   Text(
                     'Komponen ${component.kind} Utama • MGRS',
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF64748B),
+                      color: AppTokens.stone,
                     ),
                   ),
                 ],
@@ -429,16 +429,16 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  color: AppTokens.mistLight,
+                  borderRadius: BorderRadius.circular(AppTokens.badgeRadius),
+                  border: Border.all(color: AppTokens.mistLight),
                 ),
                 child: const Text(
                   'Ganti',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF475569),
+                    color: AppTokens.graphite,
                   ),
                 ),
               ),
@@ -447,15 +447,15 @@ class _CheckingScreenState extends State<CheckingScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF2F2),
-                borderRadius: BorderRadius.circular(10),
+                color: AppTokens.dangerSurface,
+                borderRadius: BorderRadius.circular(AppTokens.badgeRadius),
               ),
               child: const Text(
                 'Rusak',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFFDC2626),
+                  color: AppTokens.danger,
                 ),
               ),
             ),
@@ -469,9 +469,9 @@ class _CheckingScreenState extends State<CheckingScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        color: AppTokens.white,
+        borderRadius: BorderRadius.circular(AppTokens.cardRadius),
+        border: Border.all(color: AppTokens.mistLight),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -484,7 +484,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
+                  color: AppTokens.ink,
                 ),
               ),
               Text(
@@ -496,22 +496,22 @@ class _CheckingScreenState extends State<CheckingScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: AppTokens.space12),
           // Option 1: Layak Pakai
           _buildConditionRadioCard(
             title: 'Layak Pakai',
             description: 'Fisik prima & fungsi normal untuk operasi',
             value: 'OK',
             selected: condition == 'OK',
-            activeBorderColor: const Color(0xFF10B981),
-            activeBgColor: const Color(0xFFF0FDF4),
-            dotColor: const Color(0xFF10B981),
+            activeBorderColor: AppTokens.success,
+            activeBgColor: AppTokens.successSurface,
+            dotColor: AppTokens.success,
             onSelect: () => setState(() {
               condition = 'OK';
               usable = 'Ya';
             }),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppTokens.space8),
           // Option 2: Perlu Servis
           _buildConditionRadioCard(
             title: 'Perlu Servis',
@@ -519,24 +519,24 @@ class _CheckingScreenState extends State<CheckingScreen> {
             value: 'Rusak Ringan',
             selected:
                 condition == 'Rusak Ringan' || condition == 'Perlu Servis',
-            activeBorderColor: const Color(0xFFF59E0B),
-            activeBgColor: const Color(0xFFFFFBEB),
-            dotColor: const Color(0xFFF59E0B),
+            activeBorderColor: AppTokens.warning,
+            activeBgColor: AppTokens.warningSurface,
+            dotColor: AppTokens.warning,
             onSelect: () => setState(() {
               condition = 'Rusak Ringan';
               usable = 'Ya';
             }),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppTokens.space8),
           // Option 3: Gangguan Fungsi
           _buildConditionRadioCard(
             title: 'Gangguan Fungsi',
             description: 'Bocor / rusak berat, tidak boleh dipasang',
             value: 'Rusak Berat',
             selected: condition == 'Rusak Berat',
-            activeBorderColor: const Color(0xFFEF4444),
-            activeBgColor: const Color(0xFFFEF2F2),
-            dotColor: const Color(0xFFEF4444),
+            activeBorderColor: AppTokens.danger,
+            activeBgColor: AppTokens.dangerSurface,
+            dotColor: AppTokens.danger,
             onSelect: () => setState(() {
               condition = 'Rusak Berat';
               usable = 'Tidak';
@@ -563,10 +563,10 @@ class _CheckingScreenState extends State<CheckingScreen> {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: selected ? activeBgColor : Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: selected ? activeBgColor : AppTokens.white,
+          borderRadius: BorderRadius.circular(AppTokens.controlRadius),
           border: Border.all(
-            color: selected ? activeBorderColor : const Color(0xFFE2E8F0),
+            color: selected ? activeBorderColor : AppTokens.mistLight,
             width: selected ? 1.8 : 1.0,
           ),
         ),
@@ -579,13 +579,17 @@ class _CheckingScreenState extends State<CheckingScreen> {
                 shape: BoxShape.circle,
                 color: selected ? activeBorderColor : Colors.transparent,
                 border: Border.all(
-                  color: selected ? activeBorderColor : const Color(0xFFCBD5E1),
+                  color: selected ? activeBorderColor : AppTokens.mist,
                   width: 2,
                 ),
               ),
               child: selected
                   ? const Center(
-                      child: Icon(Icons.check, size: 14, color: Colors.white),
+                      child: Icon(
+                        Icons.check,
+                        size: 14,
+                        color: AppTokens.white,
+                      ),
                     )
                   : null,
             ),
@@ -599,7 +603,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF0F172A),
+                      color: AppTokens.ink,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -608,7 +612,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF64748B),
+                      color: AppTokens.stone,
                     ),
                   ),
                 ],
@@ -626,9 +630,9 @@ class _CheckingScreenState extends State<CheckingScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        color: AppTokens.white,
+        borderRadius: BorderRadius.circular(AppTokens.cardRadius),
+        border: Border.all(color: AppTokens.mistLight),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -638,29 +642,29 @@ class _CheckingScreenState extends State<CheckingScreen> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF0F172A),
+              color: AppTokens.ink,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppTokens.space12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: AppTokens.porcelain,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              borderRadius: BorderRadius.circular(AppTokens.controlRadius),
+              border: Border.all(color: AppTokens.mistLight),
             ),
             child: TextField(
               controller: note,
               maxLines: 4,
               style: const TextStyle(
                 fontSize: 13,
-                color: Color(0xFF334155),
+                color: AppTokens.graphite,
                 height: 1.45,
               ),
               decoration: const InputDecoration(
                 hintText:
                     'Kondisi katup & konektor bersih, segel utuh tanpa indikasi keausan mekanis, siap digunakan.',
-                hintStyle: TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                hintStyle: TextStyle(fontSize: 13, color: AppTokens.mist),
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
@@ -681,9 +685,9 @@ class _CheckingScreenState extends State<CheckingScreen> {
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            color: AppTokens.white,
+            borderRadius: BorderRadius.circular(AppTokens.cardRadius),
+            border: Border.all(color: AppTokens.mistLight),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -696,7 +700,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
+                      color: AppTokens.ink,
                     ),
                   ),
                   Text(
@@ -709,20 +713,20 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppTokens.space12),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: AppTokens.porcelain,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(color: AppTokens.mistLight),
                 ),
                 child: TextField(
                   controller: problem,
                   maxLines: 3,
                   style: const TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF334155),
+                    color: AppTokens.graphite,
                     height: 1.45,
                   ),
                   decoration: const InputDecoration(
@@ -740,11 +744,11 @@ class _CheckingScreenState extends State<CheckingScreen> {
         const SizedBox(height: 16),
         // 2. Tindakan Perbaikan
         Container(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(AppTokens.space16),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            color: AppTokens.white,
+            borderRadius: BorderRadius.circular(AppTokens.cardRadius),
+            border: Border.all(color: AppTokens.mistLight),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -757,7 +761,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
+                      color: AppTokens.ink,
                     ),
                   ),
                   Text(
@@ -770,20 +774,20 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppTokens.space12),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppTokens.space12),
                 decoration: BoxDecoration(
                   color: AppTokens.porcelain,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  borderRadius: BorderRadius.circular(AppTokens.controlRadius),
+                  border: Border.all(color: AppTokens.mistLight),
                 ),
                 child: TextField(
                   controller: action,
                   maxLines: 4,
                   style: const TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF334155),
+                    color: AppTokens.graphite,
                     height: 1.45,
                   ),
                   decoration: const InputDecoration(
@@ -801,11 +805,11 @@ class _CheckingScreenState extends State<CheckingScreen> {
         const SizedBox(height: 16),
         // 3. Kondisi Hasil Setelah Servis
         Container(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(AppTokens.space16),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            color: AppTokens.white,
+            borderRadius: BorderRadius.circular(AppTokens.cardRadius),
+            border: Border.all(color: AppTokens.mistLight),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -818,7 +822,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
+                      color: AppTokens.ink,
                     ),
                   ),
                   Text(
@@ -838,9 +842,9 @@ class _CheckingScreenState extends State<CheckingScreen> {
                 description: 'Perbaikan sukses, unit kembali normal',
                 value: 'OK',
                 selected: condition == 'OK',
-                activeBorderColor: const Color(0xFF10B981),
-                activeBgColor: const Color(0xFFF0FDF4),
-                dotColor: const Color(0xFF10B981),
+                activeBorderColor: AppTokens.success,
+                activeBgColor: AppTokens.successSurface,
+                dotColor: AppTokens.success,
                 onSelect: () => setState(() {
                   condition = 'OK';
                   usable = 'Ya';
@@ -853,9 +857,9 @@ class _CheckingScreenState extends State<CheckingScreen> {
                 description: 'Belum tuntas, menunggu sparepart',
                 value: 'Rusak Ringan',
                 selected: condition == 'Rusak Ringan',
-                activeBorderColor: const Color(0xFFF59E0B),
-                activeBgColor: const Color(0xFFFFFBEB),
-                dotColor: const Color(0xFFF59E0B),
+                activeBorderColor: AppTokens.warning,
+                activeBgColor: AppTokens.warningSurface,
+                dotColor: AppTokens.warning,
                 onSelect: () => setState(() {
                   condition = 'Rusak Ringan';
                   usable = 'Tidak';
@@ -875,8 +879,8 @@ class _CheckingScreenState extends State<CheckingScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(0, 10, 0, 24),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+        color: AppTokens.white,
+        border: Border(top: BorderSide(color: AppTokens.mistLight)),
       ),
       child: SizedBox(
         width: double.infinity,
@@ -885,8 +889,8 @@ class _CheckingScreenState extends State<CheckingScreen> {
           onTap: blocked ? null : save,
           child: Container(
             decoration: BoxDecoration(
-              color: blocked ? const Color(0xFF94A3B8) : AppTokens.magenta,
-              borderRadius: BorderRadius.circular(14),
+              color: blocked ? AppTokens.mist : AppTokens.magenta,
+              borderRadius: BorderRadius.circular(AppTokens.controlRadius),
               boxShadow: blocked
                   ? null
                   : [
@@ -906,13 +910,13 @@ class _CheckingScreenState extends State<CheckingScreen> {
                     height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: AppTokens.white,
                     ),
                   )
                 else
                   Icon(
                     widget.service ? Icons.build_rounded : Icons.check_rounded,
-                    color: Colors.white,
+                    color: AppTokens.white,
                     size: 18,
                   ),
                 const SizedBox(width: 8),
@@ -925,7 +929,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: AppTokens.white,
                   ),
                 ),
               ],
@@ -944,9 +948,9 @@ class _CheckingScreenState extends State<CheckingScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFEF2F2),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFFECACA)),
+        color: AppTokens.dangerSurface,
+        borderRadius: BorderRadius.circular(AppTokens.badgeRadius),
+        border: Border.all(color: AppTokens.dangerSurface),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -955,7 +959,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
             children: [
               const Icon(
                 Icons.error_outline_rounded,
-                color: Color(0xFFB91C1C),
+                color: AppTokens.danger,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -967,7 +971,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                       ? 'Koneksi Terputus / Tidak Stabil'
                       : 'Gagal Menyimpan Data',
                   style: const TextStyle(
-                    color: Color(0xFFB91C1C),
+                    color: AppTokens.danger,
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
                   ),
@@ -979,7 +983,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
           Text(
             failureMessage(err),
             style: const TextStyle(
-              color: Color(0xFF7F1D1D),
+              color: AppTokens.danger,
               fontSize: 12,
               height: 1.4,
             ),
@@ -997,10 +1001,10 @@ class _CheckingScreenState extends State<CheckingScreen> {
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                   ),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFB91C1C),
-                    side: const BorderSide(color: Color(0xFFFECACA)),
+                    foregroundColor: AppTokens.danger,
+                    side: const BorderSide(color: AppTokens.dangerSurface),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppTokens.badgeRadius),
                     ),
                   ),
                 )
@@ -1012,21 +1016,21 @@ class _CheckingScreenState extends State<CheckingScreen> {
                   icon: const Icon(
                     Icons.replay_rounded,
                     size: 16,
-                    color: Colors.white,
+                    color: AppTokens.white,
                   ),
                   label: const Text(
                     'Coba Kirim Ulang',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: AppTokens.white,
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFB91C1C),
+                    backgroundColor: AppTokens.danger,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppTokens.badgeRadius),
                     ),
                   ),
                 ),
@@ -1043,8 +1047,10 @@ class _CheckingScreenState extends State<CheckingScreen> {
 
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        color: AppTokens.white,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTokens.cardRadius),
+        ),
       ),
       padding: EdgeInsets.fromLTRB(
         24,
@@ -1060,7 +1066,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFE2E8F0),
+                color: AppTokens.mistLight,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1070,11 +1076,11 @@ class _CheckingScreenState extends State<CheckingScreen> {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: const Color(0xFFDCFCE7),
+              color: AppTokens.successSurface,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                  color: AppTokens.success.withValues(alpha: 0.2),
                   blurRadius: 16,
                   offset: const Offset(0, 4),
                 ),
@@ -1083,7 +1089,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
             child: const Center(
               child: Icon(
                 Icons.check_circle_rounded,
-                color: Color(0xFF10B981),
+                color: AppTokens.success,
                 size: 36,
               ),
             ),
@@ -1095,7 +1101,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
             style: const TextStyle(
               fontSize: 19,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF0F172A),
+              color: AppTokens.ink,
               letterSpacing: -0.3,
             ),
           ),
@@ -1108,7 +1114,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF64748B),
+              color: AppTokens.stone,
               height: 1.4,
             ),
           ),
@@ -1117,8 +1123,8 @@ class _CheckingScreenState extends State<CheckingScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: AppTokens.porcelain,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              borderRadius: BorderRadius.circular(AppTokens.controlRadius),
+              border: Border.all(color: AppTokens.mistLight),
             ),
             child: Column(
               children: [
@@ -1130,7 +1136,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF64748B),
+                        color: AppTokens.stone,
                       ),
                     ),
                     Text(
@@ -1138,14 +1144,14 @@ class _CheckingScreenState extends State<CheckingScreen> {
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF0F172A),
+                        color: AppTokens.ink,
                       ),
                     ),
                   ],
                 ),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+                  child: Divider(height: 1, color: AppTokens.mistLight),
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1155,7 +1161,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF64748B),
+                        color: AppTokens.stone,
                       ),
                     ),
                     Container(
@@ -1165,11 +1171,11 @@ class _CheckingScreenState extends State<CheckingScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: isOk
-                            ? const Color(0xFFDCFCE7)
+                            ? AppTokens.successSurface
                             : (condition == 'Rusak Ringan'
-                                  ? const Color(0xFFFEF3C7)
-                                  : const Color(0xFFFEE2E2)),
-                        borderRadius: BorderRadius.circular(8),
+                                  ? AppTokens.warningSurface
+                                  : AppTokens.dangerSurface),
+                        borderRadius: BorderRadius.circular(AppTokens.badgeRadius),
                       ),
                       child: Text(
                         isOk
@@ -1181,10 +1187,10 @@ class _CheckingScreenState extends State<CheckingScreen> {
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: isOk
-                              ? const Color(0xFF15803D)
+                              ? AppTokens.success
                               : (condition == 'Rusak Ringan'
-                                    ? const Color(0xFFB45309)
-                                    : const Color(0xFFB91C1C)),
+                                    ? AppTokens.warning
+                                    : AppTokens.danger),
                         ),
                       ),
                     ),
@@ -1193,7 +1199,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                 if (isService && action.text.trim().isNotEmpty) ...[
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+                    child: Divider(height: 1, color: AppTokens.mistLight),
                   ),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1204,7 +1210,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF64748B),
+                          color: AppTokens.stone,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -1217,7 +1223,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF334155),
+                            color: AppTokens.graphite,
                           ),
                         ),
                       ),
@@ -1237,7 +1243,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                 backgroundColor: AppTokens.magenta,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppTokens.controlRadius),
                 ),
               ),
               child: const Text(
@@ -1245,7 +1251,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: AppTokens.white,
                 ),
               ),
             ),

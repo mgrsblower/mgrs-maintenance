@@ -1048,8 +1048,8 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                 height: 48,
                 decoration: BoxDecoration(
                   color: comp.condition != 'OK'
-                      ? const Color(0xFFF1F5F9)
-                      : const Color(0xFF147CC1),
+                      ? AppTokens.mistLight
+                      : AppTokens.primary,
                   borderRadius: BorderRadius.circular(AppTokens.controlRadius),
                 ),
                 child: Row(
@@ -1059,19 +1059,17 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                       Icons.fact_check_outlined,
                       size: 18,
                       color: comp.condition != 'OK'
-                          ? const Color(0xFF334155)
-                          : Colors.white,
+                          ? AppTokens.graphite
+                          : AppTokens.white,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppTokens.space8),
                     Text(
                       'Perbarui Kondisi',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 14,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: comp.condition != 'OK'
-                            ? const Color(0xFF334155)
-                            : Colors.white,
+                            ? AppTokens.graphite
+                            : AppTokens.white,
                       ),
                     ),
                   ],
@@ -1100,8 +1098,8 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                 height: 48,
                 decoration: BoxDecoration(
                   color: comp.condition != 'OK'
-                      ? const Color(0xFFDC2626)
-                      : const Color(0xFFF1F5F9),
+                      ? AppTokens.danger
+                      : AppTokens.mistLight,
                   borderRadius: BorderRadius.circular(AppTokens.controlRadius),
                   border: Border.all(color: AppTokens.mist),
                 ),
@@ -1112,19 +1110,17 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                       Icons.build_rounded,
                       size: 18,
                       color: comp.condition != 'OK'
-                          ? Colors.white
-                          : const Color(0xFF334155),
+                          ? AppTokens.white
+                          : AppTokens.graphite,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppTokens.space8),
                     Text(
                       'Catat Servis',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 14,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: comp.condition != 'OK'
-                            ? Colors.white
-                            : const Color(0xFF334155),
+                            ? AppTokens.white
+                            : AppTokens.graphite,
                       ),
                     ),
                   ],

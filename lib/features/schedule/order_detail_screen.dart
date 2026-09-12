@@ -574,10 +574,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
     final reason = await showDialog<String>(
       context: context,
-      builder: (_) => _CancelOrderDialog(
-        order: order,
-        invoice: _invoice,
-      ),
+      builder: (_) => _CancelOrderDialog(order: order, invoice: _invoice),
     );
     if (reason == null || !mounted) return;
 
@@ -849,10 +846,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 }
 
 class _CancelOrderDialog extends StatefulWidget {
-  const _CancelOrderDialog({
-    required this.order,
-    required this.invoice,
-  });
+  const _CancelOrderDialog({required this.order, required this.invoice});
 
   final OrderanSewa order;
   final InvoiceRecord? invoice;

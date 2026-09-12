@@ -57,7 +57,8 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
 
   void _generateReference([String? orderSuffix]) {
     final now = DateTime.now();
-    final date = '${now.year.toString().padLeft(4, '0')}/'
+    final date =
+        '${now.year.toString().padLeft(4, '0')}/'
         '${now.month.toString().padLeft(2, '0')}/'
         '${now.day.toString().padLeft(2, '0')}';
     final suffix = orderSuffix ?? '${now.hour}${now.minute}${now.second}';
@@ -86,9 +87,13 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
     _generateReference(orderanId.split('-').last);
     _customerNameController.text = order.namaClient ?? '';
     _customerPhoneController.text = order.nomorWhatsapp ?? '';
-    _productController.text = order.namaEvent.isNotEmpty ? order.namaEvent : 'Sewa Mistyfan';
+    _productController.text = order.namaEvent.isNotEmpty
+        ? order.namaEvent
+        : 'Sewa Mistyfan';
     _qtyController.text = order.jumlahUnit.toString();
-    _daysController.text = order.rentalDays > 0 ? order.rentalDays.toString() : '1';
+    _daysController.text = order.rentalDays > 0
+        ? order.rentalDays.toString()
+        : '1';
     setState(() {});
   }
 
@@ -97,18 +102,25 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
 
     final now = DateTime.now();
     final todayStr = now.toIso8601String().substring(0, 10);
-    final dueStr = now.add(const Duration(days: 7)).toIso8601String().substring(0, 10);
+    final dueStr = now
+        .add(const Duration(days: 7))
+        .toIso8601String()
+        .substring(0, 10);
     final qty = num.tryParse(_qtyController.text.trim()) ?? 1;
     final days = num.tryParse(_daysController.text.trim()) ?? 1;
     final price = num.tryParse(_unitPriceController.text.trim()) ?? 250000;
     final subtotal = qty * price;
     final total = subtotal * days;
     final payload = <String, Object?>{
-      'orderan_id': _isManualReimbursement ? null : (_selectedOrder?.orderanId ?? _selectedOrder?.id),
+      'orderan_id': _isManualReimbursement
+          ? null
+          : (_selectedOrder?.orderanId ?? _selectedOrder?.id),
       'invoice_reference': _refController.text.trim(),
       'invoice_date': todayStr,
       'due_date': dueStr,
-      'product_name': _productController.text.trim().isNotEmpty ? _productController.text.trim() : 'Sewa Mistyfan',
+      'product_name': _productController.text.trim().isNotEmpty
+          ? _productController.text.trim()
+          : 'Sewa Mistyfan',
       'quantity': qty,
       'rental_days': days,
       'unit_price': price,
@@ -116,7 +128,9 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
       'total_amount': total,
       'paid_amount': 0,
       'payment_status': 'unpaid',
-      'invoice_source': _isManualReimbursement ? 'manual_reimbursement' : 'order',
+      'invoice_source': _isManualReimbursement
+          ? 'manual_reimbursement'
+          : 'order',
       'customer_name': _customerNameController.text.trim(),
       'customer_phone': _customerPhoneController.text.trim(),
       'adjustments': <Map<String, Object?>>[],
@@ -128,11 +142,17 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
       if (!mounted) return;
       widget.onCreated(created);
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Invoice ${created.invoiceReference} berhasil dibuat.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Invoice ${created.invoiceReference} berhasil dibuat.'),
+        ),
+      );
     } catch (error) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal membuat invoice: $error')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal membuat invoice: $error')));
     }
   }
 
@@ -141,12 +161,17 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final media = MediaQuery.of(context);
-    final maxHeight = math.max(
-      280.0,
-      media.size.height - media.viewInsets.bottom - AppTokens.space32,
-    ).toDouble();
+    final maxHeight = math
+        .max(
+          280.0,
+          media.size.height - media.viewInsets.bottom - AppTokens.space32,
+        )
+        .toDouble();
     return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: AppTokens.space16, vertical: AppTokens.space16),
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: AppTokens.space16,
+        vertical: AppTokens.space16,
+      ),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: 560, maxHeight: maxHeight),
         child: Padding(
@@ -156,15 +181,32 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
             children: [
               Row(
                 children: [
-                  Expanded(child: Text('Buat Invoice Baru', style: theme.textTheme.titleLarge)),
-                  IconButton(onPressed: () => Navigator.of(context).pop(), icon: const Icon(Icons.close_rounded), tooltip: 'Tutup'),
+                  Expanded(
+                    child: Text(
+                      'Buat Invoice Baru',
+                      style: theme.textTheme.titleLarge,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                    tooltip: 'Tutup',
+                  ),
                 ],
               ),
               const SizedBox(height: AppTokens.space12),
               SegmentedButton<bool>(
                 segments: const [
-                  ButtonSegment(value: false, icon: Icon(Icons.event_note_rounded), label: Text('Dari Order Sewa')),
-                  ButtonSegment(value: true, icon: Icon(Icons.assignment_return_outlined), label: Text('Manual Reimbursement')),
+                  ButtonSegment(
+                    value: false,
+                    icon: Icon(Icons.event_note_rounded),
+                    label: Text('Dari Order Sewa'),
+                  ),
+                  ButtonSegment(
+                    value: true,
+                    icon: Icon(Icons.assignment_return_outlined),
+                    label: Text('Manual Reimbursement'),
+                  ),
                 ],
                 selected: {_isManualReimbursement},
                 showSelectedIcon: false,
@@ -187,32 +229,63 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
               const SizedBox(height: AppTokens.space16),
               Expanded(
                 child: SingleChildScrollView(
-                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
                   child: Form(
                     key: _formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (!_isManualReimbursement) ...[
-                          Text('Pilih Orderan Terjadwal:', style: theme.textTheme.labelLarge),
+                          Text(
+                            'Pilih Orderan Terjadwal:',
+                            style: theme.textTheme.labelLarge,
+                          ),
                           const SizedBox(height: AppTokens.space8),
                           if (_isLoadingOrders)
-                            const Center(child: Padding(padding: EdgeInsets.all(AppTokens.space12), child: CircularProgressIndicator()))
+                            const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(AppTokens.space12),
+                                child: CircularProgressIndicator(),
+                              ),
+                            )
                           else if (_availableOrders.isEmpty)
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.all(AppTokens.space12),
-                              decoration: BoxDecoration(color: colors.errorContainer, borderRadius: BorderRadius.circular(AppTokens.controlRadius)),
-                              child: Text('Belum ada data orderan terjadwal.', style: theme.textTheme.bodySmall?.copyWith(color: colors.onErrorContainer)),
+                              decoration: BoxDecoration(
+                                color: colors.errorContainer,
+                                borderRadius: BorderRadius.circular(
+                                  AppTokens.controlRadius,
+                                ),
+                              ),
+                              child: Text(
+                                'Belum ada data orderan terjadwal.',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colors.onErrorContainer,
+                                ),
+                              ),
                             )
                           else
                             DropdownButtonFormField<OrderanSewa>(
-                              key: ValueKey<String>(_selectedOrder?.id ?? 'none'),
+                              key: ValueKey<String>(
+                                _selectedOrder?.id ?? 'none',
+                              ),
                               initialValue: _selectedOrder,
                               isExpanded: true,
-                              decoration: const InputDecoration(labelText: 'Orderan'),
+                              decoration: const InputDecoration(
+                                labelText: 'Orderan',
+                              ),
                               items: _availableOrders
-                                  .map((order) => DropdownMenuItem(value: order, child: Text('${order.orderanId ?? order.id} • ${order.namaClient}', overflow: TextOverflow.ellipsis)))
+                                  .map(
+                                    (order) => DropdownMenuItem(
+                                      value: order,
+                                      child: Text(
+                                        '${order.orderanId ?? order.id} • ${order.namaClient}',
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  )
                                   .toList(),
                               onChanged: (order) {
                                 if (order != null) _selectOrder(order);
@@ -222,8 +295,13 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                         ],
                         TextFormField(
                           controller: _refController,
-                          decoration: const InputDecoration(labelText: 'No. Referensi Invoice'),
-                          validator: (value) => value == null || value.trim().isEmpty ? 'Wajib diisi' : null,
+                          decoration: const InputDecoration(
+                            labelText: 'No. Referensi Invoice',
+                          ),
+                          validator: (value) =>
+                              value == null || value.trim().isEmpty
+                              ? 'Wajib diisi'
+                              : null,
                         ),
                         const SizedBox(height: AppTokens.space12),
                         LayoutBuilder(
@@ -237,14 +315,25 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                                 ],
                               );
                             }
-                            return Row(children: [Expanded(child: _customerNameField()), const SizedBox(width: AppTokens.space12), Expanded(child: _customerPhoneField())]);
+                            return Row(
+                              children: [
+                                Expanded(child: _customerNameField()),
+                                const SizedBox(width: AppTokens.space12),
+                                Expanded(child: _customerPhoneField()),
+                              ],
+                            );
                           },
                         ),
                         const SizedBox(height: AppTokens.space12),
                         TextFormField(
                           controller: _productController,
-                          decoration: const InputDecoration(labelText: 'Acara / Deskripsi Tagihan'),
-                          validator: (value) => value == null || value.trim().isEmpty ? 'Wajib diisi' : null,
+                          decoration: const InputDecoration(
+                            labelText: 'Acara / Deskripsi Tagihan',
+                          ),
+                          validator: (value) =>
+                              value == null || value.trim().isEmpty
+                              ? 'Wajib diisi'
+                              : null,
                         ),
                         const SizedBox(height: AppTokens.space12),
                         LayoutBuilder(
@@ -252,13 +341,41 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                             if (constraints.maxWidth < 420) {
                               return Column(
                                 children: [
-                                  Row(children: [Expanded(child: _numberField(_qtyController, 'Unit')), const SizedBox(width: AppTokens.space12), Expanded(child: _numberField(_daysController, 'Hari'))]),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _numberField(
+                                          _qtyController,
+                                          'Unit',
+                                        ),
+                                      ),
+                                      const SizedBox(width: AppTokens.space12),
+                                      Expanded(
+                                        child: _numberField(
+                                          _daysController,
+                                          'Hari',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                   const SizedBox(height: AppTokens.space12),
                                   _priceField(),
                                 ],
                               );
                             }
-                            return Row(children: [Expanded(child: _numberField(_qtyController, 'Unit')), const SizedBox(width: AppTokens.space12), Expanded(child: _numberField(_daysController, 'Hari')), const SizedBox(width: AppTokens.space12), Expanded(flex: 2, child: _priceField())]);
+                            return Row(
+                              children: [
+                                Expanded(
+                                  child: _numberField(_qtyController, 'Unit'),
+                                ),
+                                const SizedBox(width: AppTokens.space12),
+                                Expanded(
+                                  child: _numberField(_daysController, 'Hari'),
+                                ),
+                                const SizedBox(width: AppTokens.space12),
+                                Expanded(flex: 2, child: _priceField()),
+                              ],
+                            );
                           },
                         ),
                       ],
@@ -272,7 +389,14 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                 child: FilledButton(
                   onPressed: _isSubmitting ? null : _submit,
                   child: _isSubmitting
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppTokens.white))
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppTokens.white,
+                          ),
+                        )
                       : const Text('Buat dan Simpan Invoice'),
                 ),
               ),
@@ -284,26 +408,35 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
   }
 
   Widget _customerNameField() => TextFormField(
-        controller: _customerNameController,
-        decoration: InputDecoration(labelText: _isManualReimbursement ? 'Penerima Reimbursement' : 'Nama Klien'),
-        validator: (value) => value == null || value.trim().isEmpty ? 'Wajib diisi' : null,
-      );
+    controller: _customerNameController,
+    decoration: InputDecoration(
+      labelText: _isManualReimbursement
+          ? 'Penerima Reimbursement'
+          : 'Nama Klien',
+    ),
+    validator: (value) =>
+        value == null || value.trim().isEmpty ? 'Wajib diisi' : null,
+  );
 
   Widget _customerPhoneField() => TextFormField(
-        controller: _customerPhoneController,
-        keyboardType: TextInputType.phone,
-        decoration: const InputDecoration(labelText: 'No. WhatsApp'),
-      );
+    controller: _customerPhoneController,
+    keyboardType: TextInputType.phone,
+    decoration: const InputDecoration(labelText: 'No. WhatsApp'),
+  );
 
-  Widget _numberField(TextEditingController controller, String label) => TextFormField(
+  Widget _numberField(TextEditingController controller, String label) =>
+      TextFormField(
         controller: controller,
         keyboardType: TextInputType.number,
         decoration: InputDecoration(labelText: label),
       );
 
   Widget _priceField() => TextFormField(
-        controller: _unitPriceController,
-        keyboardType: TextInputType.number,
-        decoration: const InputDecoration(labelText: 'Harga Satuan', prefixText: 'Rp '),
-      );
+    controller: _unitPriceController,
+    keyboardType: TextInputType.number,
+    decoration: const InputDecoration(
+      labelText: 'Harga Satuan',
+      prefixText: 'Rp ',
+    ),
+  );
 }

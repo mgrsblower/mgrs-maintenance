@@ -100,7 +100,10 @@ class InvoicePdfExportHelper {
       );
 
       final result = await service.export(payload: payload, fileName: fileName);
-      final fileLocation = await downloadInvoicePdf(result.bytes, result.fileName);
+      final fileLocation = await downloadInvoicePdf(
+        result.bytes,
+        result.fileName,
+      );
 
       if (progressNavigator?.mounted ?? false) {
         progressNavigator!.pop();
@@ -174,8 +177,7 @@ class InvoicePdfExportHelper {
                   final operational = theme.extension<OperationalColors>();
                   final successSurface =
                       operational?.success ?? colors.surfaceContainer;
-                  final successInk =
-                      operational?.onSuccess ?? colors.onSurface;
+                  final successInk = operational?.onSuccess ?? colors.onSurface;
                   final dangerSurface =
                       operational?.danger ?? colors.errorContainer;
                   final dangerInk =
@@ -257,7 +259,9 @@ class InvoicePdfExportHelper {
                                   ? null
                                   : () async {
                                       try {
-                                        await pdfService.previewPdf(fileLocation);
+                                        await pdfService.previewPdf(
+                                          fileLocation,
+                                        );
                                       } catch (e) {
                                         if (!dialogContext.mounted) return;
                                         ScaffoldMessenger.of(
@@ -268,8 +272,8 @@ class InvoicePdfExportHelper {
                                               e.toString(),
                                               style: theme.textTheme.bodyMedium
                                                   ?.copyWith(
-                                                    color: colors
-                                                        .onErrorContainer,
+                                                    color:
+                                                        colors.onErrorContainer,
                                                   ),
                                             ),
                                             backgroundColor:
@@ -297,7 +301,8 @@ class InvoicePdfExportHelper {
                                       await pdfService.sharePdf(
                                         fileLocation,
                                         title:
-                                            fileName ?? invoice.invoiceReference,
+                                            fileName ??
+                                            invoice.invoiceReference,
                                       );
                                     } catch (e) {
                                       if (!dialogContext.mounted) return;
@@ -389,4 +394,3 @@ String _storageLocationDescription() {
   } catch (_) {}
   return 'Tersimpan di folder Downloads/MGRS';
 }
-

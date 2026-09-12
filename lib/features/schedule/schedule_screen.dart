@@ -154,7 +154,9 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                 children: [
                   IconButton(
                     tooltip: 'Bulan sebelumnya',
-                    onPressed: busy || month == 'current' ? null : () => move(-1),
+                    onPressed: busy || month == 'current'
+                        ? null
+                        : () => move(-1),
                     icon: const Icon(Icons.chevron_left),
                   ),
                   Expanded(
@@ -168,7 +170,9 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                   ),
                   IconButton(
                     tooltip: 'Bulan berikutnya',
-                    onPressed: busy || month == 'current' ? null : () => move(1),
+                    onPressed: busy || month == 'current'
+                        ? null
+                        : () => move(1),
                     icon: const Icon(Icons.chevron_right),
                   ),
                 ],
@@ -194,7 +198,9 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             const SizedBox(height: AppTokens.space12),
             DropdownButtonFormField<String>(
               initialValue: status ?? '',
-              decoration: const InputDecoration(labelText: 'Status pemeriksaan'),
+              decoration: const InputDecoration(
+                labelText: 'Status pemeriksaan',
+              ),
               items: [
                 const DropdownMenuItem(value: '', child: Text('Semua status')),
                 ...states.entries.map(
@@ -246,7 +252,9 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                 ),
               if (period!['snapshotState'] == 'ready' && items.isEmpty && !busy)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppTokens.space24),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: AppTokens.space24,
+                  ),
                   child: Text(
                     'Tidak ada komponen yang sesuai filter.',
                     style: theme.textTheme.bodyMedium,
@@ -278,7 +286,9 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             if (error != null) ...[
               Text(
                 failureMessage(error),
-                style: theme.textTheme.bodyMedium?.copyWith(color: colors.error),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.error,
+                ),
               ),
               TextButton(
                 onPressed: () => load(more: items.isNotEmpty),
