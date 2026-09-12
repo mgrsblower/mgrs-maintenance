@@ -6,6 +6,19 @@ import '../../shared/bottom_nav_bar.dart';
 import '../maintenance/checking_screen.dart';
 import '../components/component.dart';
 
+const _fallbackOperationalColors = OperationalColors(
+  success: AppTokens.successSurface,
+  onSuccess: AppTokens.success,
+  warning: AppTokens.warningSurface,
+  onWarning: AppTokens.warning,
+  danger: AppTokens.dangerSurface,
+  onDanger: AppTokens.danger,
+);
+
+OperationalColors _operationalColors(BuildContext context) =>
+    Theme.of(context).extension<OperationalColors>() ??
+    _fallbackOperationalColors;
+
 class ActionCenterScreen extends StatefulWidget {
   const ActionCenterScreen({
     super.key,
@@ -68,8 +81,10 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
         Future.delayed(const Duration(milliseconds: 200), () {
           if (mounted) {
             setState(() {
-              _visibleUpdateCount =
-                  math.min(_visibleUpdateCount + _pageSize, total);
+              _visibleUpdateCount = math.min(
+                _visibleUpdateCount + _pageSize,
+                total,
+              );
               _isLoadingMore = false;
             });
           }
@@ -82,8 +97,10 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
         Future.delayed(const Duration(milliseconds: 200), () {
           if (mounted) {
             setState(() {
-              _visibleServiceCount =
-                  math.min(_visibleServiceCount + _pageSize, total);
+              _visibleServiceCount = math.min(
+                _visibleServiceCount + _pageSize,
+                total,
+              );
               _isLoadingMore = false;
             });
           }
@@ -116,8 +133,9 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
       error = null;
     });
     try {
-      final summary =
-          await widget.gateway.fetchTasksSummary(forceRefresh: forceRefresh);
+      final summary = await widget.gateway.fetchTasksSummary(
+        forceRefresh: forceRefresh,
+      );
       if (!mounted) return;
       if (summary.isNotEmpty) {
         if (summary['total'] is int) totalTasks = summary['total'] as int;
@@ -138,15 +156,18 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
               'tone': isDone ? 'success' : 'warning',
               'description':
                   'Tugas pemeriksaan periode ini untuk kelayakan unit $code.',
-              'lastChecked': isDone ? 'Selesai diperiksa' : 'Jadwal periode aktif',
+              'lastChecked': isDone
+                  ? 'Selesai diperiksa'
+                  : 'Jadwal periode aktif',
               'taskId': (t['id'] ?? '').toString(),
             };
           }).toList();
         }
       }
 
-      final components =
-          await widget.gateway.fetchComponents(forceRefresh: forceRefresh);
+      final components = await widget.gateway.fetchComponents(
+        forceRefresh: forceRefresh,
+      );
       if (!mounted) return;
       if (components.isNotEmpty) {
         final needsService = components.where((c) {
@@ -155,11 +176,11 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
         }).toList();
         servicePendingCount = needsService.length;
         serviceList = needsService.map((c) {
-          final cond =
-              (c['kondisi'] ?? c['condition'] ?? 'Service').toString();
+          final cond = (c['kondisi'] ?? c['condition'] ?? 'Service').toString();
           final updated = (c['updated_at'] ?? '').toString();
-          final dateStr =
-              updated.length >= 10 ? updated.substring(0, 10) : 'Tercatat';
+          final dateStr = updated.length >= 10
+              ? updated.substring(0, 10)
+              : 'Tercatat';
           return {
             'id': (c['id'] ?? '').toString(),
             'code': (c['nomor_stiker'] ?? c['code'] ?? '').toString(),
@@ -167,14 +188,13 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
                 'Komponen ${(c['jenis_komponen'] ?? c['kind'] ?? '')} Utama',
             'condition': cond == 'Service'
                 ? 'Perlu Servis'
-                : (cond == 'Rusak Berat'
-                    ? 'Gangguan Fungsi'
-                    : 'Rusak Ringan'),
+                : (cond == 'Rusak Berat' ? 'Gangguan Fungsi' : 'Rusak Ringan'),
             'tone': cond == 'Rusak Ringan' ? 'warning' : 'danger',
-            'description': (c['keterangan'] ??
-                    c['note'] ??
-                    'Terindikasi kendala fisik, membutuhkan tindakan servis teknisi.')
-                .toString(),
+            'description':
+                (c['keterangan'] ??
+                        c['note'] ??
+                        'Terindikasi kendala fisik, membutuhkan tindakan servis teknisi.')
+                    .toString(),
             'reporter': dateStr,
           };
         }).toList();
@@ -207,9 +227,9 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
     } catch (e) {
       if (mounted) {
         Navigator.of(context, rootNavigator: true).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(failureMessage(e))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(failureMessage(e))));
       }
       return;
     }
@@ -244,8 +264,9 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
             padding: const EdgeInsets.symmetric(horizontal: AppTokens.space16),
             child: Center(
               child: ConstrainedBox(
-                constraints:
-                    const BoxConstraints(maxWidth: AppTokens.maxContentWidth),
+                constraints: const BoxConstraints(
+                  maxWidth: AppTokens.maxContentWidth,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -361,7 +382,7 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
   }
 
   Widget _buildPeriodSummaryBanner(BuildContext context) {
-    final operational = Theme.of(context).extension<OperationalColors>()!;
+    final operational = _operationalColors(context);
     final pct = totalTasks > 0
         ? ((completedTasks / totalTasks) * 100).round()
         : 0;
@@ -378,16 +399,16 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
           Expanded(
             child: Text(
               'Pemeriksaan Periode Berjalan: $completedTasks/$totalTasks Selesai',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: operational.onSuccess,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(color: operational.onSuccess),
             ),
           ),
           Text(
             '$pct%',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: operational.onSuccess,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(color: operational.onSuccess),
           ),
         ],
       ),
@@ -395,7 +416,7 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
   }
 
   Widget _buildServicePriorityBanner(BuildContext context) {
-    final operational = Theme.of(context).extension<OperationalColors>()!;
+    final operational = _operationalColors(context);
     return Container(
       padding: const EdgeInsets.all(AppTokens.space16),
       decoration: BoxDecoration(
@@ -409,16 +430,16 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
           Expanded(
             child: Text(
               'Antrean Unit Bermasalah: $servicePendingCount Unit Butuh Tindakan',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: operational.onDanger,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(color: operational.onDanger),
             ),
           ),
           Text(
             'Prioritas',
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: operational.onDanger,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelMedium?.copyWith(color: operational.onDanger),
           ),
         ],
       ),
@@ -519,8 +540,8 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
           Text(
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -539,9 +560,9 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
             failureMessage(error),
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colors.error,
-                  fontWeight: FontWeight.w600,
-                ),
+              color: colors.error,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: AppTokens.space16),
           FilledButton.icon(
@@ -562,7 +583,7 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
     bool success,
   ) {
     final theme = Theme.of(context);
-    final operational = theme.extension<OperationalColors>()!;
+    final operational = _operationalColors(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppTokens.space32),
       child: Column(
@@ -597,18 +618,18 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
   }) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final operational = theme.extension<OperationalColors>()!;
+    final operational = _operationalColors(context);
     final tone = item['tone'] as String;
     final badgeBackground = tone == 'success'
         ? operational.success
         : tone == 'warning'
-            ? operational.warning
-            : operational.danger;
+        ? operational.warning
+        : operational.danger;
     final badgeForeground = tone == 'success'
         ? operational.onSuccess
         : tone == 'warning'
-            ? operational.onWarning
-            : operational.onDanger;
+        ? operational.onWarning
+        : operational.onDanger;
     return Card(
       margin: const EdgeInsets.only(bottom: AppTokens.space12),
       child: Padding(
@@ -623,8 +644,10 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item['code'] as String,
-                          style: theme.textTheme.titleMedium),
+                      Text(
+                        item['code'] as String,
+                        style: theme.textTheme.titleMedium,
+                      ),
                       const SizedBox(height: AppTokens.space4),
                       Text(
                         item['kind'] as String,
@@ -645,8 +668,9 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
                     ),
                     decoration: BoxDecoration(
                       color: badgeBackground,
-                      borderRadius:
-                          BorderRadius.circular(AppTokens.badgeRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppTokens.badgeRadius,
+                      ),
                     ),
                     child: Text(
                       item['condition'] as String,

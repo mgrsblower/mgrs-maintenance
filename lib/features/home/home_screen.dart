@@ -6,6 +6,19 @@ import '../schedule/order_detail_screen.dart';
 import '../schedule/order_model.dart';
 import '../schedule/upcoming_orders_screen.dart';
 
+const _fallbackOperationalColors = OperationalColors(
+  success: AppTokens.successSurface,
+  onSuccess: AppTokens.success,
+  warning: AppTokens.warningSurface,
+  onWarning: AppTokens.warning,
+  danger: AppTokens.dangerSurface,
+  onDanger: AppTokens.danger,
+);
+
+OperationalColors _operationalColors(BuildContext context) =>
+    Theme.of(context).extension<OperationalColors>() ??
+    _fallbackOperationalColors;
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
@@ -52,8 +65,9 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _loadMetrics({bool forceRefresh = false}) async {
     setState(() => _loading = true);
     try {
-      final list =
-          await widget.gateway.fetchComponents(forceRefresh: forceRefresh);
+      final list = await widget.gateway.fetchComponents(
+        forceRefresh: forceRefresh,
+      );
       if (!mounted) return;
       int ok = 0;
       int service = 0;
@@ -71,8 +85,9 @@ class _HomeScreenState extends State<HomeScreen>
 
       String countdown = '0';
       try {
-        final tasks = await widget.gateway
-            .fetchTasksSummary(forceRefresh: forceRefresh);
+        final tasks = await widget.gateway.fetchTasksSummary(
+          forceRefresh: forceRefresh,
+        );
         if (tasks.isNotEmpty) {
           final period = tasks['period'];
           if (period is Map) {
@@ -90,8 +105,10 @@ class _HomeScreenState extends State<HomeScreen>
 
       List<OrderanSewa> upcoming = [];
       try {
-        final all = await widget.gateway
-            .fetchUpcomingOrders(limit: 20, forceRefresh: forceRefresh);
+        final all = await widget.gateway.fetchUpcomingOrders(
+          limit: 20,
+          forceRefresh: forceRefresh,
+        );
         upcoming = all.where((o) => o.isUpcoming).take(5).toList();
       } catch (_) {}
 
@@ -124,8 +141,9 @@ class _HomeScreenState extends State<HomeScreen>
             padding: const EdgeInsets.symmetric(horizontal: AppTokens.space16),
             child: Center(
               child: ConstrainedBox(
-                constraints:
-                    const BoxConstraints(maxWidth: AppTokens.maxContentWidth),
+                constraints: const BoxConstraints(
+                  maxWidth: AppTokens.maxContentWidth,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -165,8 +183,9 @@ class _HomeScreenState extends State<HomeScreen>
             onTap: () => _showUserProfileBottomSheet(context),
             borderRadius: BorderRadius.circular(AppTokens.controlRadius),
             child: ConstrainedBox(
-              constraints:
-                  const BoxConstraints(minHeight: AppTokens.minTouchTarget),
+              constraints: const BoxConstraints(
+                minHeight: AppTokens.minTouchTarget,
+              ),
               child: Row(
                 children: [
                   CircleAvatar(
@@ -191,8 +210,10 @@ class _HomeScreenState extends State<HomeScreen>
                                 color: colors.onSurfaceVariant,
                               ),
                             ),
-                            const Icon(Icons.keyboard_arrow_down_rounded,
-                                size: 18),
+                            const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 18,
+                            ),
                           ],
                         ),
                         Text(
@@ -227,7 +248,7 @@ class _HomeScreenState extends State<HomeScreen>
       builder: (sheetContext) {
         final theme = Theme.of(sheetContext);
         final colors = theme.colorScheme;
-        final operational = theme.extension<OperationalColors>()!;
+        final operational = _operationalColors(sheetContext);
         return SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(
@@ -243,8 +264,10 @@ class _HomeScreenState extends State<HomeScreen>
                 Row(
                   children: [
                     Expanded(
-                      child: Text('Profil Pengguna',
-                          style: theme.textTheme.titleLarge),
+                      child: Text(
+                        'Profil Pengguna',
+                        style: theme.textTheme.titleLarge,
+                      ),
                     ),
                     IconButton(
                       onPressed: () => Navigator.of(sheetContext).pop(),
@@ -276,8 +299,10 @@ class _HomeScreenState extends State<HomeScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(widget.user.displayName,
-                                  style: theme.textTheme.titleMedium),
+                              Text(
+                                widget.user.displayName,
+                                style: theme.textTheme.titleMedium,
+                              ),
                               const SizedBox(height: AppTokens.space8),
                               Wrap(
                                 spacing: AppTokens.space8,
@@ -295,24 +320,27 @@ class _HomeScreenState extends State<HomeScreen>
                                       decoration: BoxDecoration(
                                         color: colors.secondaryContainer,
                                         borderRadius: BorderRadius.circular(
-                                            AppTokens.badgeRadius),
+                                          AppTokens.badgeRadius,
+                                        ),
                                       ),
                                       child: Text(
                                         widget.user.role,
                                         style: theme.textTheme.labelSmall
                                             ?.copyWith(
-                                          color: colors.onSecondaryContainer,
-                                          fontWeight: FontWeight.w700,
-                                        ),
+                                              color:
+                                                  colors.onSecondaryContainer,
+                                              fontWeight: FontWeight.w700,
+                                            ),
                                       ),
                                     ),
                                   ),
                                   if (widget.user.username != null)
                                     Text(
                                       '@${widget.user.username}',
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        color: colors.onSurfaceVariant,
-                                      ),
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: colors.onSurfaceVariant,
+                                          ),
                                     ),
                                 ],
                               ),
@@ -328,13 +356,16 @@ class _HomeScreenState extends State<HomeScreen>
                   padding: const EdgeInsets.all(AppTokens.space12),
                   decoration: BoxDecoration(
                     color: operational.success,
-                    borderRadius:
-                        BorderRadius.circular(AppTokens.controlRadius),
+                    borderRadius: BorderRadius.circular(
+                      AppTokens.controlRadius,
+                    ),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.check_circle_rounded,
-                          color: operational.onSuccess),
+                      Icon(
+                        Icons.check_circle_rounded,
+                        color: operational.onSuccess,
+                      ),
                       const SizedBox(width: AppTokens.space8),
                       Expanded(
                         child: Text(
@@ -433,7 +464,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildWeeklyProgressBento(BuildContext context) {
     final theme = Theme.of(context);
-    final operational = theme.extension<OperationalColors>()!;
+    final operational = _operationalColors(context);
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
@@ -453,8 +484,9 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
                       decoration: BoxDecoration(
                         color: operational.warning,
-                        borderRadius:
-                            BorderRadius.circular(AppTokens.badgeRadius),
+                        borderRadius: BorderRadius.circular(
+                          AppTokens.badgeRadius,
+                        ),
                       ),
                       child: Text(
                         'Pengingat!',
@@ -509,7 +541,7 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildUnitStatusSection(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final operational = theme.extension<OperationalColors>()!;
+    final operational = _operationalColors(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -519,8 +551,7 @@ class _HomeScreenState extends State<HomeScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Status Unit Blower',
-                      style: theme.textTheme.titleLarge),
+                  Text('Status Unit Blower', style: theme.textTheme.titleLarge),
                   const SizedBox(height: AppTokens.space4),
                   Text(
                     _totalMonitored == 0 && !_loading
@@ -638,8 +669,9 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                     decoration: BoxDecoration(
                       color: badgeBackground,
-                      borderRadius:
-                          BorderRadius.circular(AppTokens.badgeRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppTokens.badgeRadius,
+                      ),
                     ),
                     child: Text(
                       percentage,
@@ -688,8 +720,7 @@ class _HomeScreenState extends State<HomeScreen>
                 spacing: AppTokens.space8,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Text('Orderan Mendatang',
-                      style: theme.textTheme.titleLarge),
+                  Text('Orderan Mendatang', style: theme.textTheme.titleLarge),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppTokens.space8,
@@ -697,8 +728,9 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                     decoration: BoxDecoration(
                       color: colors.secondaryContainer,
-                      borderRadius:
-                          BorderRadius.circular(AppTokens.badgeRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppTokens.badgeRadius,
+                      ),
                     ),
                     child: Text(
                       '${_upcomingOrders.length}',
@@ -727,9 +759,9 @@ class _HomeScreenState extends State<HomeScreen>
         ),
         const SizedBox(height: AppTokens.space12),
         if (_upcomingOrders.isNotEmpty)
-          ..._upcomingOrders.take(3).map(
-                (order) => _buildOrderCard(context, order),
-              )
+          ..._upcomingOrders
+              .take(3)
+              .map((order) => _buildOrderCard(context, order))
         else
           Card(
             margin: EdgeInsets.zero,
@@ -737,8 +769,11 @@ class _HomeScreenState extends State<HomeScreen>
               padding: const EdgeInsets.all(AppTokens.space24),
               child: Column(
                 children: [
-                  Icon(Icons.event_available_rounded,
-                      size: 32, color: colors.outline),
+                  Icon(
+                    Icons.event_available_rounded,
+                    size: 32,
+                    color: colors.outline,
+                  ),
                   const SizedBox(height: AppTokens.space8),
                   Text(
                     'Tidak ada orderan mendatang saat ini',
@@ -763,22 +798,24 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildOrderCard(BuildContext context, OrderanSewa order) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final operational = theme.extension<OperationalColors>()!;
+    final operational = _operationalColors(context);
     final hasMaps =
         order.linkGmaps != null && order.linkGmaps!.trim().isNotEmpty;
     final hasWa = order.cleanWhatsapp.isNotEmpty;
     final isPast = order.isPast;
     final statusText = isPast
         ? (order.isCompletedOrCancelled
-            ? (order.statusOrderan ?? 'Selesai')
-            : 'Selesai / Lewat')
+              ? (order.statusOrderan ?? 'Selesai')
+              : 'Selesai / Lewat')
         : ((order.statusOrderan != null && order.statusOrderan!.isNotEmpty)
-            ? order.statusOrderan!
-            : 'Terjadwal');
-    final statusBackground =
-        isPast ? colors.secondaryContainer : operational.success;
-    final statusForeground =
-        isPast ? colors.onSecondaryContainer : operational.onSuccess;
+              ? order.statusOrderan!
+              : 'Terjadwal');
+    final statusBackground = isPast
+        ? colors.secondaryContainer
+        : operational.success;
+    final statusForeground = isPast
+        ? colors.onSecondaryContainer
+        : operational.onSuccess;
 
     return Card(
       margin: const EdgeInsets.only(bottom: AppTokens.space12),
@@ -833,8 +870,9 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
                       decoration: BoxDecoration(
                         color: statusBackground,
-                        borderRadius:
-                            BorderRadius.circular(AppTokens.badgeRadius),
+                        borderRadius: BorderRadius.circular(
+                          AppTokens.badgeRadius,
+                        ),
                       ),
                       child: Text(
                         statusText,
@@ -865,8 +903,11 @@ class _HomeScreenState extends State<HomeScreen>
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.location_on_outlined,
-                        size: 18, color: colors.onSurfaceVariant),
+                    Icon(
+                      Icons.location_on_outlined,
+                      size: 18,
+                      color: colors.onSurfaceVariant,
+                    ),
                     const SizedBox(width: AppTokens.space4),
                     Expanded(
                       child: Text(
@@ -886,8 +927,11 @@ class _HomeScreenState extends State<HomeScreen>
               const SizedBox(height: AppTokens.space8),
               Row(
                 children: [
-                  Icon(Icons.calendar_today_rounded,
-                      size: 16, color: colors.onSurfaceVariant),
+                  Icon(
+                    Icons.calendar_today_rounded,
+                    size: 16,
+                    color: colors.onSurfaceVariant,
+                  ),
                   const SizedBox(width: AppTokens.space8),
                   Expanded(
                     child: Text(
