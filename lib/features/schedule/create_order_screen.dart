@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import '../../app/app_theme.dart';
 import '../../app/gateway.dart';
+import '../../shared/pressable.dart';
 import '../invoices/invoice_model.dart';
 
 class CreateOrderScreen extends StatefulWidget {
@@ -20,6 +20,7 @@ class CreateOrderScreen extends StatefulWidget {
 
 class _CreateOrderScreenState extends State<CreateOrderScreen> {
   final _formKey = GlobalKey<FormState>();
+
   final _eventNameController = TextEditingController();
   final _clientNameController = TextEditingController();
   final _whatsappController = TextEditingController();
@@ -52,31 +53,15 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     return 'ORD-$y$m$d-${Random().nextInt(900) + 100}';
   }
 
-  static String _formatDateFull(DateTime date) {
+  static String _formatDateFull(DateTime dt) {
     const days = [
-      'Senin',
-      'Selasa',
-      'Rabu',
-      'Kamis',
-      'Jumat',
-      'Sabtu',
-      'Minggu',
+      'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
     ];
     const months = [
-      'Januari',
-      'Februari',
-      'Maret',
-      'April',
-      'Mei',
-      'Juni',
-      'Juli',
-      'Agustus',
-      'September',
-      'Oktober',
-      'November',
-      'Desember',
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
     ];
-    return '${days[date.weekday - 1]}, ${date.day} ${months[date.month - 1]} ${date.year}';
+    return '${days[dt.weekday - 1]}, ${dt.day} ${months[dt.month - 1]} ${dt.year}';
   }
 
   Future<void> _pickDate() async {
@@ -85,13 +70,30 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       initialDate: _selectedDate,
       firstDate: DateTime.now().subtract(const Duration(days: 30)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF147CC1),
+              onPrimary: Colors.white,
+              onSurface: Color(0xFF0F172A),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
-    if (picked != null) setState(() => _selectedDate = picked);
+
+    if (picked != null) {
+      setState(() => _selectedDate = picked);
+    }
   }
 
   Future<void> _submitOrder() async {
     if (!_formKey.currentState!.validate()) return;
+
     setState(() => _isSubmitting = true);
+
     try {
       final y = _selectedDate.year.toString().padLeft(4, '0');
       final m = _selectedDate.month.toString().padLeft(2, '0');
@@ -101,6 +103,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       final composedNote =
           '$rawNote [SEWA_HARI:$_rentalDays] [TGL_EVENT:$dateStr]'.trim();
       final orderanId = _generatedOrderId;
+
       final payload = <String, Object?>{
         'orderan_id': orderanId,
         'tanggal_pemasangan': dateStr,
@@ -113,21 +116,31 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         'catatan_orderan': composedNote,
         'status_orderan': 'Terjadwal',
       };
+
       await widget.gateway.createOrderWithInvoice(payload);
+
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Orderan $orderanId dan Invoice berhasil dibuat!'),
+          content: Text(
+            'Orderan $orderanId dan Invoice berhasil dibuat!',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          backgroundColor: const Color(0xFF059669),
+          behavior: SnackBarBehavior.floating,
         ),
       );
+
       Navigator.of(context).pop(true);
-    } catch (error) {
+    } catch (e) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal membuat orderan: $error'),
-          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Text('Gagal membuat orderan: $e'),
+          backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -135,18 +148,18 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
     return Scaffold(
-      backgroundColor: colors.surfaceContainerLow,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
             _buildTopBar(context),
-            const Divider(),
+            const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppTokens.space16),
+                physics: const BouncingScrollPhysics(),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -161,39 +174,41 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         controller: _eventNameController,
                         label: 'Nama Acara / Event *',
                         hint: 'Misal: Pernikahan Budi & Ani, Konser Musik',
-                        validator: (value) =>
-                            value == null || value.trim().isEmpty
+                        validator: (v) => v == null || v.trim().isEmpty
                             ? 'Harap isi nama acara'
                             : null,
                       ),
-                      _spacer(),
+                      const SizedBox(height: 14),
                       _buildFormField(
                         controller: _clientNameController,
                         label: 'Nama Klien / Penyelenggara *',
                         hint: 'Misal: Ibu Sarah / PT Maju Jaya',
-                        validator: (value) =>
-                            value == null || value.trim().isEmpty
+                        validator: (v) => v == null || v.trim().isEmpty
                             ? 'Harap isi nama klien'
                             : null,
                       ),
-                      _spacer(),
+                      const SizedBox(height: 14),
                       _buildFormField(
                         controller: _whatsappController,
                         label: 'Nomor WhatsApp Klien *',
                         hint: 'Contoh: 08123456789',
                         keyboardType: TextInputType.phone,
-                        validator: (value) =>
-                            value == null || value.trim().isEmpty
+                        validator: (v) => v == null || v.trim().isEmpty
                             ? 'Harap isi nomor WhatsApp klien'
                             : null,
                       ),
-                      _sectionGap(),
+
+                      const SizedBox(height: 24),
+                      const Divider(
+                          height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
+                      const SizedBox(height: 20),
+
                       _buildSectionHeader(
                         icon: Icons.calendar_today_rounded,
                         title: 'Jadwal & Kebutuhan Unit',
                       ),
                       _buildDatePickerField(),
-                      _spacer(),
+                      const SizedBox(height: 14),
                       Row(
                         children: [
                           Expanded(
@@ -203,11 +218,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                               unitSuffix: 'Unit',
                               min: 1,
                               max: 30,
-                              onChanged: (value) =>
-                                  setState(() => _unitCount = value),
+                              onChanged: (v) => setState(() => _unitCount = v),
                             ),
                           ),
-                          const SizedBox(width: AppTokens.space12),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: _buildStepperBox(
                               title: 'Durasi Sewa',
@@ -215,13 +229,17 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                               unitSuffix: 'Hari',
                               min: 1,
                               max: 14,
-                              onChanged: (value) =>
-                                  setState(() => _rentalDays = value),
+                              onChanged: (v) => setState(() => _rentalDays = v),
                             ),
                           ),
                         ],
                       ),
-                      _sectionGap(),
+
+                      const SizedBox(height: 24),
+                      const Divider(
+                          height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
+                      const SizedBox(height: 20),
+
                       _buildSectionHeader(
                         icon: Icons.location_on_outlined,
                         title: 'Lokasi & Keterangan',
@@ -230,29 +248,29 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         controller: _addressController,
                         label: 'Alamat Lengkap Lokasi *',
                         hint: 'Nama gedung, jalan, nomor, patokan venue',
-                        maxLines: 3,
-                        validator: (value) =>
-                            value == null || value.trim().isEmpty
+                        maxLines: 2,
+                        validator: (v) => v == null || v.trim().isEmpty
                             ? 'Harap isi alamat lokasi'
                             : null,
                       ),
-                      _spacer(),
+                      const SizedBox(height: 14),
                       _buildFormField(
                         controller: _mapsController,
                         label: 'Link Google Maps (Opsional)',
                         hint: 'https://maps.app.goo.gl/...',
                         keyboardType: TextInputType.url,
                       ),
-                      _spacer(),
+                      const SizedBox(height: 14),
                       _buildFormField(
                         controller: _noteController,
                         label: 'Catatan Tambahan (Opsional)',
                         hint: 'Misal: pasang sebelum jam 9 pagi, kabel panjang',
-                        maxLines: 3,
+                        maxLines: 2,
                       ),
-                      _sectionGap(),
-                      _buildInvoicePreview(context),
-                      const SizedBox(height: AppTokens.space12),
+
+                      const SizedBox(height: 24),
+                      _buildInvoicePreview(),
+                      const SizedBox(height: 12),
                     ],
                   ),
                 ),
@@ -265,40 +283,86 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  SizedBox _spacer() => const SizedBox(height: AppTokens.space12);
-  SizedBox _sectionGap() => const SizedBox(height: AppTokens.space24);
-
+  // Top Bar clean and native
   Widget _buildTopBar(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
     return Padding(
-      padding: const EdgeInsets.all(AppTokens.space8),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
-            tooltip: 'Kembali',
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.chevron_left_rounded),
+          Row(
+            children: [
+              PressableScale(
+                onTap: () => Navigator.of(context).pop(),
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.chevron_left_rounded,
+                      color: Color(0xFF0F172A),
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    'Input Orderan Sewa',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  Text(
+                    'Jadwal Acara & Terbit Invoice',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Input Orderan Sewa', style: theme.textTheme.titleLarge),
+                CircleAvatar(
+                  radius: 3,
+                  backgroundColor: Color(0xFF2563EB),
+                ),
+                SizedBox(width: 5),
                 Text(
-                  'Jadwal Acara & Terbit Invoice',
-                  style: theme.textTheme.labelMedium,
+                  'PIC Order',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2563EB),
+                  ),
                 ),
               ],
             ),
-          ),
-          Chip(
-            avatar: Icon(
-              Icons.circle,
-              size: AppTokens.space8,
-              color: colors.primary,
-            ),
-            label: const Text('PIC Order'),
           ),
         ],
       ),
@@ -310,22 +374,34 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     required String title,
     String? caption,
   }) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppTokens.space12),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: colors.onSurfaceVariant),
-          const SizedBox(width: AppTokens.space8),
-          Expanded(child: Text(title, style: theme.textTheme.titleMedium)),
-          if (caption != null)
+          Icon(icon, size: 15, color: const Color(0xFF64748B)),
+          const SizedBox(width: 6),
+          Text(
+            title.toUpperCase(),
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 11.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.8,
+              color: Color(0xFF64748B),
+            ),
+          ),
+          if (caption != null) ...[
+            const Spacer(),
             Text(
               caption,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: colors.primary,
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2563EB),
               ),
             ),
+          ],
         ],
       ),
     );
@@ -339,32 +415,116 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     int maxLines = 1,
     String? Function(String?)? validator,
   }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      maxLines: maxLines,
-      validator: validator,
-      decoration: InputDecoration(labelText: label, hintText: hint),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 12.5,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF334155),
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          maxLines: maxLines,
+          validator: validator,
+          style: const TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 13.5,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF0F172A),
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 13,
+              color: Color(0xFF94A3B8),
+            ),
+            filled: true,
+            fillColor: const Color(0xFFF8FAFC),
+            isDense: true,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide:
+                  const BorderSide(color: Color(0xFF147CC1), width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFEF4444)),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide:
+                  const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildDatePickerField() {
-    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Tanggal Pemasangan *', style: theme.textTheme.labelLarge),
-        const SizedBox(height: AppTokens.space8),
-        OutlinedButton.icon(
-          onPressed: _pickDate,
-          icon: const Icon(Icons.calendar_today_rounded),
-          label: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(_formatDateFull(_selectedDate)),
+        const Text(
+          'Tanggal Pemasangan *',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 12.5,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF334155),
           ),
-          style: OutlinedButton.styleFrom(
-            minimumSize: const Size.fromHeight(AppTokens.minTouchTarget),
-            alignment: Alignment.centerLeft,
+        ),
+        const SizedBox(height: 6),
+        PressableScale(
+          onTap: _pickDate,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today_rounded,
+                        size: 16, color: Color(0xFF147CC1)),
+                    const SizedBox(width: 10),
+                    Text(
+                      _formatDateFull(_selectedDate),
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                  ],
+                ),
+                const Icon(Icons.arrow_drop_down_rounded,
+                    color: Color(0xFF64748B)),
+              ],
+            ),
           ),
         ),
       ],
@@ -379,31 +539,81 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     required int max,
     required ValueChanged<int> onChanged,
   }) {
-    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: theme.textTheme.labelLarge),
-        const SizedBox(height: AppTokens.space8),
-        Card(
+        Text(
+          title,
+          style: const TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 12.5,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF334155),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              IconButton(
-                tooltip: 'Kurangi $title',
-                onPressed: value > min ? () => onChanged(value - 1) : null,
-                icon: const Icon(Icons.remove_rounded),
-              ),
-              Expanded(
-                child: Text(
-                  '$value $unitSuffix',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.titleMedium,
+              InkWell(
+                onTap: value > min ? () => onChanged(value - 1) : null,
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: value > min ? Colors.white : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFFE2E8F0),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.remove_rounded,
+                    size: 18,
+                    color: value > min
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFF94A3B8),
+                  ),
                 ),
               ),
-              IconButton(
-                tooltip: 'Tambah $title',
-                onPressed: value < max ? () => onChanged(value + 1) : null,
-                icon: const Icon(Icons.add_rounded),
+              Text(
+                '$value $unitSuffix',
+                style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              InkWell(
+                onTap: value < max ? () => onChanged(value + 1) : null,
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: value < max ? Colors.white : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFFE2E8F0),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.add_rounded,
+                    size: 18,
+                    color: value < max
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFF94A3B8),
+                  ),
+                ),
               ),
             ],
           ),
@@ -412,84 +622,139 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  Widget _buildInvoicePreview(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    return Card(
-      color: colors.surfaceContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(AppTokens.space16),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Icon(Icons.receipt_long_rounded, color: colors.primary),
-                const SizedBox(width: AppTokens.space12),
-                Expanded(
-                  child: Column(
+  Widget _buildInvoicePreview() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.receipt_long_rounded,
+                      size: 17,
+                      color: Color(0xFF147CC1),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'Estimasi Total Tagihan',
-                        style: theme.textTheme.labelMedium,
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF64748B),
+                        ),
                       ),
                       Text(
                         '$_unitCount Unit × $_rentalDays Hari',
-                        style: theme.textTheme.titleMedium,
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
                       ),
                     ],
                   ),
+                ],
+              ),
+              Text(
+                InvoiceRecord.formatRupiah(_totalInvoiceAmount),
+                style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF147CC1),
                 ),
-                Text(
-                  InvoiceRecord.formatRupiah(_totalInvoiceAmount),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: colors.primary,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+          const SizedBox(height: 8),
+          const Row(
+            children: [
+              Icon(Icons.info_outline_rounded,
+                  size: 13, color: Color(0xFF94A3B8)),
+              SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Invoice resmi otomatis terbit dan masuk ke tab Invoice.',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 10.5,
+                    color: Color(0xFF64748B),
                   ),
                 ),
-              ],
-            ),
-            const Divider(height: AppTokens.space24),
-            Row(
-              children: [
-                Icon(
-                  Icons.info_outline_rounded,
-                  size: 18,
-                  color: colors.onSurfaceVariant,
-                ),
-                const SizedBox(width: AppTokens.space8),
-                Expanded(
-                  child: Text(
-                    'Invoice resmi otomatis terbit dan masuk ke tab Invoice.',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
+  // Bottom Submit Button Bar
   Widget _buildBottomSubmitBar(BuildContext context) {
-    return Material(
-      color: Theme.of(context).colorScheme.surface,
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.all(AppTokens.space16),
-          child: SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: _isSubmitting ? null : _submitOrder,
-              child: _isSubmitting
-                  ? const SizedBox.square(
-                      dimension: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Simpan & Terbitkan Orderan'),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x080F172A),
+            blurRadius: 10,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 48,
+        child: FilledButton(
+          onPressed: _isSubmitting ? null : _submitOrder,
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF147CC1),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
             ),
           ),
+          child: _isSubmitting
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2.5,
+                  ),
+                )
+              : const Text(
+                  'Simpan & Terbitkan Orderan',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
         ),
       ),
     );

@@ -24,7 +24,12 @@ enum AdminAppMode {
 }
 
 class UserProfile {
-  const UserProfile(this.id, this.role, {this.fullName, this.username});
+  const UserProfile(
+    this.id,
+    this.role, {
+    this.fullName,
+    this.username,
+  });
 
   final String id;
   final String role;
@@ -115,9 +120,7 @@ String failureMessage(Object? error) {
   if (error is PostgrestException) {
     return error.message;
   }
-  return error is AppFailure
-      ? error.message
-      : const AppFailure('unknown').message;
+  return error is AppFailure ? error.message : const AppFailure('unknown').message;
 }
 
 class _CacheEntry<T> {
@@ -177,7 +180,8 @@ abstract class MaintenanceGateway {
     String invoiceId,
     InvoicePaymentStatus status,
     num paidAmount,
-  ) async => throw UnimplementedError();
+  ) async =>
+      throw UnimplementedError();
 
   Future<InvoiceRecord?> fetchInvoiceByOrderanId(String orderanId) async =>
       null;
@@ -188,7 +192,10 @@ abstract class MaintenanceGateway {
     Map<String, Object?> orderData,
   ) async => throw UnimplementedError();
 
-  Future<void> updateOrderStatus(String orderanId, String status) async {}
+  Future<void> updateOrderStatus(
+    String orderanId,
+    String status,
+  ) async {}
 
   Future<void> cancelOrder(
     String orderanId, {
@@ -315,7 +322,9 @@ class SupabaseGateway extends MaintenanceGateway {
           !UserProfile.roles.contains(returnedProfile['role'])) {
         throw const AppFailure('forbidden');
       }
-      await client.auth.setSession(session['refresh_token'] as String);
+      await client.auth.setSession(
+        session['refresh_token'] as String,
+      );
       if (client.auth.currentUser?.id != user['id']) {
         await signOut();
         throw const AppFailure('unauthenticated');
@@ -390,9 +399,8 @@ class SupabaseGateway extends MaintenanceGateway {
         final q = query.trim();
         builder = builder.or('nomor_stiker.ilike.%$q%,komponen_id.ilike.%$q%');
       }
-      final res = await builder
-          .order('nomor_stiker')
-          .timeout(const Duration(seconds: 15));
+      final res =
+          await builder.order('nomor_stiker').timeout(const Duration(seconds: 15));
       if (res is List) {
         final items = res.map(jsonObject).toList();
         _saveToCache(cacheKey, items);
@@ -500,11 +508,9 @@ class SupabaseGateway extends MaintenanceGateway {
       if (cached != null) return cached;
     }
     try {
-      final query = client
-          .from('orderan_sewa')
-          .select(
-            'id,orderan_id,tanggal_pemasangan,nama_event,nama_client,alamat,nomor_whatsapp,link_gmaps,nama_pic,jumlah_unit,status_orderan,catatan_orderan,created_at',
-          );
+      final query = client.from('orderan_sewa').select(
+        'id,orderan_id,tanggal_pemasangan,nama_event,nama_client,alamat,nomor_whatsapp,link_gmaps,nama_pic,jumlah_unit,status_orderan,catatan_orderan,created_at',
+      );
       final res = _isUuid(id)
           ? await query.or('id.eq.$id,orderan_id.eq.$id').maybeSingle()
           : await query.eq('orderan_id', id).maybeSingle();
@@ -520,7 +526,9 @@ class SupabaseGateway extends MaintenanceGateway {
   }
 
   @override
-  Future<List<InvoiceRecord>> fetchInvoices({bool forceRefresh = false}) async {
+  Future<List<InvoiceRecord>> fetchInvoices({
+    bool forceRefresh = false,
+  }) async {
     const cacheKey = 'invoices:all';
     if (!forceRefresh) {
       final cached = _getFromCache<List<InvoiceRecord>>(cacheKey);
@@ -531,9 +539,8 @@ class SupabaseGateway extends MaintenanceGateway {
           .from('invoices')
           .select()
           .order('invoice_date', ascending: false);
-      final list = (res as List)
-          .map((item) => InvoiceRecord.fromJson(jsonObject(item)))
-          .toList();
+      final list =
+          (res as List).map((item) => InvoiceRecord.fromJson(jsonObject(item))).toList();
 
       // Clean up orphaned unpaid invoices from cancelled orders
       final orderIds = list
@@ -551,28 +558,18 @@ class SupabaseGateway extends MaintenanceGateway {
               .eq('status_orderan', 'Dibatalkan');
 
           final cancelledIds = <String>{};
-          for (final row
-              in (cancelledRes as List).cast<Map<String, Object?>>()) {
-            if (row['id'] != null) {
-              cancelledIds.add(row['id'].toString());
-            }
-            if (row['orderan_id'] != null) {
-              cancelledIds.add(row['orderan_id'].toString());
-            }
+          for (final row in (cancelledRes as List).cast<Map<String, Object?>>()) {
+            if (row['id'] != null) cancelledIds.add(row['id'].toString());
+            if (row['orderan_id'] != null) cancelledIds.add(row['orderan_id'].toString());
           }
 
           if (cancelledIds.isNotEmpty) {
             final validList = <InvoiceRecord>[];
             for (final inv in list) {
-              if (inv.orderanId != null &&
-                  cancelledIds.contains(inv.orderanId)) {
+              if (inv.orderanId != null && cancelledIds.contains(inv.orderanId)) {
                 if (inv.paidAmount <= 0) {
                   // Asynchronously delete from Supabase so it won't persist
-                  client
-                      .from('invoices')
-                      .delete()
-                      .eq('id', inv.id)
-                      .catchError((_) {});
+                  client.from('invoices').delete().eq('id', inv.id).catchError((_) {});
                   continue; // Exclude from display
                 }
               }
@@ -675,9 +672,7 @@ class SupabaseGateway extends MaintenanceGateway {
         final counterpart = _isUuid(orderanId)
             ? orderRes['orderan_id']?.toString()
             : orderRes['id']?.toString();
-        if (counterpart != null &&
-            counterpart.isNotEmpty &&
-            counterpart != orderanId) {
+        if (counterpart != null && counterpart.isNotEmpty && counterpart != orderanId) {
           final fallbackRes = await client
               .from('invoices')
               .select()
@@ -728,9 +723,8 @@ class SupabaseGateway extends MaintenanceGateway {
         'invoice_reference': invoiceRef,
         'invoice_date': dt.toIso8601String().substring(0, 10),
         'due_date': dueDate.toIso8601String().substring(0, 10),
-        'product_name': order.namaEvent.isNotEmpty
-            ? order.namaEvent
-            : 'Sewa Mistyfan',
+        'product_name':
+            order.namaEvent.isNotEmpty ? order.namaEvent : 'Sewa Mistyfan',
         'customer_name': order.namaClient,
         'customer_phone': order.nomorWhatsapp ?? '',
         'quantity': qty,
@@ -757,9 +751,11 @@ class SupabaseGateway extends MaintenanceGateway {
   Future<void> updateOrderStatus(String orderanId, String status) async {
     final normalizedStatus =
         (status.toLowerCase() == 'batal' || status.toLowerCase() == 'cancelled')
-        ? 'Dibatalkan'
-        : status;
-    final updatePayload = <String, Object?>{'status_orderan': normalizedStatus};
+            ? 'Dibatalkan'
+            : status;
+    final updatePayload = <String, Object?>{
+      'status_orderan': normalizedStatus,
+    };
 
     if (_isUuid(orderanId)) {
       await client
@@ -792,9 +788,7 @@ class SupabaseGateway extends MaintenanceGateway {
     String? businessOrderId;
     String? dbUuid;
     try {
-      final noteQuery = client
-          .from('orderan_sewa')
-          .select('id,orderan_id,catatan_orderan');
+      final noteQuery = client.from('orderan_sewa').select('id,orderan_id,catatan_orderan');
       var res = _isUuid(orderanId)
           ? await noteQuery.eq('id', orderanId).maybeSingle()
           : await noteQuery.eq('orderan_id', orderanId).maybeSingle();
@@ -830,7 +824,10 @@ class SupabaseGateway extends MaintenanceGateway {
     };
 
     if (dbUuid != null && dbUuid.isNotEmpty) {
-      await client.from('orderan_sewa').update(updatePayload).eq('id', dbUuid);
+      await client
+          .from('orderan_sewa')
+          .update(updatePayload)
+          .eq('id', dbUuid);
     } else if (businessOrderId != null && businessOrderId.isNotEmpty) {
       await client
           .from('orderan_sewa')
@@ -857,8 +854,7 @@ class SupabaseGateway extends MaintenanceGateway {
               .select('id,payment_status,paid_amount')
               .eq('orderan_id', id);
           for (final row in (res as List).cast<Map<String, Object?>>()) {
-            final paid =
-                num.tryParse(row['paid_amount']?.toString() ?? '0') ?? 0;
+            final paid = num.tryParse(row['paid_amount']?.toString() ?? '0') ?? 0;
             final status = row['payment_status']?.toString().toLowerCase();
             if (paid <= 0 || status == 'unpaid') {
               final invId = row['id']?.toString();
@@ -870,9 +866,7 @@ class SupabaseGateway extends MaintenanceGateway {
         }
 
         await findInvoices(orderanId);
-        if (businessOrderId != null &&
-            businessOrderId.isNotEmpty &&
-            businessOrderId != orderanId) {
+        if (businessOrderId != null && businessOrderId.isNotEmpty && businessOrderId != orderanId) {
           await findInvoices(businessOrderId);
         }
         if (dbUuid != null && dbUuid.isNotEmpty && dbUuid != orderanId) {
@@ -908,7 +902,9 @@ class SupabaseGateway extends MaintenanceGateway {
       if (cached != null) return cached;
     }
     try {
-      final res = await client.from('orderan_sewa').select('catatan_orderan');
+      final res = await client
+          .from('orderan_sewa')
+          .select('catatan_orderan');
       final counts = <String, int>{};
       for (final item in (res as List).cast<Map<String, Object?>>()) {
         final note = item['catatan_orderan']?.toString();
@@ -947,9 +943,7 @@ class SupabaseGateway extends MaintenanceGateway {
     String? businessOrderId;
     String? dbUuid;
     try {
-      final noteQuery = client
-          .from('orderan_sewa')
-          .select('id,orderan_id,catatan_orderan');
+      final noteQuery = client.from('orderan_sewa').select('id,orderan_id,catatan_orderan');
       var res = _isUuid(orderanId)
           ? await noteQuery.eq('id', orderanId).maybeSingle()
           : await noteQuery.eq('orderan_id', orderanId).maybeSingle();
@@ -973,14 +967,14 @@ class SupabaseGateway extends MaintenanceGateway {
       debugPrint('[Save Allocation Note Fetch Error] $e');
     }
 
-    final updatedNote = UnitAllocationParser.updateNoteWithAllocation(
-      currentNote,
-      units,
-    );
+    final updatedNote = UnitAllocationParser.updateNoteWithAllocation(currentNote, units);
     final updatePayload = {'catatan_orderan': updatedNote};
 
     if (dbUuid != null && dbUuid.isNotEmpty) {
-      await client.from('orderan_sewa').update(updatePayload).eq('id', dbUuid);
+      await client
+          .from('orderan_sewa')
+          .update(updatePayload)
+          .eq('id', dbUuid);
     } else if (businessOrderId != null && businessOrderId.isNotEmpty) {
       await client
           .from('orderan_sewa')
@@ -1044,13 +1038,10 @@ class SupabaseGateway extends MaintenanceGateway {
 
             if (matchedKind != null) {
               history.add({
-                'orderan_id':
-                    item['orderan_id']?.toString() ?? item['id']?.toString(),
+                'orderan_id': item['orderan_id']?.toString() ?? item['id']?.toString(),
                 'nama_event': item['nama_event']?.toString() ?? 'Sewa Blower',
                 'nama_client': item['nama_client']?.toString() ?? '-',
-                'tanggal':
-                    item['tanggal_pemasangan']?.toString() ??
-                    item['created_at']?.toString(),
+                'tanggal': item['tanggal_pemasangan']?.toString() ?? item['created_at']?.toString(),
                 'alamat': item['alamat']?.toString() ?? '-',
                 'status_orderan': item['status_orderan']?.toString() ?? '-',
                 'unit_index': u.unitIndex,

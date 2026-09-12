@@ -43,11 +43,11 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
   }
 
   void reload() => setState(() {
-    future = Component.load(widget.gateway, widget.id);
-    futureHistory = widget.gateway.fetchComponentHistory(widget.id);
-    _orderUsageFuture = null;
-    _loadedCode = null;
-  });
+        future = Component.load(widget.gateway, widget.id);
+        futureHistory = widget.gateway.fetchComponentHistory(widget.id);
+        _orderUsageFuture = null;
+        _loadedCode = null;
+      });
 
   @override
   Widget build(BuildContext context) {
@@ -63,9 +63,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                   _buildTopAppBar(context, 'Memuat...'),
                   const Expanded(
                     child: Center(
-                      child: CircularProgressIndicator(
-                        color: AppTokens.magenta,
-                      ),
+                      child: CircularProgressIndicator(color: Color(0xFF147CC1)),
                     ),
                   ),
                 ],
@@ -91,16 +89,17 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                             const Icon(
                               Icons.error_outline_rounded,
                               size: 44,
-                              color: AppTokens.danger,
+                              color: Color(0xFFDC2626),
                             ),
                             const SizedBox(height: 12),
                             Text(
                               failureMessage(snapshot.error),
                               textAlign: TextAlign.center,
                               style: const TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
-                                color: AppTokens.danger,
+                                color: Color(0xFF991B1B),
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -109,8 +108,8 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                               icon: const Icon(Icons.refresh_rounded, size: 18),
                               label: const Text('Coba Lagi'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTokens.magenta,
-                                foregroundColor: AppTokens.white,
+                                backgroundColor: const Color(0xFF147CC1),
+                                foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -130,9 +129,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
         final comp = snapshot.data!;
         if (_loadedCode != comp.code) {
           _loadedCode = comp.code;
-          _orderUsageFuture = widget.gateway.fetchComponentOrderUsageHistory(
-            comp.code,
-          );
+          _orderUsageFuture = widget.gateway.fetchComponentOrderUsageHistory(comp.code);
         }
 
         return Scaffold(
@@ -177,17 +174,17 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
             PressableScale(
               onTap: () => Navigator.of(context).pop(),
               child: Container(
-                width: AppTokens.minTouchTarget,
-                height: AppTokens.minTouchTarget,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: AppTokens.mistLight,
+                  color: const Color(0xFFF1F5F9),
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppTokens.mist),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 child: const Center(
                   child: Icon(
                     Icons.chevron_left_rounded,
-                    color: AppTokens.ink,
+                    color: Color(0xFF0F172A),
                     size: 24,
                   ),
                 ),
@@ -200,18 +197,20 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                 const Text(
                   'Detail Komponen',
                   style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: AppTokens.ink,
+                    color: Color(0xFF0F172A),
                     letterSpacing: -0.3,
                   ),
                 ),
                 Text(
                   'Unit MGRS • $kind',
                   style: const TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: AppTokens.stone,
+                    color: Color(0xFF64748B),
                   ),
                 ),
               ],
@@ -221,17 +220,17 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
         PressableScale(
           onTap: () {},
           child: Container(
-            width: AppTokens.minTouchTarget,
-            height: AppTokens.minTouchTarget,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              color: AppTokens.mistLight,
+              color: const Color(0xFFF1F5F9),
               shape: BoxShape.circle,
-              border: Border.all(color: AppTokens.mist),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
             child: const Center(
               child: Icon(
                 Icons.more_horiz_rounded,
-                color: AppTokens.ink,
+                color: Color(0xFF0F172A),
                 size: 20,
               ),
             ),
@@ -242,29 +241,36 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
   }
 
   // Card 1: Identity Card
-  Widget _buildIdentityCard(BuildContext context, Component comp) {
+  Widget _buildIdentityCard(
+    BuildContext context,
+    Component comp,
+  ) {
     final label = conditionDisplayLabel(comp.condition);
     final isGood = comp.condition == 'Layak Pakai' || comp.condition == 'OK';
-    final isService =
-        comp.condition == 'Service' || comp.condition == 'Rusak Berat';
+    final isService = comp.condition == 'Service' || comp.condition == 'Rusak Berat';
     final badgeColor = isGood
-        ? AppTokens.success
-        : (isService ? AppTokens.danger : AppTokens.warning);
-    final lastCheckStr =
-        comp.lastCheckingAt != null && comp.lastCheckingAt!.length >= 10
+        ? const Color(0xFF10B981)
+        : (isService ? const Color(0xFFEF4444) : const Color(0xFFF59E0B));
+    final lastCheckStr = comp.lastCheckingAt != null && comp.lastCheckingAt!.length >= 10
         ? comp.lastCheckingAt!.substring(0, 10)
         : 'Belum tercatat';
-    final serviceStr =
-        comp.lastServiceAt != null && comp.lastServiceAt!.length >= 10
+    final serviceStr = comp.lastServiceAt != null && comp.lastServiceAt!.length >= 10
         ? 'Servis: ${comp.lastServiceAt!.substring(0, 10)}'
         : 'Tercatat di MGRS';
 
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppTokens.white,
-        borderRadius: BorderRadius.circular(AppTokens.cardRadius),
-        border: Border.all(color: AppTokens.mist),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -278,9 +284,10 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                   Text(
                     comp.code,
                     style: const TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
-                      color: AppTokens.ink,
+                      color: Color(0xFF0F172A),
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -288,21 +295,19 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                   Text(
                     'Komponen ${comp.kind} Utama',
                     style: const TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: AppTokens.stone,
+                      color: Color(0xFF64748B),
                     ),
                   ),
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 5,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
                   color: badgeColor,
-                  borderRadius: BorderRadius.circular(AppTokens.cardRadius),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -311,7 +316,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                       width: 5,
                       height: 5,
                       decoration: const BoxDecoration(
-                        color: AppTokens.white,
+                        color: Colors.white,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -319,9 +324,10 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     Text(
                       label,
                       style: const TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: AppTokens.white,
+                        color: Colors.white,
                       ),
                     ),
                   ],
@@ -333,7 +339,9 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
           Container(
             padding: const EdgeInsets.only(top: 14),
             decoration: const BoxDecoration(
-              border: Border(top: BorderSide(color: AppTokens.mistLight)),
+              border: Border(
+                top: BorderSide(color: Color(0xFFF1F5F9)),
+              ),
             ),
             child: Row(
               children: [
@@ -344,24 +352,30 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                       const Text(
                         'Pemeriksaan Terakhir',
                         style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
-                          color: AppTokens.stone,
+                          color: Color(0xFF64748B),
                         ),
                       ),
                       const SizedBox(height: 3),
                       Text(
                         lastCheckStr,
                         style: const TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
-                          color: AppTokens.ink,
+                          color: Color(0xFF0F172A),
                         ),
                       ),
                     ],
                   ),
                 ),
-                Container(width: 1, height: 32, color: AppTokens.mist),
+                Container(
+                  width: 1,
+                  height: 32,
+                  color: const Color(0xFFE2E8F0),
+                ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -370,18 +384,20 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                       const Text(
                         'Status Layanan',
                         style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
-                          color: AppTokens.stone,
+                          color: Color(0xFF64748B),
                         ),
                       ),
                       const SizedBox(height: 3),
                       Text(
                         serviceStr,
                         style: const TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
-                          color: AppTokens.ink,
+                          color: Color(0xFF0F172A),
                         ),
                       ),
                     ],
@@ -398,56 +414,43 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
               final usageCount = usageList.length;
               final isZero = usageCount == 0;
               final badgeBg = isZero
-                  ? AppTokens.mistLight
+                  ? const Color(0xFFF1F5F9)
                   : (usageCount <= 5
-                        ? AppTokens.successSurface
-                        : (usageCount <= 15
-                              ? AppTokens.warningSurface
-                              : AppTokens.mistLight));
+                      ? const Color(0xFFDCFCE7)
+                      : (usageCount <= 15 ? const Color(0xFFFEF3C7) : const Color(0xFFF1F5F9)));
               final badgeText = isZero
-                  ? AppTokens.graphite
+                  ? const Color(0xFF475569)
                   : (usageCount <= 5
-                        ? AppTokens.success
-                        : (usageCount <= 15
-                              ? AppTokens.warning
-                              : AppTokens.graphite));
+                      ? const Color(0xFF166534)
+                      : (usageCount <= 15 ? const Color(0xFF92400E) : const Color(0xFF334155)));
 
               return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppTokens.white,
+                  color: const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTokens.mist),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Row(
                       children: [
-                        Icon(
-                          Icons.repeat_rounded,
-                          size: 16,
-                          color: AppTokens.ink,
-                        ),
+                        Icon(Icons.repeat_rounded, size: 16, color: Color(0xFF2563EB)),
                         SizedBox(width: 6),
                         Text(
                           'Total Pemakaian di Orderan',
                           style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: AppTokens.graphite,
+                            color: Color(0xFF334155),
                           ),
                         ),
                       ],
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: badgeBg,
                         borderRadius: BorderRadius.circular(6),
@@ -455,6 +458,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                       child: Text(
                         '$usageCount kali pakai',
                         style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: badgeText,
@@ -476,17 +480,23 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
     final note = comp.note != null && comp.note!.trim().isNotEmpty
         ? comp.note!.trim()
         : 'Tidak ada catatan kondisi khusus untuk komponen ini.';
-    final dateStr =
-        comp.lastCheckingAt != null && comp.lastCheckingAt!.length >= 10
+    final dateStr = comp.lastCheckingAt != null && comp.lastCheckingAt!.length >= 10
         ? comp.lastCheckingAt!.substring(0, 10)
         : 'Belum tercatat';
 
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppTokens.white,
-        borderRadius: BorderRadius.circular(AppTokens.cardRadius),
-        border: Border.all(color: AppTokens.mist),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -497,17 +507,19 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
               const Text(
                 'Catatan Kondisi Terkini',
                 style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: AppTokens.ink,
+                  color: Color(0xFF0F172A),
                 ),
               ),
               Text(
                 dateStr,
                 style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
-                  color: AppTokens.stone,
+                  color: Color(0xFF64748B),
                 ),
               ),
             ],
@@ -516,9 +528,10 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
           Text(
             note,
             style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: AppTokens.graphite,
+              color: Color(0xFF334155),
               height: 1.45,
             ),
           ),
@@ -526,7 +539,9 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
           Container(
             padding: const EdgeInsets.only(top: 12),
             decoration: const BoxDecoration(
-              border: Border(top: BorderSide(color: AppTokens.mistLight)),
+              border: Border(
+                top: BorderSide(color: Color(0xFFF1F5F9)),
+              ),
             ),
             child: Row(
               children: [
@@ -534,14 +549,14 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                   width: 24,
                   height: 24,
                   decoration: const BoxDecoration(
-                    color: AppTokens.mistLight,
+                    color: Color(0xFFE0E7FF),
                     shape: BoxShape.circle,
                   ),
                   child: const Center(
                     child: Icon(
                       Icons.verified_outlined,
                       size: 14,
-                      color: AppTokens.graphite,
+                      color: Color(0xFF4338CA),
                     ),
                   ),
                 ),
@@ -551,9 +566,10 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                       ? 'Pemeriksaan terakhir: $dateStr'
                       : 'Belum pernah dilakukan pemeriksaan',
                   style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: AppTokens.stone,
+                    color: Color(0xFF64748B),
                   ),
                 ),
               ],
@@ -569,9 +585,16 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppTokens.white,
-        borderRadius: BorderRadius.circular(AppTokens.cardRadius),
-        border: Border.all(color: AppTokens.mist),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -585,22 +608,19 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     width: 28,
                     height: 28,
                     decoration: BoxDecoration(
-                      color: AppTokens.mistLight,
+                      color: const Color(0xFFEFF6FF),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(
-                      Icons.event_note_rounded,
-                      size: 16,
-                      color: AppTokens.ink,
-                    ),
+                    child: const Icon(Icons.event_note_rounded, size: 16, color: Color(0xFF2563EB)),
                   ),
                   const SizedBox(width: 10),
                   const Text(
                     'Riwayat Pemakaian di Orderan',
                     style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: AppTokens.ink,
+                      color: Color(0xFF0F172A),
                     ),
                   ),
                 ],
@@ -610,20 +630,18 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                 builder: (context, snap) {
                   final count = snap.data?.length ?? 0;
                   return Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppTokens.mistLight,
+                      color: const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       '$count orderan',
                       style: const TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: AppTokens.graphite,
+                        color: Color(0xFF475569),
                       ),
                     ),
                   );
@@ -642,10 +660,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     child: SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppTokens.ink,
-                      ),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF2563EB)),
                     ),
                   ),
                 );
@@ -654,29 +669,23 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
               final items = snap.data ?? [];
               if (items.isEmpty) {
                 return Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 16,
-                    horizontal: 14,
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
                   decoration: BoxDecoration(
-                    color: AppTokens.white,
+                    color: const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTokens.mistLight),
+                    border: Border.all(color: const Color(0xFFF1F5F9)),
                   ),
                   child: const Row(
                     children: [
-                      Icon(
-                        Icons.info_outline_rounded,
-                        size: 18,
-                        color: AppTokens.stone,
-                      ),
+                      Icon(Icons.info_outline_rounded, size: 18, color: Color(0xFF94A3B8)),
                       SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           'Komponen ini belum pernah dipakai pada orderan sewa.',
                           style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: 12,
-                            color: AppTokens.stone,
+                            color: Color(0xFF64748B),
                           ),
                         ),
                       ),
@@ -687,13 +696,10 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
 
               return Column(
                 children: items.map((item) {
-                  final namaEvent =
-                      item['nama_event']?.toString() ?? 'Sewa Blower';
+                  final namaEvent = item['nama_event']?.toString() ?? 'Sewa Blower';
                   final namaClient = item['nama_client']?.toString() ?? '-';
                   final tanggal = item['tanggal']?.toString() ?? '';
-                  final dateStr = tanggal.length >= 10
-                      ? tanggal.substring(0, 10)
-                      : tanggal;
+                  final dateStr = tanggal.length >= 10 ? tanggal.substring(0, 10) : tanggal;
                   final status = item['status_orderan']?.toString() ?? '-';
                   final unitIdx = item['unit_index'];
                   final roleSlot = item['role_slot']?.toString() ?? '';
@@ -703,9 +709,9 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppTokens.white,
+                      color: const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTokens.mist),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -717,32 +723,27 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                               child: Text(
                                 namaEvent,
                                 style: const TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
-                                  color: AppTokens.ink,
+                                  color: Color(0xFF0F172A),
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: isDone
-                                    ? AppTokens.successSurface
-                                    : AppTokens.mistLight,
+                                color: isDone ? const Color(0xFFDCFCE7) : const Color(0xFFEFF6FF),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 status,
                                 style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
-                                  color: isDone
-                                      ? AppTokens.success
-                                      : AppTokens.graphite,
+                                  color: isDone ? const Color(0xFF166534) : const Color(0xFF1D4ED8),
                                 ),
                               ),
                             ),
@@ -751,37 +752,32 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            const Icon(
-                              Icons.person_outline_rounded,
-                              size: 12,
-                              color: AppTokens.stone,
-                            ),
+                            const Icon(Icons.person_outline_rounded, size: 12, color: Color(0xFF64748B)),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 namaClient,
                                 style: const TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: 12,
-                                  color: AppTokens.graphite,
+                                  color: Color(0xFF475569),
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 1.5,
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                               decoration: BoxDecoration(
-                                color: AppTokens.mist,
+                                color: const Color(0xFFE2E8F0),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
                                 'Unit $unitIdx • $roleSlot',
                                 style: const TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
-                                  color: AppTokens.graphite,
+                                  color: Color(0xFF334155),
                                 ),
                               ),
                             ),
@@ -790,29 +786,24 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            const Icon(
-                              Icons.calendar_today_rounded,
-                              size: 11,
-                              color: AppTokens.stone,
-                            ),
+                            const Icon(Icons.calendar_today_rounded, size: 11, color: Color(0xFF94A3B8)),
                             const SizedBox(width: 4),
                             Text(
                               dateStr,
                               style: const TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: 11,
-                                color: AppTokens.stone,
+                                color: Color(0xFF94A3B8),
                               ),
                             ),
                             if (item['orderan_id'] != null) ...[
-                              const Text(
-                                ' • ',
-                                style: TextStyle(color: AppTokens.stone),
-                              ),
+                              const Text(' • ', style: TextStyle(color: Color(0xFF94A3B8))),
                               Text(
                                 '#${item['orderan_id']}',
                                 style: const TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: 11,
-                                  color: AppTokens.stone,
+                                  color: Color(0xFF94A3B8),
                                 ),
                               ),
                             ],
@@ -835,9 +826,16 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppTokens.white,
-        borderRadius: BorderRadius.circular(AppTokens.cardRadius),
-        border: Border.all(color: AppTokens.mist),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -848,9 +846,10 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
               const Text(
                 'Riwayat Pemeriksaan & Servis',
                 style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: AppTokens.ink,
+                  color: Color(0xFF0F172A),
                 ),
               ),
               PressableScale(
@@ -870,6 +869,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                 child: const Text(
                   'Lihat Semua',
                   style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: AppTokens.primary,
@@ -891,22 +891,21 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     final title = activity == 'service'
                         ? 'Tindakan Servis'
                         : (activity == 'periodic_check'
-                              ? 'Pemeriksaan Berkala'
-                              : 'Pemeriksaan Manual');
+                            ? 'Pemeriksaan Berkala'
+                            : 'Pemeriksaan Manual');
                     final recordedAt = item['recordedAt']?.toString() ?? '';
                     final dateText = recordedAt.length >= 10
                         ? recordedAt.substring(0, 10)
                         : 'Baru saja';
-                    final after = item['after'] is Map
-                        ? item['after'] as Map
-                        : null;
+                    final after =
+                        item['after'] is Map ? item['after'] as Map : null;
                     final cond = after?['condition']?.toString() ?? 'OK';
                     final actor = item['actor']?.toString() ?? 'Petugas';
                     final dotColor = cond == 'OK'
-                        ? AppTokens.success
+                        ? const Color(0xFF10B981)
                         : (cond == 'Service' || cond == 'Rusak Berat'
-                              ? AppTokens.danger
-                              : AppTokens.warning);
+                            ? const Color(0xFFEF4444)
+                            : const Color(0xFFF59E0B));
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
@@ -926,7 +925,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                               Container(
                                 width: 1.5,
                                 height: 38,
-                                color: AppTokens.mist,
+                                color: const Color(0xFFE2E8F0),
                               ),
                             ],
                           ),
@@ -942,17 +941,19 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                                     Text(
                                       title,
                                       style: const TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: 13,
                                         fontWeight: FontWeight.w700,
-                                        color: AppTokens.ink,
+                                        color: Color(0xFF0F172A),
                                       ),
                                     ),
                                     Text(
                                       dateText,
                                       style: const TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: 11,
                                         fontWeight: FontWeight.w500,
-                                        color: AppTokens.stone,
+                                        color: Color(0xFF64748B),
                                       ),
                                     ),
                                   ],
@@ -961,9 +962,10 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                                 Text(
                                   '${conditionDisplayLabel(cond)} • $actor',
                                   style: const TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: 11,
                                     fontWeight: FontWeight.w500,
-                                    color: AppTokens.stone,
+                                    color: Color(0xFF64748B),
                                   ),
                                 ),
                               ],
@@ -980,7 +982,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                 return const Center(
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 24),
-                    child: CircularProgressIndicator(color: AppTokens.magenta),
+                    child: CircularProgressIndicator(color: Color(0xFF147CC1)),
                   ),
                 );
               }
@@ -993,15 +995,16 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     Icon(
                       Icons.history_rounded,
                       size: 32,
-                      color: AppTokens.stone,
+                      color: Color(0xFF94A3B8),
                     ),
                     SizedBox(height: 8),
                     Text(
                       'Belum ada riwayat pemeriksaan atau servis',
                       style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: AppTokens.stone,
+                        color: Color(0xFF64748B),
                       ),
                     ),
                   ],
@@ -1015,6 +1018,8 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
   }
 
   Widget _buildBottomActionBar(BuildContext context, Component comp) {
+    final isDamaged = comp.condition != 'OK';
+
     return Container(
       padding: EdgeInsets.fromLTRB(
         20,
@@ -1023,8 +1028,8 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
         MediaQuery.of(context).padding.bottom + 12,
       ),
       decoration: const BoxDecoration(
-        color: AppTokens.white,
-        border: Border(top: BorderSide(color: AppTokens.mistLight)),
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
       ),
       child: Row(
         children: [
@@ -1047,10 +1052,10 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
               child: Container(
                 height: 48,
                 decoration: BoxDecoration(
-                  color: comp.condition != 'OK'
-                      ? AppTokens.mistLight
-                      : AppTokens.primary,
-                  borderRadius: BorderRadius.circular(AppTokens.controlRadius),
+                  color: isDamaged
+                      ? const Color(0xFFF1F5F9)
+                      : const Color(0xFF147CC1),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -1058,18 +1063,17 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     Icon(
                       Icons.fact_check_outlined,
                       size: 18,
-                      color: comp.condition != 'OK'
-                          ? AppTokens.graphite
-                          : AppTokens.white,
+                      color: isDamaged ? const Color(0xFF334155) : Colors.white,
                     ),
-                    const SizedBox(width: AppTokens.space8),
+                    const SizedBox(width: 8),
                     Text(
                       'Perbarui Kondisi',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: comp.condition != 'OK'
-                            ? AppTokens.graphite
-                            : AppTokens.white,
+                        color:
+                            isDamaged ? const Color(0xFF334155) : Colors.white,
                       ),
                     ),
                   ],
@@ -1097,11 +1101,10 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
               child: Container(
                 height: 48,
                 decoration: BoxDecoration(
-                  color: comp.condition != 'OK'
-                      ? AppTokens.danger
-                      : AppTokens.mistLight,
-                  borderRadius: BorderRadius.circular(AppTokens.controlRadius),
-                  border: Border.all(color: AppTokens.mist),
+                  color: isDamaged
+                      ? const Color(0xFFDC2626)
+                      : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -1109,18 +1112,17 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     Icon(
                       Icons.build_rounded,
                       size: 18,
-                      color: comp.condition != 'OK'
-                          ? AppTokens.white
-                          : AppTokens.graphite,
+                      color: isDamaged ? Colors.white : const Color(0xFF334155),
                     ),
-                    const SizedBox(width: AppTokens.space8),
+                    const SizedBox(width: 8),
                     Text(
                       'Catat Servis',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: comp.condition != 'OK'
-                            ? AppTokens.white
-                            : AppTokens.graphite,
+                        color:
+                            isDamaged ? Colors.white : const Color(0xFF334155),
                       ),
                     ),
                   ],
@@ -1142,32 +1144,29 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
         MediaQuery.of(context).padding.bottom + 12,
       ),
       decoration: const BoxDecoration(
-        color: AppTokens.white,
-        border: Border(top: BorderSide(color: AppTokens.mistLight)),
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
       ),
       child: Container(
         height: 48,
         decoration: BoxDecoration(
-          color: AppTokens.white,
+          color: const Color(0xFFF8FAFC),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppTokens.mist),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
         ),
         child: const Center(
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.remove_red_eye_outlined,
-                size: 16,
-                color: AppTokens.stone,
-              ),
+              Icon(Icons.remove_red_eye_outlined, size: 16, color: Color(0xFF64748B)),
               SizedBox(width: 8),
               Text(
                 'Mode Pantau Status • Hanya Baca',
                 style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: AppTokens.stone,
+                  color: Color(0xFF64748B),
                 ),
               ),
             ],

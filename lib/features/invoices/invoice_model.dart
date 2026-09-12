@@ -7,11 +7,11 @@ enum InvoicePaymentStatus {
   cancelled;
 
   String toJson() => switch (this) {
-    InvoicePaymentStatus.unpaid => 'unpaid',
-    InvoicePaymentStatus.partial => 'partial',
-    InvoicePaymentStatus.paid => 'paid',
-    InvoicePaymentStatus.cancelled => 'cancelled',
-  };
+        InvoicePaymentStatus.unpaid => 'unpaid',
+        InvoicePaymentStatus.partial => 'partial',
+        InvoicePaymentStatus.paid => 'paid',
+        InvoicePaymentStatus.cancelled => 'cancelled',
+      };
 
   static InvoicePaymentStatus fromJson(Object? value) {
     if (value is InvoicePaymentStatus) return value;
@@ -25,11 +25,11 @@ enum InvoicePaymentStatus {
   }
 
   String get label => switch (this) {
-    InvoicePaymentStatus.unpaid => 'Belum Bayar',
-    InvoicePaymentStatus.partial => 'Sebagian',
-    InvoicePaymentStatus.paid => 'Lunas',
-    InvoicePaymentStatus.cancelled => 'Dibatalkan',
-  };
+        InvoicePaymentStatus.unpaid => 'Belum Bayar',
+        InvoicePaymentStatus.partial => 'Sebagian',
+        InvoicePaymentStatus.paid => 'Lunas',
+        InvoicePaymentStatus.cancelled => 'Dibatalkan',
+      };
 }
 
 @immutable
@@ -48,9 +48,9 @@ class InvoiceAdjustment {
       );
 
   Map<String, Object?> toJson() => <String, Object?>{
-    'description': description,
-    'amount': amount,
-  };
+        'description': description,
+        'amount': amount,
+      };
 }
 
 class InvoiceCalculation {
@@ -79,9 +79,7 @@ abstract final class InvoiceCalculator {
     num paidAmount = 0,
   }) {
     final subtotal =
-        _nonNegative(quantity) *
-        _nonNegative(rentalDays) *
-        _nonNegative(unitPrice);
+        _nonNegative(quantity) * _nonNegative(rentalDays) * _nonNegative(unitPrice);
     final adjustmentTotal = adjustments.fold<num>(
       0,
       (total, adjustment) => total + adjustment.amount,
@@ -147,26 +145,25 @@ class SaveInvoiceInput {
   final String? printedAt;
 
   Map<String, Object?> toPayload() => <String, Object?>{
-    'orderan_id': orderanId,
-    'invoice_reference': invoiceReference,
-    'invoice_date': invoiceDate,
-    'due_date': dueDate,
-    'product_name': productName,
-    'quantity': quantity,
-    'rental_days': rentalDays,
-    'unit_price': unitPrice,
-    'subtotal': subtotal,
-    'total_amount': totalAmount,
-    'paid_amount': paidAmount,
-    'payment_status': paymentStatus.toJson(),
-    'invoice_source': invoiceSource,
-    'customer_name': customerName,
-    'customer_phone': customerPhone,
-    'adjustments': adjustments
-        .map((adjustment) => adjustment.toJson())
-        .toList(),
-    if (printedAt != null) 'printed_at': printedAt,
-  };
+        'orderan_id': orderanId,
+        'invoice_reference': invoiceReference,
+        'invoice_date': invoiceDate,
+        'due_date': dueDate,
+        'product_name': productName,
+        'quantity': quantity,
+        'rental_days': rentalDays,
+        'unit_price': unitPrice,
+        'subtotal': subtotal,
+        'total_amount': totalAmount,
+        'paid_amount': paidAmount,
+        'payment_status': paymentStatus.toJson(),
+        'invoice_source': invoiceSource,
+        'customer_name': customerName,
+        'customer_phone': customerPhone,
+        'adjustments':
+            adjustments.map((adjustment) => adjustment.toJson()).toList(),
+        if (printedAt != null) 'printed_at': printedAt,
+      };
 }
 
 class InvoiceRecord {
@@ -225,7 +222,8 @@ class InvoiceRecord {
       paymentStatus == InvoicePaymentStatus.partial ||
       (paidAmount > 0 && paidAmount < totalAmount);
 
-  bool get isCancelled => paymentStatus == InvoicePaymentStatus.cancelled;
+  bool get isCancelled =>
+      paymentStatus == InvoicePaymentStatus.cancelled;
 
   bool get isUnpaid => !isPaid && !isDp && !isCancelled;
 
@@ -293,18 +291,8 @@ class InvoiceRecord {
 
   static String formatDate(DateTime dt) {
     const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mei',
-      'Jun',
-      'Jul',
-      'Ags',
-      'Sep',
-      'Okt',
-      'Nov',
-      'Des',
+      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'
     ];
     return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
   }
@@ -345,9 +333,7 @@ class InvoiceRecord {
         if (item is Map<String, Object?>) {
           adjustments.add(InvoiceAdjustment.fromJson(item));
         } else if (item is Map) {
-          adjustments.add(
-            InvoiceAdjustment.fromJson(Map<String, Object?>.from(item)),
-          );
+          adjustments.add(InvoiceAdjustment.fromJson(Map<String, Object?>.from(item)));
         }
       }
     }
@@ -356,8 +342,7 @@ class InvoiceRecord {
       id: (json['id'] ?? '').toString(),
       orderanId: json['orderan_id']?.toString(),
       invoiceReference:
-          (json['invoice_reference'] ?? json['nomor_invoice'] ?? '-')
-              .toString(),
+          (json['invoice_reference'] ?? json['nomor_invoice'] ?? '-').toString(),
       invoiceDate: (json['invoice_date'] ?? '').toString(),
       dueDate: (json['due_date'] ?? '').toString(),
       productName: (json['product_name'] ?? 'Sewa Mistyfan').toString(),
@@ -368,10 +353,10 @@ class InvoiceRecord {
       totalAmount: parseNum(json['total_amount']),
       paidAmount: parseNum(json['paid_amount']),
       paymentStatus: InvoicePaymentStatus.fromJson(json['payment_status']),
-      customerName: (json['customer_name'] ?? json['nama_client'] ?? '')
-          .toString(),
-      customerPhone: (json['customer_phone'] ?? json['nomor_whatsapp'] ?? '')
-          .toString(),
+      customerName:
+          (json['customer_name'] ?? json['nama_client'] ?? '').toString(),
+      customerPhone:
+          (json['customer_phone'] ?? json['nomor_whatsapp'] ?? '').toString(),
       invoiceSource: (json['invoice_source'] ?? 'order').toString(),
       adjustments: adjustments,
       printedAt: json['printed_at']?.toString(),
@@ -381,25 +366,25 @@ class InvoiceRecord {
   }
 
   Map<String, Object?> toJson() => {
-    'id': id,
-    'orderan_id': orderanId,
-    'invoice_reference': invoiceReference,
-    'invoice_date': invoiceDate,
-    'due_date': dueDate,
-    'product_name': productName,
-    'quantity': quantity,
-    'rental_days': rentalDays,
-    'unit_price': unitPrice,
-    'subtotal': subtotal,
-    'total_amount': totalAmount,
-    'paid_amount': paidAmount,
-    'payment_status': paymentStatus.toJson(),
-    'customer_name': customerName,
-    'customer_phone': customerPhone,
-    'invoice_source': invoiceSource,
-    'adjustments': adjustments.map((a) => a.toJson()).toList(),
-    'printed_at': printedAt,
-    'created_at': createdAt,
-    'updated_at': updatedAt,
-  };
+        'id': id,
+        'orderan_id': orderanId,
+        'invoice_reference': invoiceReference,
+        'invoice_date': invoiceDate,
+        'due_date': dueDate,
+        'product_name': productName,
+        'quantity': quantity,
+        'rental_days': rentalDays,
+        'unit_price': unitPrice,
+        'subtotal': subtotal,
+        'total_amount': totalAmount,
+        'paid_amount': paidAmount,
+        'payment_status': paymentStatus.toJson(),
+        'customer_name': customerName,
+        'customer_phone': customerPhone,
+        'invoice_source': invoiceSource,
+        'adjustments': adjustments.map((a) => a.toJson()).toList(),
+        'printed_at': printedAt,
+        'created_at': createdAt,
+        'updated_at': updatedAt,
+      };
 }

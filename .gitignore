@@ -13,5 +13,3 @@ supabase/.branches/
 .idea/
 *.iml
 .omo/
-.worktrees/
-.superpowers/

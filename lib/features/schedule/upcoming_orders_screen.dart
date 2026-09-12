@@ -1,24 +1,16 @@
 import 'package:flutter/material.dart';
-import '../../app/app_theme.dart';
 import '../../app/gateway.dart';
 import '../../shared/pressable.dart';
 import 'create_order_screen.dart';
 import 'order_detail_screen.dart';
 import 'order_model.dart';
 
-OperationalColors _operationalColors(BuildContext context) =>
-    Theme.of(context).extension<OperationalColors>() ??
-    const OperationalColors(
-      success: AppTokens.successSurface,
-      onSuccess: AppTokens.success,
-      warning: AppTokens.warningSurface,
-      onWarning: AppTokens.warning,
-      danger: AppTokens.dangerSurface,
-      onDanger: AppTokens.danger,
-    );
-
 class UpcomingOrdersScreen extends StatefulWidget {
-  const UpcomingOrdersScreen({super.key, required this.gateway, this.user});
+  const UpcomingOrdersScreen({
+    super.key,
+    required this.gateway,
+    this.user,
+  });
 
   final MaintenanceGateway gateway;
   final UserProfile? user;
@@ -52,10 +44,8 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
       error = null;
     });
     try {
-      final fetched = await widget.gateway.fetchUpcomingOrders(
-        limit: 50,
-        forceRefresh: true,
-      );
+      final fetched = await widget.gateway
+          .fetchUpcomingOrders(limit: 50, forceRefresh: true);
       if (mounted) {
         setState(() {
           orders = fetched;
@@ -65,8 +55,7 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
     } catch (_) {
       if (mounted) {
         setState(() {
-          error =
-              'Daftar orderan belum dapat dimuat. Periksa koneksi internet lalu coba lagi.';
+          error = 'Daftar orderan belum dapat dimuat. Periksa koneksi internet lalu coba lagi.';
           isLoading = false;
         });
       }
@@ -74,19 +63,19 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
   }
 
   List<OrderanSewa> get filteredOrders {
-    final query = searchController.text.trim().toLowerCase();
-    return orders.where((order) {
+    final q = searchController.text.trim().toLowerCase();
+    return orders.where((o) {
       final matchesFilter = switch (activeFilter) {
-        'Mendatang' => order.isUpcoming,
-        'Selesai' => order.isPast,
+        'Mendatang' => o.isUpcoming,
+        'Selesai' => o.isPast,
         _ => true,
       };
       if (!matchesFilter) return false;
-      if (query.isEmpty) return true;
-      return order.namaEvent.toLowerCase().contains(query) ||
-          (order.alamat?.toLowerCase().contains(query) ?? false) ||
-          (order.namaPic?.toLowerCase().contains(query) ?? false) ||
-          (order.namaClient?.toLowerCase().contains(query) ?? false);
+      if (q.isEmpty) return true;
+      return o.namaEvent.toLowerCase().contains(q) ||
+          (o.alamat != null && o.alamat!.toLowerCase().contains(q)) ||
+          (o.namaPic != null && o.namaPic!.toLowerCase().contains(q)) ||
+          (o.namaClient != null && o.namaClient!.toLowerCase().contains(q));
     }).toList();
   }
 
@@ -94,78 +83,91 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
     if (widget.user == null) return;
     final created = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) =>
-            CreateOrderScreen(gateway: widget.gateway, user: widget.user!),
+        builder: (_) => CreateOrderScreen(
+          gateway: widget.gateway,
+          user: widget.user!,
+        ),
       ),
     );
     if (created == true) loadOrders();
   }
 
   Widget _buildFilterChips(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
     final filters = ['Semua', 'Mendatang', 'Selesai'];
-    final upcomingCount = orders.where((order) => order.isUpcoming).length;
-    final pastCount = orders.where((order) => order.isPast).length;
+    final upcomingCount = orders.where((o) => o.isUpcoming).length;
+    final pastCount = orders.where((o) => o.isPast).length;
 
     return Row(
       children: filters.asMap().entries.map((entry) {
         final index = entry.key;
-        final filter = entry.value;
-        final isSelected = activeFilter == filter;
-        final count = switch (filter) {
+        final f = entry.value;
+        final isSelected = activeFilter == f;
+        final count = switch (f) {
           'Mendatang' => upcomingCount,
           'Selesai' => pastCount,
           _ => orders.length,
         };
+
         return Expanded(
           child: Padding(
             padding: EdgeInsets.only(
-              left: index == 0 ? 0 : AppTokens.space4,
-              right: index == filters.length - 1 ? 0 : AppTokens.space4,
+              left: index == 0 ? 0 : 4,
+              right: index == filters.length - 1 ? 0 : 4,
             ),
             child: PressableScale(
-              onTap: () => setState(() => activeFilter = filter),
+              onTap: () => setState(() => activeFilter = f),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                constraints: const BoxConstraints(
-                  minHeight: AppTokens.minTouchTarget,
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppTokens.space8,
-                ),
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
-                  color: isSelected ? colors.secondary : colors.surface,
-                  borderRadius: const BorderRadius.all(
-                    Radius.circular(AppTokens.badgeRadius),
-                  ),
+                  color: isSelected ? const Color(0xFF0F172A) : Colors.white,
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isSelected ? colors.secondary : colors.outline,
+                    color: isSelected
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFFE2E8F0),
                   ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Flexible(
                       child: Text(
-                        filter,
+                        f,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelMedium?.copyWith(
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 12,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w600,
                           color: isSelected
-                              ? colors.onSecondary
-                              : colors.onSurfaceVariant,
-                          fontWeight: isSelected ? FontWeight.w700 : null,
+                              ? Colors.white
+                              : const Color(0xFF475569),
                         ),
                       ),
                     ),
-                    const SizedBox(width: AppTokens.space4),
-                    Text(
-                      '$count',
-                      style: theme.textTheme.labelMedium?.copyWith(
+                    const SizedBox(width: 5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 1.5),
+                      decoration: BoxDecoration(
                         color: isSelected
-                            ? colors.onSecondary
-                            : colors.onSurfaceVariant,
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$count',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: isSelected
+                              ? Colors.white
+                              : const Color(0xFF64748B),
+                        ),
                       ),
                     ),
                   ],
@@ -180,61 +182,45 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
     final list = filteredOrders;
+
     return Scaffold(
-      backgroundColor: colors.surfaceContainerLow,
+      backgroundColor: const Color(0xFFFBFBFB),
       body: SafeArea(
         child: Column(
           children: [
             _buildTopBar(context),
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppTokens.space16,
-                vertical: AppTokens.space8,
-              ),
-              child: TextField(
-                controller: searchController,
-                onChanged: (_) => setState(() {}),
-                textInputAction: TextInputAction.search,
-                decoration: const InputDecoration(
-                  hintText: 'Cari acara, lokasi, atau PIC...',
-                  prefixIcon: Icon(Icons.search_rounded),
-                ),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+              child: _buildSearchBar(context),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppTokens.space16,
-                0,
-                AppTokens.space16,
-                AppTokens.space8,
-              ),
+              padding: const EdgeInsets.fromLTRB(20, 2, 20, 10),
               child: _buildFilterChips(context),
             ),
             Expanded(
               child: RefreshIndicator(
                 onRefresh: loadOrders,
-                color: colors.primary,
+                color: const Color(0xFF147CC1),
                 child: isLoading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Center(
+                        child:
+                            CircularProgressIndicator(color: Color(0xFF147CC1)),
+                      )
                     : error != null
-                    ? _buildErrorView(context)
-                    : list.isEmpty
-                    ? _buildEmptyView(context)
-                    : ListView.builder(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(
-                          AppTokens.space16,
-                          AppTokens.space8,
-                          AppTokens.space16,
-                          AppTokens.space32,
-                        ),
-                        itemCount: list.length,
-                        itemBuilder: (context, index) =>
-                            _buildOrderCard(context, list[index]),
-                      ),
+                        ? _buildErrorView(context)
+                        : list.isEmpty
+                            ? _buildEmptyView(context)
+                            : ListView.builder(
+                                physics: const AlwaysScrollableScrollPhysics(
+                                  parent: BouncingScrollPhysics(),
+                                ),
+                                padding: const EdgeInsets.fromLTRB(20, 8, 20, 110),
+                                itemCount: list.length,
+                                itemBuilder: (context, index) {
+                                  return _buildOrderCard(context, list[index]);
+                                },
+                              ),
               ),
             ),
           ],
@@ -244,46 +230,167 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
   }
 
   Widget _buildTopBar(BuildContext context) {
-    final theme = Theme.of(context);
     final canPop = ModalRoute.of(context)?.canPop ?? false;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppTokens.space16,
-        AppTokens.space8,
-        AppTokens.space16,
-        AppTokens.space4,
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              if (canPop) ...[
+                PressableScale(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.chevron_left_rounded,
+                        color: Color(0xFF0F172A),
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    'Orderan Mendatang',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Jadwal Pemasangan & Sewa',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          if (widget.user?.canManageOrders == true)
+            PressableScale(
+              onTap: _openCreateOrder,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF147CC1),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF147CC1).withValues(alpha: 0.25),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_rounded, size: 16, color: Colors.white),
+                    SizedBox(width: 4),
+                    Text(
+                      'Orderan Baru',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            PressableScale(
+              onTap: loadOrders,
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.refresh_rounded,
+                    color: Color(0xFF0F172A),
+                    size: 18,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar(BuildContext context) {
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Row(
         children: [
-          if (canPop)
-            IconButton(
-              tooltip: 'Kembali',
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.chevron_left_rounded),
-            ),
+          const Icon(Icons.search_rounded, size: 18, color: Color(0xFF94A3B8)),
+          const SizedBox(width: 8),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Orderan Mendatang', style: theme.textTheme.headlineSmall),
-                Text(
-                  'Jadwal Pemasangan & Sewa',
-                  style: theme.textTheme.labelMedium,
+            child: TextField(
+              controller: searchController,
+              onChanged: (_) => setState(() {}),
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 13,
+                color: Color(0xFF0F172A),
+              ),
+              decoration: const InputDecoration(
+                hintText: 'Cari acara, lokasi, atau PIC...',
+                hintStyle: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 13,
+                  color: Color(0xFF94A3B8),
                 ),
-              ],
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
             ),
           ),
-          if (widget.user?.canManageOrders == true)
-            FilledButton.icon(
-              onPressed: _openCreateOrder,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Orderan Baru'),
-            )
-          else
-            IconButton(
-              tooltip: 'Muat ulang',
-              onPressed: isLoading ? null : loadOrders,
-              icon: const Icon(Icons.refresh_rounded),
+          if (searchController.text.isNotEmpty)
+            GestureDetector(
+              onTap: () {
+                searchController.clear();
+                setState(() {});
+              },
+              child: const Icon(Icons.close_rounded,
+                  size: 16, color: Color(0xFF94A3B8)),
             ),
         ],
       ),
@@ -291,40 +398,47 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
   }
 
   Widget _buildOrderCard(BuildContext context, OrderanSewa order) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final operational = _operationalColors(context);
-    final hasMaps = order.linkGmaps?.trim().isNotEmpty == true;
-    final hasWhatsapp = order.cleanWhatsapp.isNotEmpty;
+    final hasMaps =
+        order.linkGmaps != null && order.linkGmaps!.trim().isNotEmpty;
+    final hasWa = order.cleanWhatsapp.isNotEmpty;
+
     final isPast = order.isPast;
-    final statusText = order.isCancelled
-        ? 'Dibatalkan'
-        : isPast
-        ? (order.isCompletedOrCancelled
-              ? (order.statusOrderan ?? 'Selesai')
-              : 'Selesai / Lewat')
-        : (order.statusOrderan?.isNotEmpty == true
+    final String statusText;
+    final Color statusBg;
+    final Color statusBorder;
+    final Color statusColor;
+    final Color dotColor;
+
+    if (order.isCancelled) {
+      statusText = 'Dibatalkan';
+      statusBg = const Color(0xFFFEF2F2);
+      statusBorder = const Color(0xFFFECACA);
+      statusColor = const Color(0xFFDC2626);
+      dotColor = const Color(0xFFEF4444);
+    } else if (isPast) {
+      statusText = order.isCompletedOrCancelled
+          ? (order.statusOrderan ?? 'Selesai')
+          : 'Selesai / Lewat';
+      statusBg = const Color(0xFFF1F5F9);
+      statusBorder = const Color(0xFFCBD5E1);
+      statusColor = const Color(0xFF475569);
+      dotColor = const Color(0xFF94A3B8);
+    } else {
+      statusText =
+          (order.statusOrderan != null && order.statusOrderan!.isNotEmpty)
               ? order.statusOrderan!
-              : 'Terjadwal');
-    final statusSurface = order.isCancelled
-        ? operational.danger
-        : isPast
-        ? colors.surfaceContainer
-        : operational.success;
-    final statusInk = order.isCancelled
-        ? operational.onDanger
-        : isPast
-        ? colors.onSurfaceVariant
-        : operational.onSuccess;
+              : 'Terjadwal';
+      statusBg = const Color(0xFFECFDF5);
+      statusBorder = const Color(0xFFA7F3D0);
+      statusColor = const Color(0xFF059669);
+      dotColor = const Color(0xFF10B981);
+    }
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppTokens.space12),
-      child: Card(
-        child: InkWell(
-          borderRadius: const BorderRadius.all(
-            Radius.circular(AppTokens.cardRadius),
-          ),
-          onTap: () => Navigator.of(context).push<void>(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: PressableScale(
+        onTap: () {
+          Navigator.of(context).push<void>(
             MaterialPageRoute(
               builder: (_) => OrderDetailScreen(
                 order: order,
@@ -332,123 +446,275 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                 user: widget.user,
               ),
             ),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x06000000),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(AppTokens.space16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              order.displayCode,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: colors.onSurface,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            ' • ',
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                          Text(
-                            '${order.jumlahUnit} Unit',
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: colors.onSurface,
-                            ),
-                          ),
-                          Text(
-                            ' (${order.durasiSewaText})',
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: AppTokens.space8),
-                    Chip(
-                      label: Text(statusText),
-                      backgroundColor: statusSurface,
-                      labelStyle: theme.textTheme.labelMedium?.copyWith(
-                        color: statusInk,
-                      ),
-                      side: BorderSide(color: statusInk),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppTokens.space8),
-                Text(order.namaEvent, style: theme.textTheme.titleMedium),
-                if (order.namaClient?.isNotEmpty == true)
-                  Padding(
-                    padding: const EdgeInsets.only(top: AppTokens.space4),
-                    child: Text(
-                      'Klien: ${order.namaClient}${order.nomorWhatsapp?.isNotEmpty == true ? ' • ${order.nomorWhatsapp}' : ''}',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ),
-                if (order.alamat?.isNotEmpty == true)
-                  Padding(
-                    padding: const EdgeInsets.only(top: AppTokens.space4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 1. Header: [ ● ORD-XXX • 10 Unit (1 Hari) ]  ...  [ Terjadwal ]
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
                     child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.location_on_outlined),
-                        const SizedBox(width: AppTokens.space4),
-                        Expanded(
+                        Container(
+                          width: 7,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            color: dotColor,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
                           child: Text(
-                            order.alamat!,
-                            maxLines: 3,
+                            order.displayCode,
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodyMedium,
+                            style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Text(
+                          '• ',
+                          style: TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 11,
+                            color: Color(0xFF94A3B8),
+                          ),
+                        ),
+                        Text(
+                          '${order.jumlahUnit} Unit',
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF475569),
+                          ),
+                        ),
+                        Text(
+                          ' (${order.durasiSewaText})',
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF64748B),
                           ),
                         ),
                       ],
                     ),
                   ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppTokens.space12),
-                  child: Divider(),
-                ),
-                Row(
-                  children: [
-                    const Icon(Icons.calendar_today_rounded),
-                    const SizedBox(width: AppTokens.space8),
-                    Expanded(
-                      child: Text(
-                        order.dayDateYear,
-                        style: theme.textTheme.labelMedium,
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: statusBg,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: statusBorder),
+                    ),
+                    child: Text(
+                      statusText,
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: statusColor,
                       ),
                     ),
-                    if (hasMaps)
-                      IconButton(
-                        tooltip: 'Maps',
-                        onPressed: order.launchMaps,
-                        icon: const Icon(Icons.near_me_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // 2. Body: Nama Event (Bold)
+              Text(
+                order.namaEvent,
+                style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                  letterSpacing: -0.2,
+                ),
+              ),
+
+              // Detail Klien
+              if (order.namaClient != null && order.namaClient!.isNotEmpty) ...[
+                const SizedBox(height: 3),
+                Text(
+                  'Klien: ${order.namaClient}${order.nomorWhatsapp != null && order.nomorWhatsapp!.isNotEmpty ? ' • ${order.nomorWhatsapp}' : ''}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              ],
+
+              // Alamat Venue
+              if (order.alamat != null && order.alamat!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.location_on_outlined,
+                        size: 14, color: Color(0xFF64748B)),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        order.alamat!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 11.5,
+                          color: Color(0xFF64748B),
+                          height: 1.35,
+                        ),
                       ),
-                    if (hasWhatsapp)
-                      IconButton(
-                        tooltip: 'WhatsApp',
-                        onPressed: order.launchWhatsApp,
-                        icon: const Icon(Icons.chat_rounded),
-                      ),
-                    if (!hasMaps && !hasWhatsapp)
-                      const Icon(Icons.chevron_right_rounded),
+                    ),
                   ],
                 ),
               ],
-            ),
+
+              const SizedBox(height: 10),
+
+              // 3. Footer: [ Kamis, 10 Sep 2026 ]  ...  [ Maps ] [ WA ]
+              Container(
+                padding: const EdgeInsets.only(top: 8),
+                decoration: const BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: Color(0xFFF1F5F9)),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.calendar_today_rounded,
+                            size: 12,
+                            color: Color(0xFF64748B),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              order.dayDateYear,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF475569),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (hasMaps)
+                          PressableScale(
+                            onTap: () => order.launchMaps(),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 9, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(8),
+                                border:
+                                    Border.all(color: const Color(0xFFBFDBFE)),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.near_me_rounded,
+                                      size: 12, color: Color(0xFF2563EB)),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Maps',
+                                    style: TextStyle(
+                                      fontFamily: 'Plus Jakarta Sans',
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF2563EB),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        if (hasMaps && hasWa) const SizedBox(width: 6),
+                        if (hasWa)
+                          PressableScale(
+                            onTap: () => order.launchWhatsApp(),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 9, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF0FDF4),
+                                borderRadius: BorderRadius.circular(8),
+                                border:
+                                    Border.all(color: const Color(0xFFBBF7D0)),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.chat_rounded,
+                                      size: 12, color: Color(0xFF16A34A)),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'WA',
+                                    style: TextStyle(
+                                      fontFamily: 'Plus Jakarta Sans',
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF16A34A),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        if (!hasMaps && !hasWa)
+                          const Icon(Icons.chevron_right_rounded,
+                              size: 18, color: Color(0xFF94A3B8)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -456,31 +722,40 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
   }
 
   Widget _buildEmptyView(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        const SizedBox(height: AppTokens.space32),
-        Icon(
-          Icons.event_busy_rounded,
-          size: 48,
-          color: colors.onSurfaceVariant,
-        ),
-        const SizedBox(height: AppTokens.space12),
+      children: const [
+        SizedBox(height: 80),
         Center(
-          child: Text(
-            'Belum Ada Orderan Mendatang',
-            style: theme.textTheme.titleMedium,
-          ),
-        ),
-        const SizedBox(height: AppTokens.space8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppTokens.space32),
-          child: Text(
-            'Daftar orderan sewa akan otomatis muncul saat jadwal pemasangan dibuat.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.event_busy_rounded, size: 48, color: Color(0xFF94A3B8)),
+              SizedBox(height: 14),
+              Text(
+                'Belum Ada Orderan Mendatang',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              SizedBox(height: 6),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 40),
+                child: Text(
+                  'Daftar orderan sewa akan otomatis muncul saat jadwal pemasangan dibuat.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -488,24 +763,35 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
   }
 
   Widget _buildErrorView(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppTokens.space24),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline_rounded, size: 40, color: colors.error),
-            const SizedBox(height: AppTokens.space12),
+            const Icon(Icons.error_outline_rounded,
+                size: 40, color: Color(0xFFDC2626)),
+            const SizedBox(height: 12),
             Text(
               error ?? 'Terjadi kesalahan saat memuat data',
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(color: colors.error),
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF991B1B),
+              ),
             ),
-            const SizedBox(height: AppTokens.space12),
-            OutlinedButton(
+            const SizedBox(height: 14),
+            ElevatedButton(
               onPressed: loadOrders,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF147CC1),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
               child: const Text('Coba Lagi'),
             ),
           ],

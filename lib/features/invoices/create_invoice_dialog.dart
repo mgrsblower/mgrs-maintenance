@@ -1,6 +1,4 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../../app/app_theme.dart';
 import '../../app/gateway.dart';
 import '../schedule/order_model.dart';
 import 'invoice_model.dart';
@@ -57,12 +55,11 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
 
   void _generateReference([String? orderSuffix]) {
     final now = DateTime.now();
-    final date =
-        '${now.year.toString().padLeft(4, '0')}/'
-        '${now.month.toString().padLeft(2, '0')}/'
-        '${now.day.toString().padLeft(2, '0')}';
+    final y = now.year.toString().padLeft(4, '0');
+    final m = now.month.toString().padLeft(2, '0');
+    final d = now.day.toString().padLeft(2, '0');
     final suffix = orderSuffix ?? '${now.hour}${now.minute}${now.second}';
-    _refController.text = 'INV/$date-$suffix';
+    _refController.text = 'INV/$y/$m/$d-$suffix';
   }
 
   Future<void> _loadAvailableOrders() async {
@@ -73,8 +70,10 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
       setState(() {
         _availableOrders = orders;
         _isLoadingOrders = false;
+        if (orders.isNotEmpty) {
+          _selectOrder(orders.first);
+        }
       });
-      if (orders.isNotEmpty) _selectOrder(orders.first);
     } catch (_) {
       if (!mounted) return;
       setState(() => _isLoadingOrders = false);
@@ -84,16 +83,16 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
   void _selectOrder(OrderanSewa order) {
     _selectedOrder = order;
     final orderanId = order.orderanId ?? order.id;
-    _generateReference(orderanId.split('-').last);
+    final suffix = orderanId.split('-').last;
+    _generateReference(suffix);
+
     _customerNameController.text = order.namaClient ?? '';
     _customerPhoneController.text = order.nomorWhatsapp ?? '';
-    _productController.text = order.namaEvent.isNotEmpty
-        ? order.namaEvent
-        : 'Sewa Mistyfan';
+    _productController.text =
+        order.namaEvent.isNotEmpty ? order.namaEvent : 'Sewa Mistyfan';
     _qtyController.text = order.jumlahUnit.toString();
-    _daysController.text = order.rentalDays > 0
-        ? order.rentalDays.toString()
-        : '1';
+    _daysController.text =
+        order.rentalDays > 0 ? order.rentalDays.toString() : '1';
     setState(() {});
   }
 
@@ -102,15 +101,15 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
 
     final now = DateTime.now();
     final todayStr = now.toIso8601String().substring(0, 10);
-    final dueStr = now
-        .add(const Duration(days: 7))
-        .toIso8601String()
-        .substring(0, 10);
+    final dueStr =
+        now.add(const Duration(days: 7)).toIso8601String().substring(0, 10);
+
     final qty = num.tryParse(_qtyController.text.trim()) ?? 1;
     final days = num.tryParse(_daysController.text.trim()) ?? 1;
     final price = num.tryParse(_unitPriceController.text.trim()) ?? 250000;
     final subtotal = qty * price;
     final total = subtotal * days;
+
     final payload = <String, Object?>{
       'orderan_id': _isManualReimbursement
           ? null
@@ -128,9 +127,8 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
       'total_amount': total,
       'paid_amount': 0,
       'payment_status': 'unpaid',
-      'invoice_source': _isManualReimbursement
-          ? 'manual_reimbursement'
-          : 'order',
+      'invoice_source':
+          _isManualReimbursement ? 'manual_reimbursement' : 'order',
       'customer_name': _customerNameController.text.trim(),
       'customer_phone': _customerPhoneController.text.trim(),
       'adjustments': <Map<String, Object?>>[],
@@ -144,260 +142,393 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Invoice ${created.invoiceReference} berhasil dibuat.'),
+          content: Text(
+            'Invoice ${created.invoiceReference} berhasil dibuat.',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: const Color(0xFF059669),
         ),
       );
-    } catch (error) {
+    } catch (e) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Gagal membuat invoice: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal membuat invoice: $e'),
+          backgroundColor: const Color(0xFFDC2626),
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final media = MediaQuery.of(context);
-    final maxHeight = math
-        .max(
-          280.0,
-          media.size.height - media.viewInsets.bottom - AppTokens.space32,
-        )
-        .toDouble();
     return Dialog(
-      insetPadding: const EdgeInsets.symmetric(
-        horizontal: AppTokens.space16,
-        vertical: AppTokens.space16,
-      ),
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: 560, maxHeight: maxHeight),
+        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 750),
         child: Padding(
-          padding: const EdgeInsets.all(AppTokens.space24),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Dialog Header
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: Text(
-                      'Buat Invoice Baru',
-                      style: theme.textTheme.titleLarge,
+                  const Text(
+                    'Buat Invoice Baru',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
                     ),
                   ),
                   IconButton(
+                    icon: const Icon(Icons.close_rounded,
+                        size: 20, color: Color(0xFF64748B)),
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded),
-                    tooltip: 'Tutup',
                   ),
                 ],
               ),
-              const SizedBox(height: AppTokens.space12),
-              SegmentedButton<bool>(
-                segments: const [
-                  ButtonSegment(
-                    value: false,
-                    icon: Icon(Icons.event_note_rounded),
-                    label: Text('Dari Order Sewa'),
-                  ),
-                  ButtonSegment(
-                    value: true,
-                    icon: Icon(Icons.assignment_return_outlined),
-                    label: Text('Manual Reimbursement'),
-                  ),
-                ],
-                selected: {_isManualReimbursement},
-                showSelectedIcon: false,
-                onSelectionChanged: (selection) {
-                  final manual = selection.first;
-                  setState(() {
-                    _isManualReimbursement = manual;
-                    if (manual) {
-                      _selectedOrder = null;
-                      _generateReference();
-                      _customerNameController.clear();
-                      _customerPhoneController.clear();
-                      _productController.text = 'Reimbursement Operasional';
-                    } else if (_selectedOrder != null) {
-                      _selectOrder(_selectedOrder!);
-                    }
-                  });
-                },
+              const SizedBox(height: 12),
+              // Segmented Type: Dari Order vs Manual
+              Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _isManualReimbursement = false;
+                            if (_selectedOrder != null) {
+                              _selectOrder(_selectedOrder!);
+                            }
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            color: !_isManualReimbursement
+                                ? Colors.white
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: !_isManualReimbursement
+                                ? const [
+                                    BoxShadow(
+                                      color: Color(0x0A0F172A),
+                                      blurRadius: 4,
+                                      offset: Offset(0, 1),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Dari Order Sewa',
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 12,
+                              fontWeight: !_isManualReimbursement
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: !_isManualReimbursement
+                                  ? const Color(0xFF0F172A)
+                                  : const Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _isManualReimbursement = true;
+                            _selectedOrder = null;
+                            _generateReference();
+                            _customerNameController.clear();
+                            _customerPhoneController.clear();
+                            _productController.text = 'Reimbursement Operasional';
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            color: _isManualReimbursement
+                                ? Colors.white
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: _isManualReimbursement
+                                ? const [
+                                    BoxShadow(
+                                      color: Color(0x0A0F172A),
+                                      blurRadius: 4,
+                                      offset: Offset(0, 1),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Manual Reimbursement',
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 12,
+                              fontWeight: _isManualReimbursement
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: _isManualReimbursement
+                                  ? const Color(0xFF0F172A)
+                                  : const Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: AppTokens.space16),
+              const SizedBox(height: 16),
+              // Form Body
               Expanded(
                 child: SingleChildScrollView(
-                  keyboardDismissBehavior:
-                      ScrollViewKeyboardDismissBehavior.onDrag,
                   child: Form(
                     key: _formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (!_isManualReimbursement) ...[
-                          Text(
+                          const Text(
                             'Pilih Orderan Terjadwal:',
-                            style: theme.textTheme.labelLarge,
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF334155),
+                            ),
                           ),
-                          const SizedBox(height: AppTokens.space8),
+                          const SizedBox(height: 6),
                           if (_isLoadingOrders)
                             const Center(
                               child: Padding(
-                                padding: EdgeInsets.all(AppTokens.space12),
-                                child: CircularProgressIndicator(),
+                                padding: EdgeInsets.all(12),
+                                child: CircularProgressIndicator(strokeWidth: 2),
                               ),
                             )
                           else if (_availableOrders.isEmpty)
                             Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(AppTokens.space12),
+                              padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: colors.errorContainer,
-                                borderRadius: BorderRadius.circular(
-                                  AppTokens.controlRadius,
-                                ),
+                                color: const Color(0xFFFEF2F2),
+                                borderRadius: BorderRadius.circular(10),
                               ),
-                              child: Text(
+                              child: const Text(
                                 'Belum ada data orderan terjadwal.',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colors.onErrorContainer,
+                                style: TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontSize: 12,
+                                  color: Color(0xFFDC2626),
                                 ),
                               ),
                             )
                           else
                             DropdownButtonFormField<OrderanSewa>(
-                              key: ValueKey<String>(
-                                _selectedOrder?.id ?? 'none',
-                              ),
+                              key: ValueKey<String>(_selectedOrder?.id ?? 'none'),
                               initialValue: _selectedOrder,
                               isExpanded: true,
-                              decoration: const InputDecoration(
-                                labelText: 'Orderan',
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10)),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 10),
                               ),
-                              items: _availableOrders
-                                  .map(
-                                    (order) => DropdownMenuItem(
-                                      value: order,
-                                      child: Text(
-                                        '${order.orderanId ?? order.id} • ${order.namaClient}',
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (order) {
-                                if (order != null) _selectOrder(order);
+                              items: _availableOrders.map((ord) {
+                                return DropdownMenuItem(
+                                  value: ord,
+                                  child: Text(
+                                    '${ord.orderanId ?? ord.id} • ${ord.namaClient}',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (ord) {
+                                if (ord != null) _selectOrder(ord);
                               },
                             ),
-                          const SizedBox(height: AppTokens.space16),
+                          const SizedBox(height: 14),
                         ],
                         TextFormField(
                           controller: _refController,
-                          decoration: const InputDecoration(
+                          style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                          decoration: InputDecoration(
                             labelText: 'No. Referensi Invoice',
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
                           ),
-                          validator: (value) =>
-                              value == null || value.trim().isEmpty
-                              ? 'Wajib diisi'
-                              : null,
+                          validator: (v) =>
+                              v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
                         ),
-                        const SizedBox(height: AppTokens.space12),
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            if (constraints.maxWidth < 420) {
-                              return Column(
-                                children: [
-                                  _customerNameField(),
-                                  const SizedBox(height: AppTokens.space12),
-                                  _customerPhoneField(),
-                                ],
-                              );
-                            }
-                            return Row(
-                              children: [
-                                Expanded(child: _customerNameField()),
-                                const SizedBox(width: AppTokens.space12),
-                                Expanded(child: _customerPhoneField()),
-                              ],
-                            );
-                          },
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _customerNameController,
+                                style: const TextStyle(
+                                    fontFamily: 'Plus Jakarta Sans',
+                                    fontSize: 13),
+                                decoration: InputDecoration(
+                                  labelText: _isManualReimbursement
+                                      ? 'Penerima Reimbursement'
+                                      : 'Nama Klien',
+                                  border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10)),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
+                                ),
+                                validator: (v) =>
+                                    v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _customerPhoneController,
+                                keyboardType: TextInputType.phone,
+                                style: const TextStyle(
+                                    fontFamily: 'Plus Jakarta Sans',
+                                    fontSize: 13),
+                                decoration: InputDecoration(
+                                  labelText: 'No. WhatsApp',
+                                  border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10)),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: AppTokens.space12),
+                        const SizedBox(height: 12),
                         TextFormField(
                           controller: _productController,
-                          decoration: const InputDecoration(
+                          style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                          decoration: InputDecoration(
                             labelText: 'Acara / Deskripsi Tagihan',
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
                           ),
-                          validator: (value) =>
-                              value == null || value.trim().isEmpty
-                              ? 'Wajib diisi'
-                              : null,
+                          validator: (v) =>
+                              v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
                         ),
-                        const SizedBox(height: AppTokens.space12),
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            if (constraints.maxWidth < 420) {
-                              return Column(
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: _numberField(
-                                          _qtyController,
-                                          'Unit',
-                                        ),
-                                      ),
-                                      const SizedBox(width: AppTokens.space12),
-                                      Expanded(
-                                        child: _numberField(
-                                          _daysController,
-                                          'Hari',
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: AppTokens.space12),
-                                  _priceField(),
-                                ],
-                              );
-                            }
-                            return Row(
-                              children: [
-                                Expanded(
-                                  child: _numberField(_qtyController, 'Unit'),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _qtyController,
+                                keyboardType: TextInputType.number,
+                                style: const TextStyle(
+                                    fontFamily: 'Plus Jakarta Sans',
+                                    fontSize: 13),
+                                decoration: InputDecoration(
+                                  labelText: 'Unit',
+                                  border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10)),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
                                 ),
-                                const SizedBox(width: AppTokens.space12),
-                                Expanded(
-                                  child: _numberField(_daysController, 'Hari'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _daysController,
+                                keyboardType: TextInputType.number,
+                                style: const TextStyle(
+                                    fontFamily: 'Plus Jakarta Sans',
+                                    fontSize: 13),
+                                decoration: InputDecoration(
+                                  labelText: 'Hari',
+                                  border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10)),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
                                 ),
-                                const SizedBox(width: AppTokens.space12),
-                                Expanded(flex: 2, child: _priceField()),
-                              ],
-                            );
-                          },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              flex: 2,
+                              child: TextFormField(
+                                controller: _unitPriceController,
+                                keyboardType: TextInputType.number,
+                                style: const TextStyle(
+                                    fontFamily: 'Plus Jakarta Sans',
+                                    fontSize: 13),
+                                decoration: InputDecoration(
+                                  labelText: 'Harga Satuan',
+                                  prefixText: 'Rp ',
+                                  border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10)),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: AppTokens.space16),
+              const SizedBox(height: 16),
+              // Submit Button
               SizedBox(
                 width: double.infinity,
+                height: 44,
                 child: FilledButton(
                   onPressed: _isSubmitting ? null : _submit,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF0F172A),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                   child: _isSubmitting
                       ? const SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppTokens.white,
-                          ),
+                              strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text('Buat dan Simpan Invoice'),
+                      : const Text(
+                          'Buat dan Simpan Invoice',
+                          style: TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
                 ),
               ),
             ],
@@ -406,37 +537,4 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
       ),
     );
   }
-
-  Widget _customerNameField() => TextFormField(
-    controller: _customerNameController,
-    decoration: InputDecoration(
-      labelText: _isManualReimbursement
-          ? 'Penerima Reimbursement'
-          : 'Nama Klien',
-    ),
-    validator: (value) =>
-        value == null || value.trim().isEmpty ? 'Wajib diisi' : null,
-  );
-
-  Widget _customerPhoneField() => TextFormField(
-    controller: _customerPhoneController,
-    keyboardType: TextInputType.phone,
-    decoration: const InputDecoration(labelText: 'No. WhatsApp'),
-  );
-
-  Widget _numberField(TextEditingController controller, String label) =>
-      TextFormField(
-        controller: controller,
-        keyboardType: TextInputType.number,
-        decoration: InputDecoration(labelText: label),
-      );
-
-  Widget _priceField() => TextFormField(
-    controller: _unitPriceController,
-    keyboardType: TextInputType.number,
-    decoration: const InputDecoration(
-      labelText: 'Harga Satuan',
-      prefixText: 'Rp ',
-    ),
-  );
 }

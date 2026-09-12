@@ -1,22 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../app/app_theme.dart';
 import '../../app/gateway.dart';
+import '../../shared/pressable.dart';
 import '../invoices/invoice_builder_dialog.dart';
 import '../invoices/invoice_model.dart';
 import '../invoices/quick_payment_dialog.dart';
 import 'order_model.dart';
 import 'unit_allocation_card.dart';
-
-OperationalColors _operationalColors(BuildContext context) =>
-    Theme.of(context).extension<OperationalColors>() ??
-    const OperationalColors(
-      success: AppTokens.successSurface,
-      onSuccess: AppTokens.success,
-      warning: AppTokens.warningSurface,
-      onWarning: AppTokens.warning,
-      danger: AppTokens.dangerSurface,
-      onDanger: AppTokens.danger,
-    );
 
 class OrderDetailScreen extends StatefulWidget {
   const OrderDetailScreen({
@@ -50,6 +39,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     } else if (widget.orderId != null && widget.gateway != null) {
       _loadOrderDetail();
     } else {
+      // Default fallback for preview/testing
       _order = const OrderanSewa(
         id: 'ORD-2026-088',
         namaEvent: 'Event Pertamina JCC',
@@ -58,9 +48,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         jumlahUnit: 4,
         nomorWhatsapp: '081234567890',
         linkGmaps: 'https://maps.google.com/?q=JCC+Senayan',
+        tanggalPemasangan: null,
       );
     }
-    if (widget.gateway != null) _loadInvoice();
+    if (widget.gateway != null) {
+      _loadInvoice();
+    }
   }
 
   Future<void> _loadInvoice() async {
@@ -69,13 +62,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final businessId = _order?.orderanId;
     if (primaryId == null && businessId == null) return;
     try {
-      var invoice = primaryId == null
-          ? null
-          : await widget.gateway!.fetchInvoiceByOrderanId(primaryId);
-      if (invoice == null && businessId != null && businessId != primaryId) {
-        invoice = await widget.gateway!.fetchInvoiceByOrderanId(businessId);
+      var inv = primaryId != null
+          ? await widget.gateway!.fetchInvoiceByOrderanId(primaryId)
+          : null;
+      if (inv == null && businessId != null && businessId != primaryId) {
+        inv = await widget.gateway!.fetchInvoiceByOrderanId(businessId);
       }
-      if (mounted && invoice != null) setState(() => _invoice = invoice);
+      if (mounted && inv != null) {
+        setState(() => _invoice = inv);
+      }
     } catch (_) {}
   }
 
@@ -96,8 +91,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     } catch (_) {
       if (mounted) {
         setState(() {
-          _error =
-              'Detail orderan belum dapat dimuat. Silakan periksa koneksi lalu coba lagi.';
+          _error = 'Detail orderan belum dapat dimuat. Silakan periksa koneksi lalu coba lagi.';
           _isLoading = false;
         });
       }
@@ -106,426 +100,713 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
     return Scaffold(
-      backgroundColor: colors.surfaceContainerLow,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(
+                child: CircularProgressIndicator(color: Color(0xFF147CC1)),
+              )
             : _error != null
-            ? _buildErrorState(context)
-            : Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(AppTokens.space16),
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          _buildTopBar(context),
-                          const SizedBox(height: AppTokens.space16),
-                          _buildOrderHeaderCard(context),
-                          const SizedBox(height: AppTokens.space16),
-                          _buildVenueCard(context),
-                          if (widget.gateway != null && _order != null) ...[
-                            const SizedBox(height: AppTokens.space16),
-                            UnitAllocationCard(
-                              gateway: widget.gateway!,
-                              order: _order!,
-                              isEditable:
-                                  (widget.user?.isTechnician == true ||
-                                      widget.user?.isAdmin == true) &&
-                                  !_order!.isCompletedOrCancelled,
+                          const Icon(Icons.error_outline_rounded,
+                              size: 40, color: Color(0xFFDC2626)),
+                          const SizedBox(height: 12),
+                          Text(
+                            _error!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 14,
+                              color: Color(0xFF991B1B),
                             ),
-                          ],
-                          const SizedBox(height: AppTokens.space16),
-                          _buildCustomerCard(context),
-                          const SizedBox(height: AppTokens.space16),
-                          _buildEventNotesCard(context),
-                          const SizedBox(height: AppTokens.space16),
-                          _buildInvoiceCard(context),
-                          const SizedBox(height: AppTokens.space24),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _loadOrderDetail,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF147CC1),
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Coba Lagi'),
+                          ),
                         ],
                       ),
                     ),
+                  )
+                : Column(
+                    children: [
+                      Expanded(
+                        child: SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _buildTopBar(context),
+                              const SizedBox(height: 16),
+                              _buildOrderHeaderCard(context),
+                              const SizedBox(height: 16),
+                              _buildVenueCard(context),
+                              const SizedBox(height: 16),
+                              if (widget.gateway != null && _order != null) ...[
+                                UnitAllocationCard(
+                                  gateway: widget.gateway!,
+                                  order: _order!,
+                                  isEditable: (widget.user?.isTechnician == true || widget.user?.isAdmin == true) &&
+                                      !_order!.isCompletedOrCancelled,
+                                ),
+                                const SizedBox(height: 16),
+                              ],
+                              _buildCustomerCard(context),
+                              const SizedBox(height: 16),
+                              _buildEventNotesCard(context),
+                              const SizedBox(height: 16),
+                              _buildInvoiceCard(context),
+                              const SizedBox(height: 24),
+                            ],
+                          ),
+                        ),
+                      ),
+                      _buildBottomCta(context),
+                    ],
                   ),
-                  _buildBottomCta(context),
-                ],
-              ),
       ),
     );
   }
 
-  Widget _buildErrorState(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTokens.space24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline_rounded, size: 40, color: colors.error),
-            const SizedBox(height: AppTokens.space12),
-            Text(
-              _error!,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: AppTokens.space12),
-            OutlinedButton(
-              onPressed: _loadOrderDetail,
-              child: const Text('Coba Lagi'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
+  // Top Bar
   Widget _buildTopBar(BuildContext context) {
-    final theme = Theme.of(context);
-    final canManage =
-        widget.user?.canManageOrders == true &&
+    final canManage = widget.user?.canManageOrders == true &&
         _order != null &&
         !_order!.isCompletedOrCancelled;
+
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        IconButton(
-          tooltip: 'Kembali',
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.chevron_left_rounded),
+        GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: Color(0xFFF1F5F9),
+              shape: BoxShape.circle,
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.chevron_left_rounded,
+                color: Color(0xFF0F172A),
+                size: 24,
+              ),
+            ),
+          ),
         ),
-        Expanded(
-          child: Text('Detail Orderan', style: theme.textTheme.headlineSmall),
+        const Text(
+          'Detail Orderan',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF0F172A),
+          ),
         ),
         if (canManage)
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert_rounded),
-            onSelected: (value) {
-              if (value == 'cancel_order') _showCancelOrderDialog();
+            icon: Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF1F5F9),
+                shape: BoxShape.circle,
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.more_vert_rounded,
+                  color: Color(0xFF0F172A),
+                  size: 20,
+                ),
+              ),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            elevation: 4,
+            offset: const Offset(0, 48),
+            onSelected: (val) {
+              if (val == 'cancel_order') {
+                _showCancelOrderDialog();
+              }
             },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
+            itemBuilder: (ctx) => [
+              const PopupMenuItem<String>(
                 value: 'cancel_order',
                 child: Row(
                   children: [
-                    Icon(Icons.cancel_outlined),
-                    SizedBox(width: AppTokens.space8),
-                    Text('Batalkan Order'),
+                    Icon(
+                      Icons.cancel_outlined,
+                      color: Color(0xFFDC2626),
+                      size: 20,
+                    ),
+                    SizedBox(width: 10),
+                    Text(
+                      'Batalkan Order',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFDC2626),
+                      ),
+                    ),
                   ],
                 ),
               ),
             ],
           )
         else
-          const SizedBox(width: AppTokens.minTouchTarget),
+          const SizedBox(width: 40),
       ],
     );
   }
 
+  // Card 1: Nama Event + Tanggal, Durasi Sewa, Jumlah Unit
   Widget _buildOrderHeaderCard(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final operational = _operationalColors(context);
     final order = _order;
-    final done = order?.statusOrderan?.toLowerCase() == 'selesai';
-    final cancelled = order?.isCancelled ?? false;
-    final statusSurface = cancelled
-        ? operational.danger
-        : done
-        ? operational.success
-        : colors.surfaceContainer;
-    final statusInk = cancelled
-        ? operational.onDanger
-        : done
-        ? operational.onSuccess
-        : colors.onSurfaceVariant;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTokens.space16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    order?.displayCode ?? 'ORD-2026-088',
-                    style: theme.textTheme.headlineSmall,
-                  ),
-                ),
-                if (order != null)
-                  Chip(
-                    label: Text(
-                      cancelled
-                          ? 'Dibatalkan'
-                          : done
-                          ? 'Selesai'
-                          : 'Aktif',
-                    ),
-                    backgroundColor: statusSurface,
-                    labelStyle: theme.textTheme.labelMedium?.copyWith(
-                      color: statusInk,
-                    ),
-                    side: BorderSide(color: statusInk),
-                  ),
-              ],
-            ),
-            const SizedBox(height: AppTokens.space8),
-            Text(
-              'Nama Event: ${order?.namaEvent ?? '-'}',
-              style: theme.textTheme.bodyLarge,
-            ),
-            if (cancelled) ...[
-              const SizedBox(height: AppTokens.space12),
-              _semanticBanner(
-                context,
-                icon: Icons.cancel_rounded,
-                surface: operational.danger,
-                ink: operational.onDanger,
-                title: 'Orderan Ini Telah Dibatalkan',
-                detail: order?.cancellationReason == null
-                    ? null
-                    : 'Alasan: ${order!.cancellationReason}',
-              ),
-            ],
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: AppTokens.space16),
-              child: Divider(),
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: _metric(
-                    context,
-                    'Pemasangan',
-                    order?.formattedDate ?? 'Jadwal belum ditentukan',
-                  ),
-                ),
-                const SizedBox(width: AppTokens.space12),
-                Expanded(
-                  child: _metric(
-                    context,
-                    'Durasi Sewa',
-                    order?.durasiSewaText ?? '1 Hari',
-                  ),
-                ),
-                const SizedBox(width: AppTokens.space12),
-                Expanded(
-                  child: _metric(
-                    context,
-                    'Kebutuhan',
-                    '${order?.jumlahUnit ?? 4} Unit',
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+    final displayCode = order?.displayCode ?? 'ORD-2026-088';
+    final isDone = order?.statusOrderan?.toLowerCase() == 'selesai';
+    final isCancelled = order?.isCancelled ?? false;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
-    );
-  }
-
-  Widget _metric(BuildContext context, String label, String value) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: theme.textTheme.labelMedium),
-        const SizedBox(height: AppTokens.space4),
-        Text(value, style: theme.textTheme.titleMedium),
-      ],
-    );
-  }
-
-  Widget _buildVenueCard(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final order = _order;
-    final hasMaps = order?.linkGmaps?.trim().isNotEmpty == true;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTokens.space16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                displayCode,
+                style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                  letterSpacing: -0.4,
+                ),
+              ),
+              if (order != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isCancelled
+                        ? const Color(0xFFFEF2F2)
+                        : (isDone
+                            ? const Color(0xFFECFDF5)
+                            : const Color(0xFFEFF6FF)),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isCancelled
+                          ? const Color(0xFFFECACA)
+                          : (isDone
+                              ? const Color(0xFFA7F3D0)
+                              : const Color(0xFFBFDBFE)),
+                    ),
+                  ),
                   child: Text(
-                    'Lokasi Acara',
-                    style: theme.textTheme.titleMedium,
+                    isCancelled
+                        ? 'Dibatalkan'
+                        : (isDone ? 'Selesai' : 'Aktif'),
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: isCancelled
+                          ? const Color(0xFFDC2626)
+                          : (isDone
+                              ? const Color(0xFF059669)
+                              : const Color(0xFF2563EB)),
+                    ),
                   ),
                 ),
-                if (hasMaps)
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      final ok = await order!.launchMaps();
-                      if (!ok && context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Peta lokasi acara tidak dapat dibuka.',
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Nama Event: ${order?.namaEvent ?? '-'}',
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF475569),
+            ),
+          ),
+          if (isCancelled) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFECACA)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.cancel_rounded, color: Color(0xFFDC2626), size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Orderan Ini Telah Dibatalkan',
+                          style: TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF991B1B),
+                          ),
+                        ),
+                        if (order?.cancellationReason != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            'Alasan: ${order!.cancellationReason}',
+                            style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 11.5,
+                              color: Color(0xFFB91C1C),
+                              height: 1.3,
                             ),
                           ),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.near_me_rounded),
-                    label: const Text('Petunjuk Arah'),
+                        ],
+                      ],
+                    ),
                   ),
-              ],
-            ),
-            const SizedBox(height: AppTokens.space12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.location_on_rounded, color: colors.onSurfaceVariant),
-                const SizedBox(width: AppTokens.space12),
-                Expanded(
-                  child: Text(
-                    order?.alamat ?? 'Lokasi acara belum dicatat',
-                    style: theme.textTheme.bodyLarge,
-                  ),
-                ),
-              ],
-            ),
-            if (hasMaps) ...[
-              const SizedBox(height: AppTokens.space12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => order!.launchMaps(),
-                  icon: const Icon(Icons.map_rounded),
-                  label: const Text('Buka di Google Maps'),
-                ),
+                ],
               ),
-            ],
+            ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCustomerCard(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final order = _order;
-    final hasWhatsapp = order?.cleanWhatsapp.isNotEmpty == true;
-    final customerName = order?.namaClient?.trim().isNotEmpty == true
-        ? order!.namaClient!.trim()
-        : order?.namaPic?.trim().isNotEmpty == true
-        ? order!.namaPic!.trim()
-        : 'Pemesan';
-    final phone = order?.nomorWhatsapp?.trim().isNotEmpty == true
-        ? order!.nomorWhatsapp!.trim()
-        : 'Nomor WhatsApp belum tersedia';
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTokens.space16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Data Pemesan', style: theme.textTheme.titleMedium),
-            const SizedBox(height: AppTokens.space8),
-            Row(
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.only(top: 14),
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+            ),
+            child: Row(
               children: [
-                CircleAvatar(
-                  backgroundColor: colors.surfaceContainer,
-                  child: Text(customerName.substring(0, 1).toUpperCase()),
-                ),
-                const SizedBox(width: AppTokens.space12),
+                // Jadwal Pemasangan
                 Expanded(
+                  flex: 4,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(customerName, style: theme.textTheme.titleMedium),
-                      Text(phone, style: theme.textTheme.bodyMedium),
+                      const Text(
+                        'Pemasangan',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        order?.tanggalPemasangan != null
+                            ? order!.formattedDate
+                            : 'Jadwal belum ditentukan',
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFFDC2626),
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                if (hasWhatsapp)
-                  IconButton(
-                    tooltip: 'WhatsApp',
-                    onPressed: () => order!.launchWhatsApp(),
-                    icon: const Icon(Icons.chat_bubble_rounded),
+                Container(width: 1, height: 32, color: const Color(0xFFE2E8F0)),
+                const SizedBox(width: 10),
+                // Durasi Sewa
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Durasi Sewa',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        order?.durasiSewaText ?? '1 Hari',
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF2563EB),
+                        ),
+                      ),
+                    ],
                   ),
+                ),
+                Container(width: 1, height: 32, color: const Color(0xFFE2E8F0)),
+                const SizedBox(width: 10),
+                // Kebutuhan Unit
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Kebutuhan',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${order?.jumlahUnit ?? 4} Unit',
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildEventNotesCard(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final note = _order?.cleanNote ?? '';
-    return Card(
-      color: colors.surfaceContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(AppTokens.space16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.edit_note_rounded, color: colors.onSurfaceVariant),
-                const SizedBox(width: AppTokens.space8),
-                Text('Catatan Orderan', style: theme.textTheme.titleMedium),
-              ],
-            ),
-            const SizedBox(height: AppTokens.space8),
-            Text(
-              note.isEmpty
-                  ? 'Tidak ada catatan khusus untuk orderan ini.'
-                  : note,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: note.isEmpty ? colors.onSurfaceVariant : null,
-                fontStyle: note.isEmpty ? FontStyle.italic : null,
+  // Card 2: Lokasi Acara + Tombol Maps
+  Widget _buildVenueCard(BuildContext context) {
+    final order = _order;
+    final hasMaps = order?.linkGmaps != null && order!.linkGmaps!.trim().isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Lokasi Acara',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              if (hasMaps)
+                PressableScale(
+                  onTap: () async {
+                    final ok = await order.launchMaps();
+                    if (!ok && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Peta lokasi acara tidak dapat dibuka.'),
+                        ),
+                      );
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.near_me_rounded, size: 14, color: Color(0xFF2563EB)),
+                        SizedBox(width: 4),
+                        Text(
+                          'Petunjuk Arah',
+                          style: TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF2563EB),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.location_on_rounded,
+                    color: Color(0xFF2563EB),
+                    size: 20,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      order?.alamat ?? 'Lokasi acara belum dicatat',
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0F172A),
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (hasMaps) ...[
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              height: 38,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final ok = await order.launchMaps();
+                  if (!ok && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Peta lokasi acara tidak dapat dibuka.'),
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.map_rounded, size: 16),
+                label: const Text(
+                  'Buka di Google Maps',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF2563EB),
+                  side: const BorderSide(color: Color(0xFFBFDBFE)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
               ),
             ),
           ],
-        ),
+        ],
       ),
     );
   }
 
-  Widget _semanticBanner(
-    BuildContext context, {
-    required IconData icon,
-    required Color surface,
-    required Color ink,
-    required String title,
-    String? detail,
-  }) {
-    final theme = Theme.of(context);
+  // Card 3: Data Pemesan
+  Widget _buildCustomerCard(BuildContext context) {
+    final order = _order;
+    final hasWa = order?.cleanWhatsapp.isNotEmpty == true;
+
+    final customerName = (order?.namaClient != null && order!.namaClient!.trim().isNotEmpty)
+        ? order.namaClient!.trim()
+        : (order?.namaPic != null && order!.namaPic!.trim().isNotEmpty)
+            ? order.namaPic!.trim()
+            : 'Pemesan';
+    final initial = customerName.isNotEmpty ? customerName.substring(0, 1).toUpperCase() : 'P';
+    final phone = (order?.nomorWhatsapp != null && order!.nomorWhatsapp!.trim().isNotEmpty)
+        ? order.nomorWhatsapp!.trim()
+        : 'Nomor WhatsApp belum tersedia';
+
     return Container(
-      padding: const EdgeInsets.all(AppTokens.space12),
-      color: surface,
-      child: Row(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: ink),
-          const SizedBox(width: AppTokens.space8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(color: ink),
-                ),
-                if (detail != null)
-                  Text(
-                    detail,
-                    style: theme.textTheme.bodyMedium?.copyWith(color: ink),
+          const Text(
+            'Data Pemesan',
+            style: TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: const Color(0xFFF1F5F9),
+                child: Text(
+                  initial,
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
                   ),
-              ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      customerName,
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      phone,
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (hasWa)
+                PressableScale(
+                  onTap: () async {
+                    final ok = await order!.launchWhatsApp();
+                    if (!ok && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Tidak dapat membuka WhatsApp.'),
+                        ),
+                      );
+                    }
+                  },
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFBBF7D0)),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.chat_bubble_rounded,
+                        color: Color(0xFF16A34A),
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Card 4: Catatan Orderan
+  Widget _buildEventNotesCard(BuildContext context) {
+    final note = _order?.cleanNote ?? '';
+    final hasNote = note.trim().isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.edit_note_rounded,
+                  size: 18, color: Color(0xFF2563EB)),
+              SizedBox(width: 8),
+              Text(
+                'Catatan Orderan',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            hasNote ? note : 'Tidak ada catatan khusus untuk orderan ini.',
+            style: TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 12,
+              fontStyle: hasNote ? FontStyle.normal : FontStyle.italic,
+              color: hasNote ? const Color(0xFF334155) : const Color(0xFF94A3B8),
+              height: 1.5,
             ),
           ),
         ],
@@ -536,41 +817,75 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Future<void> _markAsCompleted() async {
     final order = _order;
     if (order == null) return;
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Selesaikan Orderan?'),
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text(
+          'Selesaikan Orderan?',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF0F172A),
+          ),
+        ),
         content: Text(
           'Apakah event "${order.namaEvent}" sudah selesai dan unit blower siap kembali?\nStatus orderan akan diubah menjadi Selesai.',
+          style: const TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 13,
+            color: Color(0xFF475569),
+            height: 1.4,
+          ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
+            onPressed: () => Navigator.pop(ctx, false),
             child: const Text('Batal'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF0F172A),
+            ),
             child: const Text('Ya, Selesaikan'),
           ),
         ],
       ),
     );
-    if (confirmed != true || !mounted) return;
-    try {
-      await widget.gateway?.updateOrderStatus(
-        order.orderanId ?? order.id,
-        'Selesai',
-      );
-      if (!mounted) return;
-      setState(() => _order = order.copyWith(statusOrderan: 'Selesai'));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Orderan berhasil ditandai selesai.')),
-      );
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(failureMessage(error))));
+
+    if (confirmed == true && mounted) {
+      try {
+        final orderanIdStr = order.orderanId ?? order.id;
+        await widget.gateway?.updateOrderStatus(orderanIdStr, 'Selesai');
+        if (!mounted) return;
+        setState(() {
+          _order = order.copyWith(statusOrderan: 'Selesai');
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Orderan berhasil ditandai selesai.',
+              style: TextStyle(fontFamily: 'Plus Jakarta Sans'),
+            ),
+            backgroundColor: Color(0xFF059669),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              failureMessage(e),
+              style: const TextStyle(fontFamily: 'Plus Jakarta Sans'),
+            ),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     }
   }
@@ -579,94 +894,338 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final order = _order;
     if (order == null) return;
 
-    final reason = await showDialog<String>(
-      context: context,
-      builder: (_) => _CancelOrderDialog(order: order, invoice: _invoice),
-    );
-    if (reason == null || !mounted) return;
+    final reasonController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final inv = _invoice;
+    final hasPayment = inv != null && inv.paidAmount > 0;
+    final hasUnpaidInvoice = inv != null && !inv.isPaid && !inv.isCancelled;
 
-    try {
-      final orderanId = order.id.isNotEmpty
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (dialogCtx, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+              contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+              actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+              title: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.cancel_outlined,
+                      color: Color(0xFFDC2626),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Batalkan Orderan?',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Event "${order.namaEvent}" (${order.displayCode}) akan dibatalkan dan dihapus dari jadwal aktif pemasangan.',
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 13,
+                          color: Color(0xFF475569),
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      if (hasPayment) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFFBEB),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFFDE68A)),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.warning_amber_rounded,
+                                color: Color(0xFFD97706),
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Perhatian: Invoice memiliki pembayaran tercatat sebesar ${inv.paidAmountFormatted}. Pastikan penyelesaian refund atau koordinasi dana dilakukan.',
+                                  style: const TextStyle(
+                                    fontFamily: 'Plus Jakarta Sans',
+                                    fontSize: 11.5,
+                                    color: Color(0xFF92400E),
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                      ] else if (hasUnpaidInvoice) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFBFDBFE)),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.info_outline_rounded,
+                                color: Color(0xFF2563EB),
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Invoice terkait (${inv.invoiceReference}) yang belum dibayar akan otomatis dibatalkan.',
+                                  style: const TextStyle(
+                                    fontFamily: 'Plus Jakarta Sans',
+                                    fontSize: 11.5,
+                                    color: Color(0xFF1E40AF),
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                      ],
+                      const Text(
+                        'Alasan Pembatalan *',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF334155),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: reasonController,
+                        autofocus: true,
+                        maxLines: 2,
+                        validator: (val) {
+                          if (val == null || val.trim().length < 3) {
+                            return 'Alasan pembatalan minimal 3 karakter.';
+                          }
+                          return null;
+                        },
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 13,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Contoh: Acara dibatalkan oleh pihak klien',
+                          hintStyle: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 12,
+                            color: Color(0xFF94A3B8),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Kembali'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    if (formKey.currentState?.validate() == true) {
+                      Navigator.pop(ctx, true);
+                    }
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFDC2626),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Ya, Batalkan Order'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      final reason = reasonController.text.trim();
+      final orderanIdStr = order.id.isNotEmpty
           ? order.id
           : (order.orderanId ?? widget.orderId ?? '');
-      await widget.gateway?.cancelOrder(
-        orderanId,
-        reason: reason,
-        cancelInvoice: true,
-      );
-      if (!mounted) return;
-      final currentNote = order.catatanOrderan ?? '';
-      final cancelTag = '[BATAL: $reason]';
-      final updatedNote = currentNote.isNotEmpty
-          ? '$currentNote\n$cancelTag'
-          : cancelTag;
-      setState(() {
-        _order = order.copyWith(
-          statusOrderan: 'Dibatalkan',
-          catatanOrderan: updatedNote,
+
+      try {
+        await widget.gateway?.cancelOrder(
+          orderanIdStr,
+          reason: reason,
+          cancelInvoice: true,
         );
-        if (_invoice != null &&
-            (!_invoice!.isPaid || _invoice!.paidAmount <= 0)) {
-          _invoice = null;
-        }
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Orderan berhasil dibatalkan dan invoice terkait telah dihapus.',
+        if (!mounted) return;
+
+        final currentNote = order.catatanOrderan ?? '';
+        final cancelTag = '[BATAL: $reason]';
+        final updatedNote = currentNote.isNotEmpty ? '$currentNote\n$cancelTag' : cancelTag;
+
+        setState(() {
+          _order = order.copyWith(
+            statusOrderan: 'Dibatalkan',
+            catatanOrderan: updatedNote,
+          );
+          if (_invoice != null && (!_invoice!.isPaid || _invoice!.paidAmount <= 0)) {
+            _invoice = null;
+          }
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Orderan berhasil dibatalkan dan invoice terkait telah dihapus.',
+              style: TextStyle(fontFamily: 'Plus Jakarta Sans'),
+            ),
+            backgroundColor: Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
           ),
-        ),
-      );
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(failureMessage(error))));
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              failureMessage(e),
+              style: const TextStyle(fontFamily: 'Plus Jakarta Sans'),
+            ),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     }
   }
 
+  // Bottom Floating CTA Bar
   Widget _buildBottomCta(BuildContext context) {
     final order = _order;
     final canComplete =
         widget.user?.canManageOrders == true &&
         order != null &&
         !order.isCompletedOrCancelled;
-    return Material(
-      color: Theme.of(context).colorScheme.surface,
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.all(AppTokens.space16),
-          child: canComplete
-              ? Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: _markAsCompleted,
-                        icon: const Icon(Icons.check_circle_rounded),
-                        label: const Text('Tandai Selesai'),
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: const Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: canComplete
+          ? Row(
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: PressableScale(
+                    onTap: _markAsCompleted,
+                    child: Container(
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F172A),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.check_circle_rounded,
+                              color: Colors.white, size: 18),
+                          SizedBox(width: 8),
+                          Text(
+                            'Tandai Selesai',
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: AppTokens.space8),
-                    Expanded(child: _buildWhatsappButton(order)),
-                  ],
-                )
-              : _buildWhatsappButton(order),
-        ),
-      ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  flex: 6,
+                  child: _buildWhatsappButton(order),
+                ),
+              ],
+            )
+          : _buildWhatsappButton(order),
     );
   }
 
   Widget _buildWhatsappButton(OrderanSewa? order) {
-    final colors = Theme.of(context).colorScheme;
-    return OutlinedButton.icon(
-      onPressed: () async {
+    return PressableScale(
+      onTap: () async {
         if (order != null && order.cleanWhatsapp.isNotEmpty) {
           final ok = await order.launchWhatsApp();
           if (!ok && mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Tidak dapat membuka WhatsApp.')),
+              const SnackBar(
+                content: Text('Tidak dapat membuka WhatsApp.'),
+              ),
             );
           }
         } else {
@@ -677,310 +1236,249 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           );
         }
       },
-      icon: const Icon(Icons.chat_rounded),
-      label: const Text('Hubungi Pemesan'),
-      style: OutlinedButton.styleFrom(foregroundColor: colors.onSurface),
-    );
-  }
-
-  Widget _buildInvoiceCard(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final operational = _operationalColors(context);
-    final invoice = _invoice;
-    final isPaid = invoice?.isPaid ?? false;
-    final isDp = invoice?.isDp ?? false;
-    final isCancelled = invoice?.isCancelled ?? false;
-    final statusSurface = isPaid
-        ? operational.success
-        : isDp
-        ? operational.warning
-        : isCancelled
-        ? colors.surfaceContainer
-        : operational.danger;
-    final statusInk = isPaid
-        ? operational.onSuccess
-        : isDp
-        ? operational.onWarning
-        : isCancelled
-        ? colors.onSurfaceVariant
-        : operational.onDanger;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppTokens.space16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: Container(
+        height: 48,
+        decoration: BoxDecoration(
+          color: const Color(0xFF16A34A),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x3316A34A),
+              blurRadius: 8,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Invoice Terkait',
-                    style: theme.textTheme.titleMedium,
-                  ),
-                ),
-                Chip(
-                  label: Text(invoice?.paymentStatusDisplay ?? 'Belum Ada'),
-                  backgroundColor: invoice == null
-                      ? colors.surfaceContainer
-                      : statusSurface,
-                  labelStyle: theme.textTheme.labelMedium?.copyWith(
-                    color: invoice == null
-                        ? colors.onSurfaceVariant
-                        : statusInk,
-                  ),
-                  side: BorderSide(
-                    color: invoice == null ? colors.outline : statusInk,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppTokens.space8),
+            Icon(Icons.chat_rounded, color: Colors.white, size: 18),
+            SizedBox(width: 8),
             Text(
-              invoice == null
-                  ? 'Lihat atau terbitkan invoice resmi untuk orderan ini.'
-                  : '${invoice.invoiceReference} • Total: ${invoice.totalAmountFormatted}${invoice.remainingAmount > 0 ? ' (Sisa: ${invoice.remainingAmountFormatted})' : ''}',
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: AppTokens.space12),
-            if (invoice != null)
-              Row(
-                children: [
-                  if (!isCancelled) ...[
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: widget.gateway == null
-                            ? null
-                            : () => showDialog<void>(
-                                context: context,
-                                builder: (_) => QuickPaymentDialog(
-                                  invoice: invoice,
-                                  gateway: widget.gateway!,
-                                  onPaymentUpdated: (updated) =>
-                                      setState(() => _invoice = updated),
-                                ),
-                              ),
-                        icon: const Icon(Icons.payments_outlined),
-                        label: const Text('Atur Bayar'),
-                      ),
-                    ),
-                    const SizedBox(width: AppTokens.space8),
-                  ],
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: widget.gateway == null
-                          ? null
-                          : () => showDialog<void>(
-                              context: context,
-                              builder: (_) => InvoiceBuilderDialog(
-                                invoice: invoice,
-                                gateway: widget.gateway!,
-                                onSaved: (saved) =>
-                                    setState(() => _invoice = saved),
-                              ),
-                            ),
-                      icon: const Icon(Icons.receipt_long_rounded),
-                      label: const Text('Buka Invoice'),
-                    ),
-                  ),
-                ],
-              )
-            else if (widget.gateway != null &&
-                _order != null &&
-                !_order!.isCancelled)
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: _createInvoice,
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Terbitkan Invoice untuk Order Ini'),
-                ),
+              'Hubungi Pemesan',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
               ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Future<void> _createInvoice() async {
-    final order = _order;
-    final gateway = widget.gateway;
-    if (order == null || gateway == null) return;
-    final date = order.tanggalPemasangan ?? DateTime.now();
-    final orderanId = order.orderanId ?? order.id;
-    final codeSuffix = orderanId.split('-').last;
-    final datePrefix = date
-        .toIso8601String()
-        .substring(0, 10)
-        .replaceAll('-', '/');
-    final quantity = order.jumlahUnit > 0 ? order.jumlahUnit : 1;
-    final days = order.rentalDays > 0 ? order.rentalDays : 1;
-    const unitPrice = 250000;
-    final subtotal = quantity * unitPrice;
-    final payload = <String, Object?>{
-      'orderan_id': orderanId,
-      'invoice_reference': 'INV/$datePrefix-$codeSuffix',
-      'invoice_date': date.toIso8601String().substring(0, 10),
-      'due_date': date
-          .add(const Duration(days: 7))
-          .toIso8601String()
-          .substring(0, 10),
-      'product_name': order.namaEvent.isNotEmpty
-          ? order.namaEvent
-          : 'Sewa Mistyfan',
-      'quantity': quantity,
-      'rental_days': days,
-      'unit_price': unitPrice,
-      'subtotal': subtotal,
-      'total_amount': subtotal * days,
-      'paid_amount': 0,
-      'payment_status': 'unpaid',
-      'invoice_source': 'order',
-      'customer_name': order.namaClient,
-      'customer_phone': order.nomorWhatsapp ?? '',
-    };
-    try {
-      final created = await gateway.createInvoice(payload);
-      if (mounted) setState(() => _invoice = created);
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal membuat invoice: $error')),
-        );
-      }
-    }
-  }
-}
+  Widget _buildInvoiceCard(BuildContext context) {
+    final inv = _invoice;
+    final isPaid = inv?.isPaid ?? false;
+    final isDp = inv?.isDp ?? false;
+    final isCancelled = inv?.isCancelled ?? false;
 
-class _CancelOrderDialog extends StatefulWidget {
-  const _CancelOrderDialog({required this.order, required this.invoice});
+    final statusBg = isPaid
+        ? const Color(0xFFECFDF5)
+        : isDp
+            ? const Color(0xFFFFFBEB)
+            : isCancelled
+                ? const Color(0xFFF1F5F9)
+                : const Color(0xFFFEF2F2);
 
-  final OrderanSewa order;
-  final InvoiceRecord? invoice;
+    final statusColor = isPaid
+        ? const Color(0xFF059669)
+        : isDp
+            ? const Color(0xFFD97706)
+            : isCancelled
+                ? const Color(0xFF64748B)
+                : const Color(0xFFDC2626);
 
-  @override
-  State<_CancelOrderDialog> createState() => _CancelOrderDialogState();
-}
-
-class _CancelOrderDialogState extends State<_CancelOrderDialog> {
-  final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _reasonController;
-
-  @override
-  void initState() {
-    super.initState();
-    _reasonController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _reasonController.dispose();
-    super.dispose();
-  }
-
-  Widget _buildBanner(
-    BuildContext context, {
-    required IconData icon,
-    required Color surface,
-    required Color ink,
-    required String title,
-  }) {
-    final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.all(AppTokens.space12),
-      color: surface,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: ink),
-          const SizedBox(width: AppTokens.space8),
-          Expanded(
-            child: Text(
-              title,
-              style: theme.textTheme.titleMedium?.copyWith(color: ink),
-            ),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
           ),
         ],
       ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final invoice = widget.invoice;
-    final hasPayment = invoice != null && invoice.paidAmount > 0;
-    final hasUnpaidInvoice =
-        invoice != null && !invoice.isPaid && !invoice.isCancelled;
-    final operational = _operationalColors(context);
-    return AlertDialog(
-      title: const Text('Batalkan Orderan?'),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Event "${widget.order.namaEvent}" (${widget.order.displayCode}) akan dibatalkan dan dihapus dari jadwal aktif pemasangan.',
+              const Text(
+                'Invoice Terkait',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0F172A),
+                ),
               ),
-              const SizedBox(height: AppTokens.space12),
-              if (hasPayment) ...[
-                _buildBanner(
-                  context,
-                  icon: Icons.warning_amber_rounded,
-                  surface: operational.warning,
-                  ink: operational.onWarning,
-                  title:
-                      'Perhatian: Invoice memiliki pembayaran tercatat sebesar ${invoice.paidAmountFormatted}. Pastikan penyelesaian refund atau koordinasi dana dilakukan.',
+              if (inv != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: statusBg,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    inv.paymentStatusDisplay,
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: statusColor,
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    'Belum Ada',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
                 ),
-                const SizedBox(height: AppTokens.space12),
-              ] else if (hasUnpaidInvoice) ...[
-                _buildBanner(
-                  context,
-                  icon: Icons.info_outline_rounded,
-                  surface: Theme.of(context).colorScheme.surfaceContainer,
-                  ink: Theme.of(context).colorScheme.onSurfaceVariant,
-                  title:
-                      'Invoice terkait (${invoice.invoiceReference}) yang belum dibayar akan otomatis dibatalkan.',
-                ),
-                const SizedBox(height: AppTokens.space12),
-              ],
-              TextFormField(
-                controller: _reasonController,
-                autofocus: true,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Alasan Pembatalan *',
-                  hintText: 'Contoh: Acara dibatalkan oleh pihak klien',
-                ),
-                validator: (value) => value == null || value.trim().length < 3
-                    ? 'Alasan pembatalan minimal 3 karakter.'
-                    : null,
-              ),
             ],
           ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Kembali'),
-        ),
-        FilledButton(
-          onPressed: () {
-            if (_formKey.currentState?.validate() == true) {
-              Navigator.pop(context, _reasonController.text.trim());
-            }
-          },
-          style: FilledButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.surface,
-            foregroundColor: Theme.of(context).colorScheme.error,
-            side: BorderSide(color: Theme.of(context).colorScheme.error),
+          const SizedBox(height: 8),
+          Text(
+            inv != null
+                ? '${inv.invoiceReference} • Total: ${inv.totalAmountFormatted}${inv.remainingAmount > 0 ? " (Sisa: ${inv.remainingAmountFormatted})" : ""}'
+                : 'Lihat atau terbitkan invoice resmi untuk orderan ini.',
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 12,
+              color: Color(0xFF64748B),
+            ),
           ),
-          child: const Text('Ya, Batalkan Order'),
-        ),
-      ],
+          const SizedBox(height: 14),
+          if (inv != null)
+            Row(
+              children: [
+                if (!isCancelled) ...[
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        showDialog<void>(
+                          context: context,
+                          builder: (ctx) => QuickPaymentDialog(
+                            invoice: inv,
+                            gateway: widget.gateway!,
+                            onPaymentUpdated: (updated) {
+                              setState(() => _invoice = updated);
+                            },
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.payments_outlined, size: 15),
+                      label: const Text('Atur Bayar', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      showDialog<void>(
+                        context: context,
+                        builder: (ctx) => InvoiceBuilderDialog(
+                          invoice: inv,
+                          gateway: widget.gateway!,
+                          onSaved: (saved) {
+                            setState(() => _invoice = saved);
+                          },
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.receipt_long_rounded, size: 15),
+                    label: const Text('Buka Invoice', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF0F172A),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else if (widget.gateway != null && _order != null && !_order!.isCancelled)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final order = _order!;
+                  final dt = order.tanggalPemasangan ?? DateTime.now();
+                  final orderanIdStr = order.orderanId ?? order.id;
+                  final codeSuffix = orderanIdStr.split('-').last;
+                  final y = dt.year.toString().padLeft(4, '0');
+                  final m = dt.month.toString().padLeft(2, '0');
+                  final d = dt.day.toString().padLeft(2, '0');
+                  final ref = 'INV/$y/$m/$d-$codeSuffix';
+                  final qty = order.jumlahUnit > 0 ? order.jumlahUnit : 1;
+                  final days = order.rentalDays > 0 ? order.rentalDays : 1;
+                  const unitPrice = 250000;
+                  final subtotal = qty * unitPrice;
+
+                  final payload = <String, Object?>{
+                    'orderan_id': orderanIdStr,
+                    'invoice_reference': ref,
+                    'invoice_date': dt.toIso8601String().substring(0, 10),
+                    'due_date': dt.add(const Duration(days: 7)).toIso8601String().substring(0, 10),
+                    'product_name': order.namaEvent.isNotEmpty ? order.namaEvent : 'Sewa Mistyfan',
+                    'quantity': qty,
+                    'rental_days': days,
+                    'unit_price': unitPrice,
+                    'subtotal': subtotal,
+                    'total_amount': subtotal * days,
+                    'paid_amount': 0,
+                    'payment_status': 'unpaid',
+                    'invoice_source': 'order',
+                    'customer_name': order.namaClient,
+                    'customer_phone': order.nomorWhatsapp ?? '',
+                  };
+                  final messenger = ScaffoldMessenger.of(context);
+                  try {
+                    final created = await widget.gateway!.createInvoice(payload);
+                    if (mounted) {
+                      setState(() => _invoice = created);
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      messenger.showSnackBar(
+                        SnackBar(content: Text('Gagal membuat invoice: $e'), backgroundColor: const Color(0xFFDC2626)),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: const Text('Terbitkan Invoice untuk Order Ini', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                style: OutlinedButton.styleFrom(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../app/app_theme.dart';
 import 'package:lottie/lottie.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -19,9 +18,9 @@ class _SplashScreenState extends State<SplashScreen>
   bool _finished = false;
 
   static bool get _isTestEnvironment {
-    return WidgetsBinding.instance.runtimeType.toString().contains(
-      'TestWidgetsFlutterBinding',
-    );
+    return WidgetsBinding.instance.runtimeType
+        .toString()
+        .contains('TestWidgetsFlutterBinding');
   }
 
   @override
@@ -60,38 +59,27 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     if (_isTestEnvironment) {
-      return Scaffold(
-        backgroundColor: AppTokens.porcelain,
-        body: Center(
-          child: Text('MGRS Splash', style: textTheme.headlineSmall),
-        ),
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: Text('MGRS Splash')),
       );
     }
 
     return Scaffold(
-      backgroundColor: AppTokens.porcelain,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AppTokens.space24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Semantics(
-                label: 'MGRS-Maintenance',
-                image: true,
-                child: Lottie.asset(
-                  'assets/animation/splash_mgrs.json',
-                  controller: _controller,
-                  fit: BoxFit.contain,
-                  onLoaded: (composition) {
-                    _controller.duration = composition.duration;
-                    _controller.forward();
-                  },
-                ),
-              ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Lottie.asset(
+              'assets/animation/splash_mgrs.json',
+              controller: _controller,
+              fit: BoxFit.contain,
+              onLoaded: (composition) {
+                _controller.duration = composition.duration;
+                _controller.forward();
+              },
             ),
           ),
         ),

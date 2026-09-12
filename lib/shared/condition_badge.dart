@@ -6,43 +6,20 @@ class ConditionBadge extends StatelessWidget {
   final String value;
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final textTheme = theme.textTheme;
-    final operational =
-        theme.extension<OperationalColors>() ??
-        const OperationalColors(
-          success: AppTokens.successSurface,
-          onSuccess: AppTokens.success,
-          warning: AppTokens.warningSurface,
-          onWarning: AppTokens.warning,
-          danger: AppTokens.dangerSurface,
-          onDanger: AppTokens.danger,
-        );
-    final Color background;
-    final Color foreground;
-    if (value == 'OK') {
-      background = operational.success;
-      foreground = operational.onSuccess;
-    } else if (value == 'Rusak Ringan') {
-      background = operational.warning;
-      foreground = operational.onWarning;
-    } else {
-      background = operational.danger;
-      foreground = operational.onDanger;
-    }
-
+    final color = value == 'OK'
+        ? AppTokens.success
+        : value == 'Rusak Ringan'
+        ? AppTokens.warning
+        : AppTokens.danger;
     return Chip(
       avatar: Icon(
         value == 'OK' ? Icons.check_circle_outline : Icons.info_outline,
-        color: foreground,
+        color: color,
         size: 18,
       ),
-      label: Text(
-        value,
-        style: textTheme.labelMedium?.copyWith(color: foreground),
-      ),
-      side: BorderSide(color: foreground.withValues(alpha: 0.3)),
-      backgroundColor: background,
+      label: Text(value, style: TextStyle(color: color)),
+      side: BorderSide(color: color.withValues(alpha: .3)),
+      backgroundColor: color.withValues(alpha: .06),
     );
   }
 }

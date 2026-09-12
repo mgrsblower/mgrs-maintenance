@@ -34,7 +34,6 @@ class _PressableScaleState extends State<PressableScale>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _scaleAnimation;
-  bool? _disableAnimations;
 
   @override
   void initState() {
@@ -45,30 +44,14 @@ class _PressableScaleState extends State<PressableScale>
       reverseDuration: widget.duration,
       value: 0.0,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: widget.pressedScale)
-        .animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: widget.curve,
-            reverseCurve: Curves.easeOutBack,
-          ),
-        );
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final disableAnimations = MediaQuery.disableAnimationsOf(context);
-    if (_disableAnimations == disableAnimations) return;
-    _disableAnimations = disableAnimations;
-    final duration = disableAnimations ? Duration.zero : widget.duration;
-    _controller.duration = duration;
-    _controller.reverseDuration = duration;
-    if (disableAnimations && _controller.isAnimating) {
-      final target = _controller.status == AnimationStatus.forward ? 1.0 : 0.0;
-      _controller.stop();
-      _controller.value = target;
-    }
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: widget.pressedScale,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: widget.curve,
+      reverseCurve: Curves.easeOutBack,
+    ));
   }
 
   @override
@@ -78,8 +61,7 @@ class _PressableScaleState extends State<PressableScale>
   }
 
   void _handleTapDown(TapDownDetails _) {
-    if (!widget.enabled ||
-        (widget.onTap == null && widget.onLongPress == null)) {
+    if (!widget.enabled || (widget.onTap == null && widget.onLongPress == null)) {
       return;
     }
     if (widget.enableHaptic) {
@@ -89,40 +71,35 @@ class _PressableScaleState extends State<PressableScale>
   }
 
   void _handleTapUp(TapUpDetails _) {
-    if (!widget.enabled) return;
+    if (!widget.enabled || widget.onTap == null) return;
     _controller.reverse();
   }
 
   void _handleTapCancel() {
-    if (!widget.enabled) return;
+    if (!widget.enabled || widget.onTap == null) return;
     _controller.reverse();
   }
 
   @override
   Widget build(BuildContext context) {
-    final interactive =
-        widget.enabled && (widget.onTap != null || widget.onLongPress != null);
-    if (!interactive) return widget.child;
+    if (!widget.enabled || (widget.onTap == null && widget.onLongPress == null)) {
+      return widget.child;
+    }
 
-    return Semantics(
-      button: true,
-      enabled: widget.enabled,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: _handleTapDown,
+      onTapUp: _handleTapUp,
+      onTapCancel: _handleTapCancel,
       onTap: widget.onTap,
       onLongPress: widget.onLongPress,
-      child: GestureDetector(
-        excludeFromSemantics: true,
-        behavior: HitTestBehavior.opaque,
-        onTapDown: _handleTapDown,
-        onTapUp: _handleTapUp,
-        onTapCancel: _handleTapCancel,
-        onTap: widget.onTap,
-        onLongPress: widget.onLongPress,
-        child: AnimatedBuilder(
-          animation: _scaleAnimation,
-          builder: (context, child) =>
-              Transform.scale(scale: _scaleAnimation.value, child: child),
-          child: widget.child,
+      child: AnimatedBuilder(
+        animation: _scaleAnimation,
+        builder: (context, child) => Transform.scale(
+          scale: _scaleAnimation.value,
+          child: child,
         ),
+        child: widget.child,
       ),
     );
   }

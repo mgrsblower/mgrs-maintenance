@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../app/app_theme.dart';
 
 class InvoiceAdjustmentEditor extends StatelessWidget {
   const InvoiceAdjustmentEditor({
@@ -23,16 +22,11 @@ class InvoiceAdjustmentEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final operational = theme.extension<OperationalColors>();
     final removeButton = IconButton(
       key: Key('invoice-adjustment-remove-$index'),
       onPressed: readOnly || !canRemove ? null : onRemove,
       tooltip: 'Hapus penyesuaian',
-      icon: Icon(
-        Icons.remove_circle_outline_rounded,
-        color: operational?.onDanger ?? theme.colorScheme.error,
-      ),
+      icon: const Icon(Icons.remove_circle_outline_rounded, color: Color(0xFFDC2626)),
     );
 
     return LayoutBuilder(
@@ -48,9 +42,12 @@ class InvoiceAdjustmentEditor extends StatelessWidget {
                   key: Key('invoice-adjustment-description-$index'),
                   controller: descriptionController,
                   readOnly: readOnly,
-                  decoration: const InputDecoration(
+                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                  decoration: InputDecoration(
                     labelText: 'Deskripsi Penyesuaian',
                     hintText: 'Misal: Diskon, Tambahan Kabel, Transport',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   ),
                   onChanged: (_) => onChanged(),
                 ),
@@ -63,9 +60,12 @@ class InvoiceAdjustmentEditor extends StatelessWidget {
                         controller: amountController,
                         readOnly: readOnly,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
+                        style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                        decoration: InputDecoration(
                           labelText: 'Nominal (+ / -)',
                           prefixText: 'Rp ',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         ),
                         onChanged: (_) => onChanged(),
                       ),
@@ -90,9 +90,12 @@ class InvoiceAdjustmentEditor extends StatelessWidget {
                   key: Key('invoice-adjustment-description-$index'),
                   controller: descriptionController,
                   readOnly: readOnly,
-                  decoration: const InputDecoration(
+                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                  decoration: InputDecoration(
                     labelText: 'Deskripsi',
                     hintText: 'Misal: Diskon, Transport',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   ),
                   onChanged: (_) => onChanged(),
                 ),
@@ -105,9 +108,12 @@ class InvoiceAdjustmentEditor extends StatelessWidget {
                   controller: amountController,
                   readOnly: readOnly,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
+                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                  decoration: InputDecoration(
                     labelText: 'Nominal (+ / -)',
                     prefixText: 'Rp ',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   ),
                   onChanged: (_) => onChanged(),
                 ),
