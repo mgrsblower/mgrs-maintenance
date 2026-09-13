@@ -162,5 +162,12 @@ Before shipping, verify:
 - The result remains recognizably MGRS even without the logo or product name.
 
 ## 11. Verification debt
-
+ 
 Verify the native app on Android emulator and, before release, physical hardware for camera, barcode, gestures, keyboard, and network conditions. UI verification does not prove database deployment or live policy compatibility.
+
+## 12. Shipped implementation boundaries
+
+- **Installation confirmation**: Exposes read-only order identity and pasangan context with an explicit status indicator (`Konfirmasi pemasangan belum tersedia`) pending backend RPC availability. No unverified write endpoints or fake save buttons are implemented.
+- **Surface separation**: Invoice features in order detail views are strictly restricted to users with `canManageOrders` (PIC MGRS and Admin), maintaining complete workspace isolation for Tim Lapangan.
+- **Platform packaging**: Android v2 embedding is enforced in `AndroidManifest.xml` alongside native `FileProvider` PDF support, ensuring reproducible and clean APK builds.
+

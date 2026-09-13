@@ -243,3 +243,11 @@ Shared primitives own interaction, semantics, spacing, and state behavior. Works
 ## Open implementation boundary
 
 The UI redesign may require renaming the client-facing role label from “Tim Pemasangan” to “Tim Lapangan”. Any persisted role value or server policy migration is outside the visual implementation and must be handled as a separate compatibility change before release if required by the live schema.
+
+## Verified Implementation Boundaries
+
+1. **Role Resolution & Compatibility**: `UserProfile` in `gateway.dart` resolves both modern `Tim Lapangan` and legacy strings (`Tim Service`, `Tim Pemasangan`) to `ProductRole.timLapangan` without modifying persisted database values.
+2. **Installation Confirmation Contract**: Supabase and gateway RPC contracts do not yet expose a write endpoint for installation confirmation. In accordance with the anti-slop principles, `OrderDetailScreen` displays verified order identity and pasangan context with an explicit status message (`Konfirmasi pemasangan belum tersedia`) rather than fabricating an unverified write contract or dummy submission button.
+3. **Workspace Surface Isolation**: Invoice cards and actions within `OrderDetailScreen` are strictly conditioned on `user.canManageOrders`, completely hiding invoice data and payment flows from Tim Lapangan users.
+4. **Android Embedding Metadata**: The `flutterEmbedding` v2 `<meta-data>` in `AndroidManifest.xml` has been restored alongside `FileProvider`, ensuring standard Gradle Android v2 compilation succeeds cleanly for debug and release APKs.
+
