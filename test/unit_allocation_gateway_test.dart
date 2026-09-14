@@ -68,7 +68,7 @@ class MockGatewayWithAllocation extends MaintenanceGateway {
         if (matchedKind != null) {
           history.add({
             'orderan_id': o.orderanId ?? o.id,
-            'nama_event': o.namaEvent ?? 'Sewa Blower',
+            'nama_event': o.namaEvent,
             'nama_client': o.namaClient ?? '-',
             'unit_index': u.unitIndex,
             'role_slot': matchedKind,

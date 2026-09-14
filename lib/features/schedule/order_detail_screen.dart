@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../app/gateway.dart';
-import '../../shared/pressable.dart';
+import '../../design_system/components/mgrs_button.dart';
+import '../../design_system/components/mgrs_multiline_field.dart';
+import '../../design_system/components/mgrs_status_badge.dart';
+import '../../design_system/mgrs_tokens.dart';
 import '../invoices/invoice_builder_dialog.dart';
 import '../invoices/invoice_model.dart';
 import '../invoices/quick_payment_dialog.dart';
@@ -39,7 +42,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     } else if (widget.orderId != null && widget.gateway != null) {
       _loadOrderDetail();
     } else {
-      // Default fallback for preview/testing
       _order = const OrderanSewa(
         id: 'ORD-2026-088',
         namaEvent: 'Event Pertamina JCC',
@@ -91,7 +93,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     } catch (_) {
       if (mounted) {
         setState(() {
-          _error = 'Detail orderan belum dapat dimuat. Silakan periksa koneksi lalu coba lagi.';
+          _error =
+              'Detail orderan belum dapat dimuat. Periksa koneksi Anda lalu coba lagi.';
           _isLoading = false;
         });
       }
@@ -101,36 +104,39 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: MgrsColors.canvas,
       body: SafeArea(
         child: _isLoading
             ? const Center(
-                child: CircularProgressIndicator(color: Color(0xFF147CC1)),
+                child: CircularProgressIndicator(color: MgrsColors.action),
               )
             : _error != null
                 ? Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(MgrsSpacing.xl),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.error_outline_rounded,
-                              size: 40, color: Color(0xFFDC2626)),
-                          const SizedBox(height: 12),
+                          const Icon(
+                            Icons.error_outline_rounded,
+                            size: 40,
+                            color: MgrsColors.danger,
+                          ),
+                          const SizedBox(height: MgrsSpacing.md),
                           Text(
                             _error!,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontFamily: 'Plus Jakarta Sans',
                               fontSize: 14,
-                              color: Color(0xFF991B1B),
+                              color: MgrsColors.danger,
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: MgrsSpacing.md),
                           ElevatedButton(
                             onPressed: _loadOrderDetail,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF147CC1),
+                              backgroundColor: MgrsColors.action,
                               foregroundColor: Colors.white,
                             ),
                             child: const Text('Coba Lagi'),
@@ -141,35 +147,38 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   )
                 : Column(
                     children: [
+                      _buildTopBar(context),
                       Expanded(
                         child: SingleChildScrollView(
                           physics: const BouncingScrollPhysics(),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12),
+                            horizontal: MgrsSpacing.md,
+                            vertical: MgrsSpacing.xs,
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              _buildTopBar(context),
-                              const SizedBox(height: 16),
                               _buildOrderHeaderCard(context),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: MgrsSpacing.sm),
                               _buildVenueCard(context),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: MgrsSpacing.sm),
                               if (widget.gateway != null && _order != null) ...[
                                 UnitAllocationCard(
                                   gateway: widget.gateway!,
                                   order: _order!,
-                                  isEditable: (widget.user?.isTechnician == true || widget.user?.isAdmin == true) &&
-                                      !_order!.isCompletedOrCancelled,
+                                  isEditable:
+                                      (widget.user?.isTechnician == true ||
+                                              widget.user?.isAdmin == true) &&
+                                          !_order!.isCompletedOrCancelled,
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: MgrsSpacing.sm),
                               ],
                               _buildCustomerCard(context),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: MgrsSpacing.sm),
                               _buildEventNotesCard(context),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: MgrsSpacing.sm),
                               _buildInvoiceCard(context),
-                              const SizedBox(height: 24),
+                              const SizedBox(height: MgrsSpacing.lg),
                             ],
                           ),
                         ),
@@ -181,197 +190,151 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  // Top Bar
   Widget _buildTopBar(BuildContext context) {
     final canManage = widget.user?.canManageOrders == true &&
         _order != null &&
         !_order!.isCompletedOrCancelled;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: const BoxDecoration(
-              color: Color(0xFFF1F5F9),
-              shape: BoxShape.circle,
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: MgrsSpacing.md,
+        vertical: MgrsSpacing.xs,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            onPressed: () => Navigator.maybePop(context),
+            icon: const Icon(Icons.arrow_back),
+            tooltip: 'Kembali',
+            constraints: const BoxConstraints.tightFor(
+              width: MgrsSizes.minTouch,
+              height: MgrsSizes.minTouch,
             ),
-            child: const Center(
-              child: Icon(
-                Icons.chevron_left_rounded,
-                color: Color(0xFF0F172A),
-                size: 24,
+          ),
+          const Expanded(
+            child: Text(
+              'Detail order',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: MgrsColors.ink,
               ),
             ),
           ),
-        ),
-        const Text(
-          'Detail Orderan',
-          style: TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF0F172A),
-          ),
-        ),
-        if (canManage)
-          PopupMenuButton<String>(
-            icon: Container(
-              width: 40,
-              height: 40,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF1F5F9),
-                shape: BoxShape.circle,
+          if (canManage)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert_rounded),
+              tooltip: 'Opsi order',
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(MgrsRadii.control),
               ),
-              child: const Center(
-                child: Icon(
-                  Icons.more_vert_rounded,
-                  color: Color(0xFF0F172A),
-                  size: 20,
-                ),
-              ),
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-            elevation: 4,
-            offset: const Offset(0, 48),
-            onSelected: (val) {
-              if (val == 'cancel_order') {
-                _showCancelOrderDialog();
-              }
-            },
-            itemBuilder: (ctx) => [
-              const PopupMenuItem<String>(
-                value: 'cancel_order',
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.cancel_outlined,
-                      color: Color(0xFFDC2626),
-                      size: 20,
-                    ),
-                    SizedBox(width: 10),
-                    Text(
-                      'Batalkan Order',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFFDC2626),
+              onSelected: (val) {
+                if (val == 'cancel_order') {
+                  _showCancelOrderDialog();
+                }
+              },
+              itemBuilder: (ctx) => [
+                const PopupMenuItem<String>(
+                  value: 'cancel_order',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.cancel_outlined,
+                        color: MgrsColors.danger,
+                        size: 20,
                       ),
-                    ),
-                  ],
+                      SizedBox(width: 10),
+                      Text(
+                        'Batalkan Order',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: MgrsColors.danger,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          )
-        else
-          const SizedBox(width: 40),
-      ],
+              ],
+            )
+          else
+            const SizedBox(width: MgrsSizes.minTouch),
+        ],
+      ),
     );
   }
 
-  // Card 1: Nama Event + Tanggal, Durasi Sewa, Jumlah Unit
   Widget _buildOrderHeaderCard(BuildContext context) {
     final order = _order;
     final displayCode = order?.displayCode ?? 'ORD-2026-088';
     final isDone = order?.statusOrderan?.toLowerCase() == 'selesai';
     final isCancelled = order?.isCancelled ?? false;
 
+    final statusText =
+        isCancelled ? 'Dibatalkan' : (isDone ? 'Selesai' : 'Aktif');
+    final statusTone = isCancelled
+        ? MgrsStatusTone.danger
+        : (isDone ? MgrsStatusTone.success : MgrsStatusTone.warning);
+
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(MgrsSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
+        color: MgrsColors.surface,
+        borderRadius: BorderRadius.circular(MgrsRadii.card),
+        border: Border.all(color: MgrsColors.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: MgrsSpacing.xs,
+            runSpacing: 4,
             children: [
               Text(
                 displayCode,
                 style: const TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 20,
+                  fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
+                  color: MgrsColors.ink,
                   letterSpacing: -0.4,
                 ),
               ),
-              if (order != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isCancelled
-                        ? const Color(0xFFFEF2F2)
-                        : (isDone
-                            ? const Color(0xFFECFDF5)
-                            : const Color(0xFFEFF6FF)),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isCancelled
-                          ? const Color(0xFFFECACA)
-                          : (isDone
-                              ? const Color(0xFFA7F3D0)
-                              : const Color(0xFFBFDBFE)),
-                    ),
-                  ),
-                  child: Text(
-                    isCancelled
-                        ? 'Dibatalkan'
-                        : (isDone ? 'Selesai' : 'Aktif'),
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      color: isCancelled
-                          ? const Color(0xFFDC2626)
-                          : (isDone
-                              ? const Color(0xFF059669)
-                              : const Color(0xFF2563EB)),
-                    ),
-                  ),
-                ),
+              if (order != null) MgrsStatusBadge(statusText, tone: statusTone),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: MgrsSpacing.xs),
           Text(
-            'Nama Event: ${order?.namaEvent ?? '-'}',
+            order?.namaEvent ?? '-',
             style: const TextStyle(
               fontFamily: 'Plus Jakarta Sans',
               fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF475569),
+              fontWeight: FontWeight.w700,
+              color: MgrsColors.ink,
             ),
           ),
           if (isCancelled) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: MgrsSpacing.sm),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.all(MgrsSpacing.sm),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF2F2),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFFECACA)),
+                color: MgrsColors.dangerSoft,
+                borderRadius: BorderRadius.circular(MgrsRadii.control),
+                border:
+                    Border.all(color: MgrsColors.danger.withValues(alpha: 0.2)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.cancel_rounded, color: Color(0xFFDC2626), size: 18),
-                  const SizedBox(width: 8),
+                  const Icon(Icons.cancel_rounded,
+                      color: MgrsColors.danger, size: 18),
+                  const SizedBox(width: MgrsSpacing.sm),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -382,7 +345,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                             fontFamily: 'Plus Jakarta Sans',
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF991B1B),
+                            color: MgrsColors.danger,
                           ),
                         ),
                         if (order?.cancellationReason != null) ...[
@@ -392,8 +355,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                             style: const TextStyle(
                               fontFamily: 'Plus Jakarta Sans',
                               fontSize: 11.5,
-                              color: Color(0xFFB91C1C),
-                              height: 1.3,
+                              color: MgrsColors.ink,
                             ),
                           ),
                         ],
@@ -404,129 +366,138 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ),
             ),
           ],
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.only(top: 14),
-            decoration: const BoxDecoration(
-              border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
-            ),
-            child: Row(
-              children: [
-                // Jadwal Pemasangan
-                Expanded(
-                  flex: 4,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Pemasangan',
-                        style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        order?.tanggalPemasangan != null
-                            ? order!.formattedDate
-                            : 'Jadwal belum ditentukan',
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFFDC2626),
-                        ),
-                      ),
-                    ],
+          const SizedBox(height: MgrsSpacing.sm),
+          const Divider(height: 1, color: MgrsColors.line),
+          const SizedBox(height: MgrsSpacing.sm),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 300;
+              final colPemasangan = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Pemasangan',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: MgrsColors.muted,
+                    ),
                   ),
-                ),
-                Container(width: 1, height: 32, color: const Color(0xFFE2E8F0)),
-                const SizedBox(width: 10),
-                // Durasi Sewa
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Durasi Sewa',
-                        style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        order?.durasiSewaText ?? '1 Hari',
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF2563EB),
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 2),
+                  Text(
+                    order?.tanggalPemasangan != null
+                        ? order!.formattedDate
+                        : 'Jadwal belum ditentukan',
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: MgrsColors.ink,
+                    ),
                   ),
-                ),
-                Container(width: 1, height: 32, color: const Color(0xFFE2E8F0)),
-                const SizedBox(width: 10),
-                // Kebutuhan Unit
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Kebutuhan',
-                        style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        '${order?.jumlahUnit ?? 4} Unit',
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                    ],
+                ],
+              );
+              final colDurasi = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Durasi Sewa',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: MgrsColors.muted,
+                    ),
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(height: 2),
+                  Text(
+                    order?.durasiSewaText ?? '1 Hari',
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: MgrsColors.action,
+                    ),
+                  ),
+                ],
+              );
+              final colKebutuhan = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Kebutuhan',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: MgrsColors.muted,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${order?.jumlahUnit ?? 1} Unit',
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: MgrsColors.ink,
+                    ),
+                  ),
+                ],
+              );
+
+              if (isNarrow) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    colPemasangan,
+                    const SizedBox(height: MgrsSpacing.xs),
+                    colDurasi,
+                    const SizedBox(height: MgrsSpacing.xs),
+                    colKebutuhan,
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(flex: 4, child: colPemasangan),
+                  Container(width: 1, height: 28, color: MgrsColors.line),
+                  const SizedBox(width: MgrsSpacing.sm),
+                  Expanded(flex: 3, child: colDurasi),
+                  Container(width: 1, height: 28, color: MgrsColors.line),
+                  const SizedBox(width: MgrsSpacing.sm),
+                  Expanded(flex: 3, child: colKebutuhan),
+                ],
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  // Card 2: Lokasi Acara + Tombol Maps
   Widget _buildVenueCard(BuildContext context) {
     final order = _order;
-    final hasMaps = order?.linkGmaps != null && order!.linkGmaps!.trim().isNotEmpty;
+    final hasMaps =
+        order?.linkGmaps != null && order!.linkGmaps!.trim().isNotEmpty;
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(MgrsSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        color: MgrsColors.surface,
+        borderRadius: BorderRadius.circular(MgrsRadii.card),
+        border: Border.all(color: MgrsColors.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: MgrsSpacing.xs,
+            runSpacing: 4,
             children: [
               const Text(
                 'Lokasi Acara',
@@ -534,11 +505,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   fontFamily: 'Plus Jakarta Sans',
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF0F172A),
+                  color: MgrsColors.ink,
                 ),
               ),
               if (hasMaps)
-                PressableScale(
+                InkWell(
                   onTap: () async {
                     final ok = await order.launchMaps();
                     if (!ok && context.mounted) {
@@ -549,16 +520,22 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       );
                     }
                   },
+                  borderRadius: BorderRadius.circular(MgrsRadii.control),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: MgrsSpacing.sm,
+                      vertical: 4,
                     ),
-                    child: const Row(
+                    decoration: BoxDecoration(
+                      color: MgrsColors.canvas,
+                      borderRadius: BorderRadius.circular(MgrsRadii.control),
+                      border: Border.all(color: MgrsColors.line),
+                    ),
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.near_me_rounded, size: 14, color: Color(0xFF2563EB)),
+                      children: const [
+                        Icon(Icons.near_me_rounded,
+                            size: 14, color: MgrsColors.action),
                         SizedBox(width: 4),
                         Text(
                           'Petunjuk Arah',
@@ -566,7 +543,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                             fontFamily: 'Plus Jakarta Sans',
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF2563EB),
+                            color: MgrsColors.action,
                           ),
                         ),
                       ],
@@ -575,38 +552,116 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: MgrsSpacing.sm),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 34,
+                height: 34,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(10),
+                  color: MgrsColors.canvas,
+                  borderRadius: BorderRadius.circular(MgrsRadii.control),
                 ),
                 child: const Center(
                   child: Icon(
                     Icons.location_on_rounded,
-                    color: Color(0xFF2563EB),
-                    size: 20,
+                    color: MgrsColors.action,
+                    size: 18,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: MgrsSpacing.sm),
+              Expanded(
+                child: Text(
+                  order?.alamat ?? 'Alamat lokasi belum diisi',
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: MgrsColors.ink,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCustomerCard(BuildContext context) {
+    final order = _order;
+    return Container(
+      padding: const EdgeInsets.all(MgrsSpacing.md),
+      decoration: BoxDecoration(
+        color: MgrsColors.surface,
+        borderRadius: BorderRadius.circular(MgrsRadii.card),
+        border: Border.all(color: MgrsColors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Informasi Klien & Kontak',
+            style: TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: MgrsColors.ink,
+            ),
+          ),
+          const SizedBox(height: MgrsSpacing.sm),
+          Row(
+            children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const Text(
+                      'Nama Klien',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: MgrsColors.muted,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
                     Text(
-                      order?.alamat ?? 'Lokasi acara belum dicatat',
+                      order?.namaClient ?? '-',
                       style: const TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF0F172A),
-                        height: 1.4,
+                        color: MgrsColors.ink,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'WhatsApp',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: MgrsColors.muted,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      order?.nomorWhatsapp ?? '-',
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: MgrsColors.ink,
                       ),
                     ),
                   ],
@@ -614,202 +669,341 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ),
             ],
           ),
-          if (hasMaps) ...[
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              height: 38,
-              child: OutlinedButton.icon(
-                onPressed: () async {
-                  final ok = await order.launchMaps();
-                  if (!ok && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Peta lokasi acara tidak dapat dibuka.'),
-                      ),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.map_rounded, size: 16),
-                label: const Text(
-                  'Buka di Google Maps',
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEventNotesCard(BuildContext context) {
+    final note = _order?.cleanNote ?? '';
+    if (note.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(MgrsSpacing.md),
+      decoration: BoxDecoration(
+        color: MgrsColors.surface,
+        borderRadius: BorderRadius.circular(MgrsRadii.card),
+        border: Border.all(color: MgrsColors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Catatan Khusus Acara',
+            style: TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: MgrsColors.ink,
+            ),
+          ),
+          const SizedBox(height: MgrsSpacing.xs),
+          Text(
+            note,
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 13,
+              color: MgrsColors.ink,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInvoiceCard(BuildContext context) {
+    final inv = _invoice;
+    final order = _order;
+    final canManage = widget.user?.canManageOrders == true;
+
+    return Container(
+      padding: const EdgeInsets.all(MgrsSpacing.md),
+      decoration: BoxDecoration(
+        color: MgrsColors.surface,
+        borderRadius: BorderRadius.circular(MgrsRadii.card),
+        border: Border.all(color: MgrsColors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: MgrsSpacing.xs,
+            runSpacing: 4,
+            children: [
+              const Text(
+                'Rincian Invoice',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: MgrsColors.ink,
+                ),
+              ),
+              if (inv != null)
+                MgrsStatusBadge(
+                  inv.paymentStatusDisplay,
+                  tone: inv.isPaid
+                      ? MgrsStatusTone.success
+                      : (inv.isCancelled
+                          ? MgrsStatusTone.danger
+                          : MgrsStatusTone.warning),
+                ),
+            ],
+          ),
+          const SizedBox(height: MgrsSpacing.sm),
+          if (inv != null) ...[
+            Text(
+              inv.invoiceReference,
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: MgrsColors.ink,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Total Tagihan:',
                   style: TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
                     fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                    color: MgrsColors.muted,
                   ),
                 ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF2563EB),
-                  side: const BorderSide(color: Color(0xFFBFDBFE)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                Text(
+                  inv.totalAmountFormatted,
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: MgrsColors.action,
                   ),
+                ),
+              ],
+            ),
+            if (inv.paidAmount > 0) ...[
+              const SizedBox(height: 2),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Telah Dibayar:',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 12,
+                      color: MgrsColors.muted,
+                    ),
+                  ),
+                  Text(
+                    inv.paidAmountFormatted,
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: MgrsColors.success,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (canManage && !inv.isPaid && !inv.isCancelled) ...[
+              const SizedBox(height: MgrsSpacing.md),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    showDialog<void>(
+                      context: context,
+                      builder: (_) => QuickPaymentDialog(
+                        invoice: inv,
+                        gateway: widget.gateway!,
+                        onPaymentUpdated: (updated) {
+                          if (mounted) {
+                            setState(() => _invoice = updated);
+                          }
+                        },
+                      ),
+                    );
+                  },
+                  child: const Text('Catat Pembayaran'),
                 ),
               ),
+            ],
+          ] else ...[
+            const Text(
+              'Belum ada invoice terkait orderan ini.',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 12,
+                color: MgrsColors.muted,
+              ),
             ),
+            if (canManage && order != null && !order.isCancelled) ...[
+              const SizedBox(height: MgrsSpacing.md),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    final now = DateTime.now();
+                    final y = now.year.toString().padLeft(4, '0');
+                    final m = now.month.toString().padLeft(2, '0');
+                    final d = now.day.toString().padLeft(2, '0');
+                    final dateStr = '$y-$m-$d';
+                    final qty = order.jumlahUnit > 0 ? order.jumlahUnit : 1;
+                    final days = order.rentalDays > 0 ? order.rentalDays : 1;
+                    final subtotal = qty * 250000 * days;
+
+                    final newInvoice = InvoiceRecord(
+                      id: 'draft-${DateTime.now().millisecondsSinceEpoch}',
+                      orderanId: order.orderanId ?? order.id,
+                      invoiceReference: 'INV/$y/$m/$d-${order.displayCode}',
+                      invoiceDate: dateStr,
+                      dueDate: dateStr,
+                      productName: 'Sewa blower - ${order.namaEvent}',
+                      quantity: qty,
+                      rentalDays: days,
+                      unitPrice: 250000,
+                      subtotal: subtotal,
+                      totalAmount: subtotal,
+                      paidAmount: 0,
+                      paymentStatus: InvoicePaymentStatus.unpaid,
+                      customerName: order.namaClient ?? '',
+                      customerPhone: order.nomorWhatsapp ?? '',
+                    );
+
+                    showDialog<void>(
+                      context: context,
+                      builder: (_) => InvoiceBuilderDialog(
+                        invoice: newInvoice,
+                        gateway: widget.gateway!,
+                        selectedOrder: order,
+                        initiallyEditing: true,
+                        onSaved: (saved) {
+                          if (mounted) {
+                            setState(() => _invoice = saved);
+                          }
+                        },
+                      ),
+                    );
+                  },
+                  child: const Text('Terbitkan Invoice'),
+                ),
+              ),
+            ],
           ],
         ],
       ),
     );
   }
 
-  // Card 3: Data Pemesan
-  Widget _buildCustomerCard(BuildContext context) {
+  Widget _buildBottomCta(BuildContext context) {
     final order = _order;
-    final hasWa = order?.cleanWhatsapp.isNotEmpty == true;
+    if (order == null || order.isCancelled) {
+      return const SizedBox.shrink();
+    }
 
-    final customerName = (order?.namaClient != null && order!.namaClient!.trim().isNotEmpty)
-        ? order.namaClient!.trim()
-        : (order?.namaPic != null && order!.namaPic!.trim().isNotEmpty)
-            ? order.namaPic!.trim()
-            : 'Pemesan';
-    final initial = customerName.isNotEmpty ? customerName.substring(0, 1).toUpperCase() : 'P';
-    final phone = (order?.nomorWhatsapp != null && order!.nomorWhatsapp!.trim().isNotEmpty)
-        ? order.nomorWhatsapp!.trim()
-        : 'Nomor WhatsApp belum tersedia';
+    final isPast = order.statusOrderan?.toLowerCase() == 'selesai';
+    final canComplete = !isPast &&
+        (widget.user?.canManageOrders == true ||
+            widget.user?.isTechnician == true ||
+            widget.user?.isAdmin == true);
 
     return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+      padding: const EdgeInsets.symmetric(
+        horizontal: MgrsSpacing.md,
+        vertical: MgrsSpacing.sm,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Data Pemesan',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF0F172A),
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
+      decoration: const BoxDecoration(
+        color: MgrsColors.surface,
+        border: Border(top: BorderSide(color: MgrsColors.line)),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < 340;
+
+          final completeBtn = canComplete
+              ? MgrsButton.primary(
+                  label: 'Tandai Selesai',
+                  icon: Icons.check_circle_rounded,
+                  onPressed: _markAsCompleted,
+                )
+              : null;
+
+          final waBtn = _buildWhatsappButton(order);
+
+          if (completeBtn == null) {
+            return waBtn;
+          }
+
+          if (isNarrow) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                completeBtn,
+                const SizedBox(height: MgrsSpacing.sm),
+                waBtn,
+              ],
+            );
+          }
+
+          return Row(
             children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: const Color(0xFFF1F5F9),
-                child: Text(
-                  initial,
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF0F172A),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      customerName,
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF0F172A),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      phone,
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (hasWa)
-                PressableScale(
-                  onTap: () async {
-                    final ok = await order!.launchWhatsApp();
-                    if (!ok && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Tidak dapat membuka WhatsApp.'),
-                        ),
-                      );
-                    }
-                  },
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF0FDF4),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFBBF7D0)),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.chat_bubble_rounded,
-                        color: Color(0xFF16A34A),
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ),
+              Expanded(child: completeBtn),
+              const SizedBox(width: MgrsSpacing.sm),
+              Expanded(child: waBtn),
             ],
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 
-  // Card 4: Catatan Orderan
-  Widget _buildEventNotesCard(BuildContext context) {
-    final note = _order?.cleanNote ?? '';
-    final hasNote = note.trim().isNotEmpty;
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.edit_note_rounded,
-                  size: 18, color: Color(0xFF2563EB)),
-              SizedBox(width: 8),
-              Text(
-                'Catatan Orderan',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1E293B),
+  Widget _buildWhatsappButton(OrderanSewa? order) {
+    return SizedBox(
+      height: MgrsSizes.primaryButton,
+      child: FilledButton.icon(
+        onPressed: () async {
+          if (order != null && order.cleanWhatsapp.isNotEmpty) {
+            final ok = await order.launchWhatsApp();
+            if (!ok && mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Tidak dapat membuka WhatsApp.'),
                 ),
+              );
+            }
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Nomor WhatsApp pemesan belum terdaftar.'),
               ),
-            ],
+            );
+          }
+        },
+        icon: const Icon(Icons.chat_rounded, size: 18),
+        label: const Text(
+          'Hubungi Pemesan',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
           ),
-          const SizedBox(height: 8),
-          Text(
-            hasNote ? note : 'Tidak ada catatan khusus untuk orderan ini.',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 12,
-              fontStyle: hasNote ? FontStyle.normal : FontStyle.italic,
-              color: hasNote ? const Color(0xFF334155) : const Color(0xFF94A3B8),
-              height: 1.5,
-            ),
+          overflow: TextOverflow.ellipsis,
+        ),
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFF16A34A),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(MgrsRadii.control),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -821,24 +1015,42 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(MgrsRadii.card),
+        ),
         title: const Text(
-          'Selesaikan Orderan?',
+          'Selesaikan order?',
           style: TextStyle(
             fontFamily: 'Plus Jakarta Sans',
             fontSize: 16,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF0F172A),
+            color: MgrsColors.ink,
           ),
         ),
-        content: Text(
-          'Apakah event "${order.namaEvent}" sudah selesai dan unit blower siap kembali?\nStatus orderan akan diubah menjadi Selesai.',
-          style: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontSize: 13,
-            color: Color(0xFF475569),
-            height: 1.4,
-          ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Apakah event "${order.namaEvent}" (${order.displayCode}) dengan ${order.jumlahUnit} unit blower telah selesai?',
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 13,
+                color: MgrsColors.ink,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: MgrsSpacing.sm),
+            const Text(
+              'Status order akan diubah menjadi Selesai.',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 12,
+                color: MgrsColors.muted,
+                height: 1.4,
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -848,7 +1060,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF0F172A),
+              backgroundColor: MgrsColors.ink,
             ),
             child: const Text('Ya, Selesaikan'),
           ),
@@ -870,19 +1082,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               'Orderan berhasil ditandai selesai.',
               style: TextStyle(fontFamily: 'Plus Jakarta Sans'),
             ),
-            backgroundColor: Color(0xFF059669),
+            backgroundColor: MgrsColors.success,
             behavior: SnackBarBehavior.floating,
           ),
         );
-      } catch (e) {
+      } catch (_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text(
-              failureMessage(e),
-              style: const TextStyle(fontFamily: 'Plus Jakarta Sans'),
+              'Status order belum dapat diperbarui. Periksa koneksi Anda.',
+              style: TextStyle(fontFamily: 'Plus Jakarta Sans'),
             ),
-            backgroundColor: const Color(0xFFDC2626),
+            backgroundColor: MgrsColors.danger,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -895,10 +1107,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     if (order == null) return;
 
     final reasonController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
+    final reasonFocusNode = FocusNode();
     final inv = _invoice;
     final hasPayment = inv != null && inv.paidAmount > 0;
-    final hasUnpaidInvoice = inv != null && !inv.isPaid && !inv.isCancelled;
+    final hasUnpaidInvoice =
+        inv != null && !inv.isPaid && inv.paidAmount <= 0 && !inv.isCancelled;
+
+    bool cancelInvoiceSelected = hasUnpaidInvoice;
+    String? reasonError;
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -906,189 +1122,176 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         return StatefulBuilder(
           builder: (dialogCtx, setDialogState) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-              contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-              actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(MgrsRadii.card),
+              ),
+              titlePadding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
               title: Row(
                 children: [
                   Container(
-                    width: 36,
-                    height: 36,
+                    width: 34,
+                    height: 34,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFEF2F2),
-                      borderRadius: BorderRadius.circular(10),
+                      color: MgrsColors.dangerSoft,
+                      borderRadius: BorderRadius.circular(MgrsRadii.control),
                     ),
                     child: const Icon(
                       Icons.cancel_outlined,
-                      color: Color(0xFFDC2626),
+                      color: MgrsColors.danger,
                       size: 20,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   const Expanded(
                     child: Text(
                       'Batalkan Orderan?',
                       style: TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 17,
+                        fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF0F172A),
+                        color: MgrsColors.ink,
                       ),
                     ),
                   ),
                 ],
               ),
               content: SingleChildScrollView(
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Event "${order.namaEvent}" (${order.displayCode}) akan dibatalkan dan dihapus dari jadwal aktif pemasangan.',
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 13,
-                          color: Color(0xFF475569),
-                          height: 1.4,
-                        ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Event "${order.namaEvent}" (${order.displayCode}) akan dibatalkan dan dihapus dari jadwal aktif pemasangan.',
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 13,
+                        color: MgrsColors.muted,
+                        height: 1.4,
                       ),
-                      const SizedBox(height: 14),
-                      if (hasPayment) ...[
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFFBEB),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFFDE68A)),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(
-                                Icons.warning_amber_rounded,
-                                color: Color(0xFFD97706),
-                                size: 18,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Perhatian: Invoice memiliki pembayaran tercatat sebesar ${inv.paidAmountFormatted}. Pastikan penyelesaian refund atau koordinasi dana dilakukan.',
-                                  style: const TextStyle(
-                                    fontFamily: 'Plus Jakarta Sans',
-                                    fontSize: 11.5,
-                                    color: Color(0xFF92400E),
-                                    height: 1.4,
-                                  ),
+                    ),
+                    const SizedBox(height: 10),
+                    if (hasPayment) ...[
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFFBEB),
+                          borderRadius: BorderRadius.circular(MgrsRadii.control),
+                          border: Border.all(color: const Color(0xFFFDE68A)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.warning_amber_rounded,
+                              color: Color(0xFFD97706),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Perhatian: Invoice memiliki pembayaran tercatat sebesar ${inv.paidAmountFormatted}. Pastikan penyelesaian refund atau koordinasi dana dilakukan.',
+                                style: const TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontSize: 11.5,
+                                  color: Color(0xFF92400E),
+                                  height: 1.4,
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                      ] else if (hasUnpaidInvoice) ...[
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEFF6FF),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFBFDBFE)),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(
-                                Icons.info_outline_rounded,
-                                color: Color(0xFF2563EB),
-                                size: 18,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Invoice terkait (${inv.invoiceReference}) yang belum dibayar akan otomatis dibatalkan.',
-                                  style: const TextStyle(
-                                    fontFamily: 'Plus Jakarta Sans',
-                                    fontSize: 11.5,
-                                    color: Color(0xFF1E40AF),
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                      ],
-                      const Text(
-                        'Alasan Pembatalan *',
-                        style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF334155),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: reasonController,
-                        autofocus: true,
-                        maxLines: 2,
-                        validator: (val) {
-                          if (val == null || val.trim().length < 3) {
-                            return 'Alasan pembatalan minimal 3 karakter.';
-                          }
-                          return null;
+                      const SizedBox(height: 10),
+                    ] else if (hasUnpaidInvoice) ...[
+                      InkWell(
+                        onTap: () {
+                          setDialogState(() {
+                            cancelInvoiceSelected = !cancelInvoiceSelected;
+                          });
                         },
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 13,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Contoh: Acara dibatalkan oleh pihak klien',
-                          hintStyle: const TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 12,
-                            color: Color(0xFF94A3B8),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
+                        borderRadius: BorderRadius.circular(MgrsRadii.control),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Checkbox(
+                                    value: cancelInvoiceSelected,
+                                    onChanged: (val) {
+                                      setDialogState(() {
+                                        cancelInvoiceSelected = val ?? false;
+                                      });
+                                    },
+                                    activeColor: MgrsColors.danger,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Expanded(
+                                    child: Text(
+                                      'Batalkan invoice yang belum dibayar',
+                                      style: TextStyle(
+                                        fontFamily: 'Plus Jakarta Sans',
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: MgrsColors.ink,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(left: 36),
+                                child: Text(
+                                  'Invoice terkait (${inv.invoiceReference}) yang belum dibayar akan otomatis dibatalkan jika opsi ini aktif.',
+                                  style: const TextStyle(
+                                    fontFamily: 'Plus Jakarta Sans',
+                                    fontSize: 11.5,
+                                    color: MgrsColors.muted,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
+                      const SizedBox(height: 10),
                     ],
-                  ),
+                    MgrsMultilineField(
+                      label: 'Alasan pembatalan *',
+                      controller: reasonController,
+                      focusNode: reasonFocusNode,
+                      hintText: 'Contoh: Acara dibatalkan oleh pihak klien',
+                      errorText: reasonError,
+                      onChanged: (_) {
+                        if (reasonError != null) {
+                          setDialogState(() => reasonError = null);
+                        }
+                      },
+                    ),
+                  ],
                 ),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Kembali'),
+                  child: const Text('Batal'),
                 ),
-                FilledButton(
+                MgrsButton.destructive(
+                  label: 'Ya, Batalkan Order',
                   onPressed: () {
-                    if (formKey.currentState?.validate() == true) {
-                      Navigator.pop(ctx, true);
+                    final text = reasonController.text.trim();
+                    if (text.length < 3) {
+                      setDialogState(() {
+                        reasonError = 'Alasan pembatalan minimal 3 karakter.';
+                      });
+                      reasonFocusNode.requestFocus();
+                      return;
                     }
+                    Navigator.pop(ctx, true);
                   },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFDC2626),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('Ya, Batalkan Order'),
                 ),
               ],
             );
@@ -1107,20 +1310,23 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         await widget.gateway?.cancelOrder(
           orderanIdStr,
           reason: reason,
-          cancelInvoice: true,
+          cancelInvoice: cancelInvoiceSelected,
         );
         if (!mounted) return;
 
         final currentNote = order.catatanOrderan ?? '';
         final cancelTag = '[BATAL: $reason]';
-        final updatedNote = currentNote.isNotEmpty ? '$currentNote\n$cancelTag' : cancelTag;
+        final updatedNote =
+            currentNote.isNotEmpty ? '$currentNote\n$cancelTag' : cancelTag;
 
         setState(() {
           _order = order.copyWith(
             statusOrderan: 'Dibatalkan',
             catatanOrderan: updatedNote,
           );
-          if (_invoice != null && (!_invoice!.isPaid || _invoice!.paidAmount <= 0)) {
+          if (cancelInvoiceSelected &&
+              _invoice != null &&
+              (!_invoice!.isPaid || _invoice!.paidAmount <= 0)) {
             _invoice = null;
           }
         });
@@ -1131,354 +1337,23 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               'Orderan berhasil dibatalkan dan invoice terkait telah dihapus.',
               style: TextStyle(fontFamily: 'Plus Jakarta Sans'),
             ),
-            backgroundColor: Color(0xFFDC2626),
+            backgroundColor: MgrsColors.danger,
             behavior: SnackBarBehavior.floating,
           ),
         );
-      } catch (e) {
+      } catch (_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text(
-              failureMessage(e),
-              style: const TextStyle(fontFamily: 'Plus Jakarta Sans'),
+              'Orderan belum dapat dibatalkan. Periksa koneksi Anda.',
+              style: TextStyle(fontFamily: 'Plus Jakarta Sans'),
             ),
-            backgroundColor: const Color(0xFFDC2626),
+            backgroundColor: MgrsColors.danger,
             behavior: SnackBarBehavior.floating,
           ),
         );
       }
     }
-  }
-
-  // Bottom Floating CTA Bar
-  Widget _buildBottomCta(BuildContext context) {
-    final order = _order;
-    final canComplete =
-        widget.user?.canManageOrders == true &&
-        order != null &&
-        !order.isCompletedOrCancelled;
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: const Border(top: BorderSide(color: Color(0xFFF1F5F9))),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: canComplete
-          ? Row(
-              children: [
-                Expanded(
-                  flex: 5,
-                  child: PressableScale(
-                    onTap: _markAsCompleted,
-                    child: Container(
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0F172A),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.check_circle_rounded,
-                              color: Colors.white, size: 18),
-                          SizedBox(width: 8),
-                          Text(
-                            'Tandai Selesai',
-                            style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  flex: 6,
-                  child: _buildWhatsappButton(order),
-                ),
-              ],
-            )
-          : _buildWhatsappButton(order),
-    );
-  }
-
-  Widget _buildWhatsappButton(OrderanSewa? order) {
-    return PressableScale(
-      onTap: () async {
-        if (order != null && order.cleanWhatsapp.isNotEmpty) {
-          final ok = await order.launchWhatsApp();
-          if (!ok && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Tidak dapat membuka WhatsApp.'),
-              ),
-            );
-          }
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Nomor WhatsApp pemesan belum terdaftar.'),
-            ),
-          );
-        }
-      },
-      child: Container(
-        height: 48,
-        decoration: BoxDecoration(
-          color: const Color(0xFF16A34A),
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x3316A34A),
-              blurRadius: 8,
-              offset: Offset(0, 3),
-            ),
-          ],
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.chat_rounded, color: Colors.white, size: 18),
-            SizedBox(width: 8),
-            Text(
-              'Hubungi Pemesan',
-              style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInvoiceCard(BuildContext context) {
-    final inv = _invoice;
-    final isPaid = inv?.isPaid ?? false;
-    final isDp = inv?.isDp ?? false;
-    final isCancelled = inv?.isCancelled ?? false;
-
-    final statusBg = isPaid
-        ? const Color(0xFFECFDF5)
-        : isDp
-            ? const Color(0xFFFFFBEB)
-            : isCancelled
-                ? const Color(0xFFF1F5F9)
-                : const Color(0xFFFEF2F2);
-
-    final statusColor = isPaid
-        ? const Color(0xFF059669)
-        : isDp
-            ? const Color(0xFFD97706)
-            : isCancelled
-                ? const Color(0xFF64748B)
-                : const Color(0xFFDC2626);
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Invoice Terkait',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              if (inv != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: statusBg,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    inv.paymentStatusDisplay,
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: statusColor,
-                    ),
-                  ),
-                )
-              else
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Text(
-                    'Belum Ada',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            inv != null
-                ? '${inv.invoiceReference} • Total: ${inv.totalAmountFormatted}${inv.remainingAmount > 0 ? " (Sisa: ${inv.remainingAmountFormatted})" : ""}'
-                : 'Lihat atau terbitkan invoice resmi untuk orderan ini.',
-            style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 12,
-              color: Color(0xFF64748B),
-            ),
-          ),
-          const SizedBox(height: 14),
-          if (inv != null)
-            Row(
-              children: [
-                if (!isCancelled) ...[
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        showDialog<void>(
-                          context: context,
-                          builder: (ctx) => QuickPaymentDialog(
-                            invoice: inv,
-                            gateway: widget.gateway!,
-                            onPaymentUpdated: (updated) {
-                              setState(() => _invoice = updated);
-                            },
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.payments_outlined, size: 15),
-                      label: const Text('Atur Bayar', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      showDialog<void>(
-                        context: context,
-                        builder: (ctx) => InvoiceBuilderDialog(
-                          invoice: inv,
-                          gateway: widget.gateway!,
-                          onSaved: (saved) {
-                            setState(() => _invoice = saved);
-                          },
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.receipt_long_rounded, size: 15),
-                    label: const Text('Buka Invoice', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF0F172A),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-                ),
-              ],
-            )
-          else if (widget.gateway != null && _order != null && !_order!.isCancelled)
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () async {
-                  final order = _order!;
-                  final dt = order.tanggalPemasangan ?? DateTime.now();
-                  final orderanIdStr = order.orderanId ?? order.id;
-                  final codeSuffix = orderanIdStr.split('-').last;
-                  final y = dt.year.toString().padLeft(4, '0');
-                  final m = dt.month.toString().padLeft(2, '0');
-                  final d = dt.day.toString().padLeft(2, '0');
-                  final ref = 'INV/$y/$m/$d-$codeSuffix';
-                  final qty = order.jumlahUnit > 0 ? order.jumlahUnit : 1;
-                  final days = order.rentalDays > 0 ? order.rentalDays : 1;
-                  const unitPrice = 250000;
-                  final subtotal = qty * unitPrice;
-
-                  final payload = <String, Object?>{
-                    'orderan_id': orderanIdStr,
-                    'invoice_reference': ref,
-                    'invoice_date': dt.toIso8601String().substring(0, 10),
-                    'due_date': dt.add(const Duration(days: 7)).toIso8601String().substring(0, 10),
-                    'product_name': order.namaEvent.isNotEmpty ? order.namaEvent : 'Sewa Mistyfan',
-                    'quantity': qty,
-                    'rental_days': days,
-                    'unit_price': unitPrice,
-                    'subtotal': subtotal,
-                    'total_amount': subtotal * days,
-                    'paid_amount': 0,
-                    'payment_status': 'unpaid',
-                    'invoice_source': 'order',
-                    'customer_name': order.namaClient,
-                    'customer_phone': order.nomorWhatsapp ?? '',
-                  };
-                  final messenger = ScaffoldMessenger.of(context);
-                  try {
-                    final created = await widget.gateway!.createInvoice(payload);
-                    if (mounted) {
-                      setState(() => _invoice = created);
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      messenger.showSnackBar(
-                        SnackBar(content: Text('Gagal membuat invoice: $e'), backgroundColor: const Color(0xFFDC2626)),
-                      );
-                    }
-                  }
-                },
-                icon: const Icon(Icons.add_rounded, size: 16),
-                label: const Text('Terbitkan Invoice untuk Order Ini', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                style: OutlinedButton.styleFrom(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
   }
 }

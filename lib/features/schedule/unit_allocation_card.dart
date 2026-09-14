@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../app/gateway.dart';
+import '../../design_system/components/mgrs_status_badge.dart';
+import '../../design_system/mgrs_tokens.dart';
 import 'component_picker_sheet.dart';
 import 'order_model.dart';
 import 'unit_allocation_model.dart';
 
-/// Card to manage and view optional unit allocations (Kepala + Batang + Tabung)
-/// for an order, with wear-and-tear usage tracking to balance equipment usage.
 class UnitAllocationCard extends StatefulWidget {
   const UnitAllocationCard({
     super.key,
@@ -28,8 +28,6 @@ class UnitAllocationCard extends StatefulWidget {
 class _UnitAllocationCardState extends State<UnitAllocationCard> {
   late List<AllocatedUnit> _units;
   Map<String, int> _usageCounts = {};
-  bool _isLoadingUsage = true;
-  bool _isSaving = false;
   bool _isRecommending = false;
 
   @override
@@ -50,7 +48,8 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
 
   void _initUnits() {
     final existing = List<AllocatedUnit>.from(widget.order.allocatedUnits);
-    final targetCount = widget.order.jumlahUnit > 0 ? widget.order.jumlahUnit : 1;
+    final targetCount =
+        widget.order.jumlahUnit > 0 ? widget.order.jumlahUnit : 1;
 
     while (existing.length < targetCount) {
       existing.add(AllocatedUnit(unitIndex: existing.length + 1));
@@ -64,18 +63,12 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
       if (mounted) {
         setState(() {
           _usageCounts = counts;
-          _isLoadingUsage = false;
         });
       }
-    } catch (_) {
-      if (mounted) {
-        setState(() => _isLoadingUsage = false);
-      }
-    }
+    } catch (_) {}
   }
 
   Future<void> _saveCurrentAllocation() async {
-    setState(() => _isSaving = true);
     try {
       final orderanId = widget.order.orderanId ?? widget.order.id;
       await widget.gateway.saveOrderUnitAllocation(
@@ -83,15 +76,14 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
         _units,
       );
       widget.onAllocationChanged?.call(_units);
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal menyimpan unit: $e'), backgroundColor: Colors.red),
+          const SnackBar(
+            content: Text('Alokasi komponen belum dapat disimpan.'),
+            backgroundColor: MgrsColors.danger,
+          ),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
       }
     }
   }
@@ -121,9 +113,18 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
     setState(() {
       final oldUnit = _units[unitIndex];
       _units[unitIndex] = switch (kind) {
-        'Kepala' => oldUnit.copyWith(kepalaSticker: cleanSelected, clearKepala: cleanSelected == null),
-        'Batang' => oldUnit.copyWith(batangSticker: cleanSelected, clearBatang: cleanSelected == null),
-        'Tabung' => oldUnit.copyWith(tabungSticker: cleanSelected, clearTabung: cleanSelected == null),
+        'Kepala' => oldUnit.copyWith(
+            kepalaSticker: cleanSelected,
+            clearKepala: cleanSelected == null,
+          ),
+        'Batang' => oldUnit.copyWith(
+            batangSticker: cleanSelected,
+            clearBatang: cleanSelected == null,
+          ),
+        'Tabung' => oldUnit.copyWith(
+            tabungSticker: cleanSelected,
+            clearTabung: cleanSelected == null,
+          ),
         _ => oldUnit,
       };
     });
@@ -156,7 +157,6 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
       final batangList = await _fetchAvailableComponents('Batang');
       final tabungList = await _fetchAvailableComponents('Tabung');
 
-      // Set of stickers already assigned in this order
       final assignedStickers = <String>{};
       for (final u in _units) {
         if (u.kepalaSticker != null) assignedStickers.add(u.kepalaSticker!);
@@ -214,15 +214,20 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✨ Berhasil mengisi unit dengan komponen tersegar!'),
-            backgroundColor: Color(0xFF16A34A),
+            content: Text('Komponen tersegar berhasil dialokasikan!'),
+            backgroundColor: MgrsColors.success,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal merekomendasikan unit: $e'), backgroundColor: Colors.red),
+          const SnackBar(
+            content: Text('Gagal merekomendasikan unit.'),
+            backgroundColor: MgrsColors.danger,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -257,315 +262,437 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
 
   Future<void> _showScanDialog() async {
     final textCtrl = TextEditingController();
+    String? dialogError;
+    bool isProcessing = false;
 
-    final result = await showDialog<String>(
+    await showDialog<bool>(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.qr_code_scanner, color: Color(0xFF2563EB)),
-            SizedBox(width: 8),
-            Text('Scan Barcode Komponen', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: SizedBox(
-          width: 320,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox(
-                  height: 180,
-                  child: MobileScanner(
-                    onDetect: (capture) {
-                      final barcodes = capture.barcodes;
-                      for (final barcode in barcodes) {
-                        final val = barcode.rawValue?.trim().toUpperCase();
-                        if (val != null && val.isNotEmpty) {
-                          Navigator.of(dialogCtx).pop(val);
-                          return;
-                        }
-                      }
-                    },
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          Future<void> processCode(String rawCode) async {
+            final normalizedCode = rawCode.trim().toUpperCase();
+            if (normalizedCode.isEmpty) return;
+
+            textCtrl.clear();
+            setDialogState(() {
+              isProcessing = true;
+              dialogError = null;
+            });
+
+            String? expectedKind;
+            if (normalizedCode.startsWith('K')) {
+              expectedKind = 'Kepala';
+            } else if (normalizedCode.startsWith('B')) {
+              expectedKind = 'Batang';
+            } else if (normalizedCode.startsWith('T')) {
+              expectedKind = 'Tabung';
+            }
+
+            if (expectedKind == null) {
+              setDialogState(() {
+                isProcessing = false;
+                dialogError =
+                    'Kode "$rawCode" tidak dikenali. Format stiker harus diawali K-, B-, atau T-.';
+              });
+              return;
+            }
+
+            try {
+              final searchResults = await widget.gateway.fetchComponents(
+                query: normalizedCode,
+                forceRefresh: true,
+              );
+
+              if (searchResults.isEmpty) {
+                setDialogState(() {
+                  isProcessing = false;
+                  dialogError =
+                      'Komponen $normalizedCode tidak ditemukan atau tidak layak pakai.';
+                });
+                return;
+              }
+
+              final exactMatch =
+                  searchResults.cast<Map<String, Object?>?>().firstWhere(
+                        (c) =>
+                            c?['nomor_stiker']
+                                ?.toString()
+                                .trim()
+                                .toUpperCase() ==
+                            normalizedCode,
+                        orElse: () => null,
+                      );
+
+              if (exactMatch == null) {
+                setDialogState(() {
+                  isProcessing = false;
+                  dialogError =
+                      'Komponen hasil pencarian tidak cocok dengan kode stiker $normalizedCode.';
+                });
+                return;
+              }
+
+              final dbKind =
+                  exactMatch['jenis_komponen']?.toString().trim() ?? '';
+              if (dbKind != expectedKind) {
+                setDialogState(() {
+                  isProcessing = false;
+                  dialogError =
+                      'Komponen $normalizedCode terdaftar sebagai $dbKind, bukan $expectedKind.';
+                });
+                return;
+              }
+
+              final alreadyInThisOrder = _units.any(
+                (u) =>
+                    u.kepalaSticker?.toUpperCase() == normalizedCode ||
+                    u.batangSticker?.toUpperCase() == normalizedCode ||
+                    u.tabungSticker?.toUpperCase() == normalizedCode,
+              );
+              if (alreadyInThisOrder) {
+                setDialogState(() {
+                  isProcessing = false;
+                  dialogError =
+                      'Komponen $normalizedCode sudah dipakai pada order ini.';
+                });
+                return;
+              }
+
+              final history =
+                  await widget.gateway.fetchComponentOrderUsageHistory(
+                normalizedCode,
+                forceRefresh: true,
+              );
+              final currentOrderId = widget.order.id;
+              final currentOrderanId = widget.order.orderanId;
+
+              final activeHistory =
+                  history.cast<Map<String, Object?>?>().firstWhere(
+                (h) {
+                  if (h == null) return false;
+                  final hOrderId = h['orderan_id']?.toString().trim();
+                  final status =
+                      h['status_orderan']?.toString().trim().toLowerCase();
+                  final isCurrent = hOrderId == currentOrderId ||
+                      hOrderId == currentOrderanId;
+                  final isInactive = status == 'selesai' ||
+                      status == 'dibatalkan' ||
+                      status == 'batal';
+                  return !isCurrent && !isInactive;
+                },
+                orElse: () => null,
+              );
+
+              if (activeHistory != null) {
+                final otherOrder =
+                    activeHistory['orderan_id']?.toString() ?? 'lain';
+                setDialogState(() {
+                  isProcessing = false;
+                  dialogError =
+                      'Komponen $normalizedCode masih dialokasikan pada order $otherOrder.';
+                });
+                return;
+              }
+
+              int targetIndex = -1;
+              for (var i = 0; i < _units.length; i++) {
+                final currentVal = switch (expectedKind) {
+                  'Kepala' => _units[i].kepalaSticker,
+                  'Batang' => _units[i].batangSticker,
+                  'Tabung' => _units[i].tabungSticker,
+                  _ => null,
+                };
+                if (currentVal == null || currentVal.isEmpty) {
+                  targetIndex = i;
+                  break;
+                }
+              }
+
+              if (targetIndex == -1) {
+                setDialogState(() {
+                  isProcessing = false;
+                  dialogError =
+                      'Semua unit sudah memiliki komponen $expectedKind.';
+                });
+                return;
+              }
+
+              final updatedUnits = List<AllocatedUnit>.from(_units);
+              final oldUnit = updatedUnits[targetIndex];
+              updatedUnits[targetIndex] = switch (expectedKind) {
+                'Kepala' => oldUnit.copyWith(kepalaSticker: normalizedCode),
+                'Batang' => oldUnit.copyWith(batangSticker: normalizedCode),
+                'Tabung' => oldUnit.copyWith(tabungSticker: normalizedCode),
+                _ => oldUnit,
+              };
+
+              final orderanId = widget.order.orderanId ?? widget.order.id;
+              await widget.gateway.saveOrderUnitAllocation(
+                orderanId,
+                updatedUnits,
+              );
+
+              setState(() {
+                _units = updatedUnits;
+              });
+              widget.onAllocationChanged?.call(updatedUnits);
+
+              if (ctx.mounted) {
+                Navigator.of(ctx).pop(true);
+              }
+            } catch (e) {
+              setDialogState(() {
+                isProcessing = false;
+                dialogError =
+                    'Terjadi kendala saat memeriksa komponen. Coba lagi.';
+              });
+            }
+          }
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(MgrsRadii.card),
+            ),
+            title: const Row(
+              children: [
+                Icon(Icons.qr_code_scanner, color: MgrsColors.action),
+                SizedBox(width: MgrsSpacing.xs),
+                Expanded(
+                  child: Text(
+                    'Scan barcode komponen',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: MgrsColors.ink,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              const Text('Atau ketik kode stiker:', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-              const SizedBox(height: 6),
-              TextField(
-                controller: textCtrl,
-                textCapitalization: TextCapitalization.characters,
-                decoration: InputDecoration(
-                  hintText: 'Contoh: K-01, B-02, T-03',
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ],
+            ),
+            content: SizedBox(
+              width: 320,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(MgrsRadii.control),
+                      child: SizedBox(
+                        height: 180,
+                        child: MobileScanner(
+                          onDetect: (capture) {
+                            if (isProcessing) return;
+                            final barcodes = capture.barcodes;
+                            for (final barcode in barcodes) {
+                              final val =
+                                  barcode.rawValue?.trim().toUpperCase();
+                              if (val != null && val.isNotEmpty) {
+                                processCode(val);
+                                return;
+                              }
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    if (dialogError != null) ...[
+                      const SizedBox(height: MgrsSpacing.sm),
+                      Container(
+                        padding: const EdgeInsets.all(MgrsSpacing.sm),
+                        decoration: BoxDecoration(
+                          color: MgrsColors.dangerSoft,
+                          borderRadius:
+                              BorderRadius.circular(MgrsRadii.control),
+                          border: Border.all(color: MgrsColors.danger),
+                        ),
+                        child: Text(
+                          dialogError!,
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: MgrsColors.danger,
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: MgrsSpacing.md),
+                    const Text(
+                      'Kode stiker:',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: MgrsColors.muted,
+                      ),
+                    ),
+                    const SizedBox(height: MgrsSpacing.xs),
+                    TextField(
+                      controller: textCtrl,
+                      textCapitalization: TextCapitalization.characters,
+                      decoration: InputDecoration(
+                        hintText: 'Contoh: K-01',
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: MgrsSpacing.md,
+                          vertical: MgrsSpacing.sm,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(MgrsRadii.control),
+                        ),
+                      ),
+                      onSubmitted: (val) {
+                        if (val.trim().isNotEmpty && !isProcessing) {
+                          processCode(val);
+                        }
+                      },
+                    ),
+                  ],
                 ),
-                onSubmitted: (val) {
-                  if (val.trim().isNotEmpty) {
-                    Navigator.of(dialogCtx).pop(val.trim().toUpperCase());
-                  }
-                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Batal'),
+              ),
+              FilledButton(
+                onPressed: isProcessing
+                    ? null
+                    : () {
+                        if (textCtrl.text.trim().isNotEmpty) {
+                          processCode(textCtrl.text);
+                        }
+                      },
+                child: isProcessing
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Gunakan kode'),
               ),
             ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (textCtrl.text.trim().isNotEmpty) {
-                Navigator.of(dialogCtx).pop(textCtrl.text.trim().toUpperCase());
-              }
-            },
-            child: const Text('Gunakan'),
-          ),
-        ],
+          );
+        },
       ),
     );
-
-    if (result == null || result.isEmpty) return;
-
-    _assignScannedCode(result);
-  }
-
-  void _assignScannedCode(String code) {
-    String? kind;
-    if (code.startsWith('K')) {
-      kind = 'Kepala';
-    } else if (code.startsWith('B')) {
-      kind = 'Batang';
-    } else if (code.startsWith('T')) {
-      kind = 'Tabung';
-    }
-
-    if (kind == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Kode "$code" tidak dikenali. Format harus K-xx, B-xx, atau T-xx.'),
-          backgroundColor: Colors.orange.shade800,
-        ),
-      );
-      return;
-    }
-
-    // Find first unit where this slot is empty
-    int targetIndex = -1;
-    for (var i = 0; i < _units.length; i++) {
-      final val = switch (kind) {
-        'Kepala' => _units[i].kepalaSticker,
-        'Batang' => _units[i].batangSticker,
-        'Tabung' => _units[i].tabungSticker,
-        _ => null,
-      };
-      if (val == null || val.isEmpty) {
-        targetIndex = i;
-        break;
-      }
-    }
-
-    if (targetIndex == -1) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Semua unit sudah memiliki komponen $kind ($code)'),
-          backgroundColor: Colors.orange.shade800,
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      final oldUnit = _units[targetIndex];
-      _units[targetIndex] = switch (kind) {
-        'Kepala' => oldUnit.copyWith(kepalaSticker: code),
-        'Batang' => oldUnit.copyWith(batangSticker: code),
-        'Tabung' => oldUnit.copyWith(tabungSticker: code),
-        _ => oldUnit,
-      };
-    });
-
-    _saveCurrentAllocation();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('✅ $kind Unit ${targetIndex + 1} diatur ke $code'),
-        backgroundColor: const Color(0xFF16A34A),
-      ),
-    );
-  }
-
-  Color _badgeBgColor(int count) {
-    if (count <= 5) return const Color(0xFFDCFCE7);
-    if (count <= 15) return const Color(0xFFFEF3C7);
-    return const Color(0xFFF1F5F9);
-  }
-
-  Color _badgeTextColor(int count) {
-    if (count <= 5) return const Color(0xFF166534);
-    if (count <= 15) return const Color(0xFF92400E);
-    return const Color(0xFF475569);
   }
 
   @override
   Widget build(BuildContext context) {
-    final completeUnits = _units.where((u) => u.isComplete).length;
-    final totalUnits = _units.length;
+    final completedCount = _units.where((u) => u.isComplete).length;
+    final totalCount = _units.length;
 
     return Container(
+      padding: const EdgeInsets.all(MgrsSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: MgrsColors.surface,
+        borderRadius: BorderRadius.circular(MgrsRadii.card),
+        border: Border.all(color: MgrsColors.line),
       ),
-      padding: const EdgeInsets.all(16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Row
-          Row(
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: MgrsSpacing.xs,
+            runSpacing: 4,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.inventory_2_outlined,
-                  color: Color(0xFF2563EB),
-                  size: 20,
+              const Text(
+                'Alokasi Unit Blower',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: MgrsColors.ink,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Text(
-                          'Alokasi Unit Blower',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            'Opsional',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$completeUnits dari $totalUnits unit lengkap',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: completeUnits == totalUnits && totalUnits > 0
-                            ? const Color(0xFF16A34A)
-                            : const Color(0xFF64748B),
-                        fontWeight: completeUnits == totalUnits && totalUnits > 0
-                            ? FontWeight.w600
-                            : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (_isSaving)
-                const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
+              const MgrsStatusBadge('Opsional', tone: MgrsStatusTone.warning),
             ],
           ),
-
-          // Action buttons for editable users
+          const SizedBox(height: 2),
+          Text(
+            '$completedCount dari $totalCount unit lengkap',
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: MgrsColors.muted,
+            ),
+          ),
           if (widget.isEditable) ...[
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _isRecommending ? null : _applyRecommendation,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF2563EB),
-                      side: const BorderSide(color: Color(0xFFBFDBFE)),
-                      backgroundColor: const Color(0xFFF0FDF4),
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    icon: _isRecommending
-                        ? const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.auto_awesome_rounded, size: 16, color: Color(0xFF16A34A)),
-                    label: const Text(
-                      'Rekomendasi Tersegar',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF166534)),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  onPressed: _showScanDialog,
+            const SizedBox(height: MgrsSpacing.sm),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isNarrow = constraints.maxWidth < 320;
+                final recBtn = OutlinedButton.icon(
+                  onPressed: _isRecommending ? null : _applyRecommendation,
+                  icon: const Icon(Icons.auto_awesome_rounded, size: 16),
+                  label: _isRecommending
+                      ? const Text('Mencari...')
+                      : const Text('Rekomendasi Tersegar'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF0F172A),
-                    side: const BorderSide(color: Color(0xFFCBD5E1)),
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: MgrsSpacing.sm,
+                      vertical: MgrsSpacing.xs,
+                    ),
+                    minimumSize: const Size(0, MgrsSizes.minTouch),
                   ),
+                );
+
+                final scanBtn = FilledButton.icon(
+                  onPressed: _showScanDialog,
                   icon: const Icon(Icons.qr_code_scanner_rounded, size: 16),
-                  label: const Text(
-                    'Scan Barcode',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                  label: const Text('Scan Barcode'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: MgrsColors.action,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: MgrsSpacing.sm,
+                      vertical: MgrsSpacing.xs,
+                    ),
+                    minimumSize: const Size(0, MgrsSizes.minTouch),
                   ),
-                ),
-              ],
+                );
+
+                if (isNarrow) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      recBtn,
+                      const SizedBox(height: MgrsSpacing.xs),
+                      scanBtn,
+                    ],
+                  );
+                }
+
+                return Row(
+                  children: [
+                    Expanded(child: recBtn),
+                    const SizedBox(width: MgrsSpacing.sm),
+                    Expanded(child: scanBtn),
+                  ],
+                );
+              },
             ),
           ],
-
-          const SizedBox(height: 14),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
-          const SizedBox(height: 12),
-
-          // Units List
+          const SizedBox(height: MgrsSpacing.sm),
+          const Divider(height: 1, color: MgrsColors.line),
+          const SizedBox(height: MgrsSpacing.sm),
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _units.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
+            separatorBuilder: (_, index) => const SizedBox(height: MgrsSpacing.sm),
             itemBuilder: (context, index) {
-              final unit = _units[index];
-              return _buildUnitItem(index, unit);
+              return _buildUnitAllocationRow(index);
             },
           ),
         ],
@@ -573,208 +700,179 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
     );
   }
 
-  Widget _buildUnitItem(int index, AllocatedUnit unit) {
+  Widget _buildUnitAllocationRow(int unitIndex) {
+    final unit = _units[unitIndex];
+    final isComplete = unit.isComplete;
+
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(MgrsSpacing.sm),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        color: MgrsColors.canvas,
+        borderRadius: BorderRadius.circular(MgrsRadii.control),
+        border: Border.all(color: MgrsColors.line),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Unit title & completion status
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: MgrsSpacing.xs,
+            runSpacing: 4,
             children: [
               Text(
-                'Unit ${index + 1}',
+                'Unit ${unitIndex + 1}',
                 style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
                   fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+                  fontWeight: FontWeight.w700,
+                  color: MgrsColors.ink,
                 ),
               ),
-              if (unit.isComplete)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFDCFCE7),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.check_circle, size: 11, color: Color(0xFF166534)),
-                      SizedBox(width: 3),
-                      Text(
-                        'Lengkap',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF166534),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              else if (!unit.isEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text(
-                    'Sebagian',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF92400E),
-                    ),
-                  ),
-                ),
+              MgrsStatusBadge(
+                isComplete ? 'Lengkap' : 'Belum Lengkap',
+                tone: isComplete
+                    ? MgrsStatusTone.success
+                    : MgrsStatusTone.warning,
+              ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: MgrsSpacing.xs),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 300;
+              final slotKepala = _buildSlotWidget(
+                unitIndex: unitIndex,
+                kind: 'Kepala',
+                sticker: unit.kepalaSticker,
+              );
+              final slotBatang = _buildSlotWidget(
+                unitIndex: unitIndex,
+                kind: 'Batang',
+                sticker: unit.batangSticker,
+              );
+              final slotTabung = _buildSlotWidget(
+                unitIndex: unitIndex,
+                kind: 'Tabung',
+                sticker: unit.tabungSticker,
+              );
 
-          // 3 Component slots (Kepala, Batang, Tabung)
-          Row(
-            children: [
-              Expanded(
-                child: _buildComponentSlot(
-                  unitIndex: index,
-                  kind: 'Kepala',
-                  sticker: unit.kepalaSticker,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildComponentSlot(
-                  unitIndex: index,
-                  kind: 'Batang',
-                  sticker: unit.batangSticker,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildComponentSlot(
-                  unitIndex: index,
-                  kind: 'Tabung',
-                  sticker: unit.tabungSticker,
-                ),
-              ),
-            ],
+              if (isNarrow) {
+                return Column(
+                  children: [
+                    slotKepala,
+                    const SizedBox(height: MgrsSpacing.xs),
+                    slotBatang,
+                    const SizedBox(height: MgrsSpacing.xs),
+                    slotTabung,
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: slotKepala),
+                  const SizedBox(width: MgrsSpacing.xs),
+                  Expanded(child: slotBatang),
+                  const SizedBox(width: MgrsSpacing.xs),
+                  Expanded(child: slotTabung),
+                ],
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildComponentSlot({
+  Widget _buildSlotWidget({
     required int unitIndex,
     required String kind,
     required String? sticker,
   }) {
-    final count = sticker != null ? (_usageCounts[sticker] ?? 0) : null;
-    final isAssigned = sticker != null && sticker.isNotEmpty;
+    final isOccupied = sticker != null && sticker.isNotEmpty;
+    final wearCount = isOccupied ? (_usageCounts[sticker] ?? 0) : null;
 
     return InkWell(
       onTap: widget.isEditable ? () => _pickComponent(unitIndex, kind) : null,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(MgrsRadii.control),
       child: Container(
-        height: 72,
-        padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: MgrsSpacing.xs,
+          vertical: MgrsSpacing.xs + 2,
+        ),
         decoration: BoxDecoration(
-          color: isAssigned ? Colors.white : const Color(0xFFF1F5F9),
-          borderRadius: BorderRadius.circular(8),
+          color: MgrsColors.surface,
+          borderRadius: BorderRadius.circular(MgrsRadii.control),
           border: Border.all(
-            color: isAssigned ? const Color(0xFFCBD5E1) : const Color(0xFFE2E8F0),
-            style: BorderStyle.solid,
+            color: isOccupied ? MgrsColors.action : MgrsColors.line,
           ),
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Kind label
             Text(
               kind,
               style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF64748B),
+                color: MgrsColors.muted,
               ),
             ),
-
-            // Sticker code or placeholder
-            if (isAssigned) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      sticker,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F172A),
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (widget.isEditable)
-                    GestureDetector(
-                      onTap: () => _clearComponent(unitIndex, kind),
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        child: const Icon(Icons.close, size: 13, color: Color(0xFF94A3B8)),
-                      ),
-                    ),
-                ],
+            const SizedBox(height: 2),
+            if (isOccupied) ...[
+              Text(
+                sticker,
+                style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: MgrsColors.action,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              if (count != null && !_isLoadingUsage) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                  decoration: BoxDecoration(
-                    color: _badgeBgColor(count),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    '${count}x pakai',
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                      color: _badgeTextColor(count),
+              Text(
+                '${wearCount ?? 0}x pakai',
+                style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  color: MgrsColors.muted,
+                ),
+              ),
+              if (widget.isEditable) ...[
+                const SizedBox(height: 2),
+                InkWell(
+                  onTap: () => _clearComponent(unitIndex, kind),
+                  child: const Padding(
+                    padding: EdgeInsets.all(2),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 14,
+                      color: MgrsColors.danger,
                     ),
                   ),
                 ),
-              ] else ...[
-                const SizedBox(height: 16),
               ],
             ] else ...[
-              Row(
-                children: [
-                  if (widget.isEditable) ...[
-                    const Icon(Icons.add, size: 12, color: Color(0xFF3B82F6)),
-                    const SizedBox(width: 2),
-                    const Text(
-                      'Pilih',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF2563EB),
-                      ),
-                    ),
-                  ] else ...[
-                    const Text(
-                      '-',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
-                    ),
-                  ],
-                ],
+              const Icon(
+                Icons.add_circle_outline_rounded,
+                size: 16,
+                color: MgrsColors.muted,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 2),
+              const Text(
+                'Pilih',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: MgrsColors.muted,
+                ),
+              ),
             ],
           ],
         ),

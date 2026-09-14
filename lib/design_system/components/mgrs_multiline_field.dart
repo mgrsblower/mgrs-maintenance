@@ -41,7 +41,7 @@ class MgrsMultilineField extends StatelessWidget {
         const SizedBox(height: MgrsSpacing.sm),
         Semantics(
           label: label,
-          child: TextField(
+          child: TextFormField(
             controller: controller,
             focusNode: focusNode,
             enabled: enabled,
