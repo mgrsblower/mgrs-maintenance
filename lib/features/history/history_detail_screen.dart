@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../app/gateway.dart';
+import '../../design_system/components/mgrs_app_bar.dart';
+import '../../design_system/components/mgrs_state_view.dart';
+import '../../design_system/mgrs_tokens.dart';
 import '../../shared/async_state_view.dart';
 import '../components/component.dart';
 import '../maintenance/checking_screen.dart';
@@ -66,135 +69,160 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
 
   Widget condition(String title, Object? data) {
     final value = data == null ? null : jsonObject(data);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
-            if (value == null)
-              const Text('Tidak tercatat')
-            else ...[
+    return Container(
+      decoration: BoxDecoration(
+        color: MgrsColors.surface,
+        borderRadius: BorderRadius.circular(MgrsRadii.card),
+      ),
+      padding: const EdgeInsets.all(MgrsSpacing.base),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: MgrsSpacing.md),
+          if (value == null)
+            const Text('Kondisi tidak tersedia pada catatan ini.')
+          else ...[
+            if (value['condition'] != null)
               InfoLine(
                 'Kondisi',
                 conditionDisplayLabel(value['condition']?.toString()),
               ),
-              InfoLine(
-                'Kelayakan pakai',
-                usableDisplayLabel(value['usable']),
-              ),
-              InfoLine(
-                'Gangguan fungsi',
-                value['impairedFunction']?.toString() ?? 'Tidak tercatat',
-              ),
-              InfoLine(
-                'Catatan kondisi',
-                value['note']?.toString() ?? 'Tidak tercatat',
-              ),
-            ],
+            if (value['usable'] != null)
+              InfoLine('Kelayakan pakai', usableDisplayLabel(value['usable'])),
+            if (value['impairedFunction'] != null)
+              InfoLine('Gangguan fungsi', value['impairedFunction'].toString()),
+            if (value['note'] != null)
+              InfoLine('Catatan kondisi', value['note'].toString()),
           ],
-        ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Text('Detail riwayat'),
+    appBar: MgrsDetailAppBar(
+      title: 'Detail riwayat',
       actions: [
-        IconButton(
+        MgrsAppBarAction(
+          icon: Icons.refresh,
           tooltip: 'Perbarui catatan',
           onPressed: reload,
-          icon: const Icon(Icons.refresh),
         ),
       ],
     ),
-    body: AsyncStateView(
+    body: FutureBuilder<Map<String, Object?>>(
       future: future,
-      retry: reload,
-      builder: (Map<String, Object?> data) => PageBody(
-        children: [
-          Text(
-            data['code']?.toString() ?? 'Kode tidak tercatat',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(activityLabels[data['activity']] ?? 'Aktivitas'),
-          const SizedBox(height: 16),
-          InfoLine('Petugas', data['actor']?.toString() ?? 'Tidak tercatat'),
-          InfoLine('Waktu pencatatan', stamp(data['recordedAt'])),
-          if (data['periodId'] != null)
-            InfoLine('Periode', periodDisplayLabel(data['periodId']?.toString())),
-          if (data['legacy'] == true)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 16),
-              child: Text(
-                'Catatan dari aplikasi sebelumnya. Kondisi awal dan kecocokan identitas komponen tidak tercatat lengkap.',
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const MgrsStateView.loading(title: 'Memuat detail riwayat...');
+        }
+        if (snapshot.hasError) {
+          return MgrsStateView.error(
+            title: 'Detail riwayat gagal dimuat',
+            message: 'Periksa koneksi lalu coba lagi.',
+            actionLabel: 'Coba lagi',
+            onAction: reload,
+          );
+        }
+        final data = snapshot.data!;
+        final activity =
+            activityLabels[data['activity']] ?? 'Aktivitas tidak tercatat';
+        return PageBody(
+          children: [
+            Text(
+              data['code']?.toString() ?? 'Kode tidak tercatat',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: MgrsSpacing.sm),
+            Text(
+              activity,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: MgrsColors.ink,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          condition('Sebelum', data['before']),
-          const SizedBox(height: 12),
-          condition('Sesudah', data['after']),
-          const SizedBox(height: 16),
-          if (data['activity'] == 'service') ...[
-            InfoLine(
-              'Masalah',
-              data['problem']?.toString() ?? 'Tidak tercatat',
-            ),
-            InfoLine(
-              'Tindakan servis',
-              data['action']?.toString() ?? 'Tidak tercatat',
-            ),
-            InfoLine(
-              'Biaya',
-              data['costRecorded'] == true && data['cost'] != null
-                  ? 'Rp ${data['cost']}'
-                  : 'Belum dicatat',
-            ),
-            if (data['legacy'] == true && data['cost'] != null)
+            const SizedBox(height: MgrsSpacing.lg),
+            if (data['actor'] != null)
+              InfoLine('Petugas', data['actor'].toString()),
+            if (data['recordedAt'] != null)
+              InfoLine('Waktu pencatatan', stamp(data['recordedAt'])),
+            if (data['periodId'] != null)
               InfoLine(
-                'Nilai pada catatan lama',
-                'Rp ${data['cost']} · belum diverifikasi',
+                'Periode',
+                periodDisplayLabel(data['periodId']?.toString()),
               ),
-          ],
-          InfoLine(
-            'Catatan aktivitas',
-            data['note']?.toString() ?? 'Tidak ada catatan',
-          ),
-          if (data['legacy'] == false && data['componentId'] != null) ...[
-            if (correctionError != null) Text(failureMessage(correctionError)),
-            OutlinedButton.icon(
-              onPressed: openingCorrection ? null : () => correct(data),
-              icon: const Icon(Icons.edit_note),
-              label: Text(
-                openingCorrection
-                    ? 'Memuat kondisi terbaru…'
-                    : 'Buat catatan koreksi',
+            if (data['legacy'] == true)
+              const Padding(
+                padding: EdgeInsets.only(bottom: MgrsSpacing.base),
+                child: Text(
+                  'Catatan dari aplikasi sebelumnya. Kondisi awal dan kecocokan identitas komponen tidak tercatat lengkap.',
+                ),
               ),
-            ),
-          ],
-          if (data['correctsEventId'] != null) ...[
-            InfoLine(
-              'Alasan koreksi',
-              data['correctionReason']?.toString() ?? 'Tidak tercatat',
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).push<void>(
-                MaterialPageRoute(
-                  builder: (_) => HistoryDetailScreen(
-                    gateway: widget.gateway,
-                    eventId: data['correctsEventId'] as String,
+            condition('Sebelum', data['before']),
+            const SizedBox(height: MgrsSpacing.md),
+            condition('Sesudah', data['after']),
+            const SizedBox(height: MgrsSpacing.lg),
+            if (data['activity'] == 'service') ...[
+              if (data['problem'] != null)
+                InfoLine('Masalah', data['problem'].toString()),
+              if (data['action'] != null)
+                InfoLine('Tindakan servis', data['action'].toString()),
+              if (data['costRecorded'] == true && data['cost'] != null)
+                InfoLine('Biaya', 'Rp ${data['cost']}'),
+              if (data['legacy'] == true && data['cost'] != null)
+                InfoLine(
+                  'Nilai pada catatan lama',
+                  'Rp ${data['cost']} · belum diverifikasi',
+                ),
+            ],
+            if (data['note'] != null)
+              InfoLine('Catatan aktivitas', data['note'].toString()),
+            if (data['legacy'] == false && data['componentId'] != null) ...[
+              if (correctionError != null)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: MgrsSpacing.sm),
+                  child: Text(
+                    'Kondisi terbaru gagal dimuat. Periksa koneksi lalu coba lagi.',
+                  ),
+                ),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: openingCorrection ? null : () => correct(data),
+                  icon: const Icon(Icons.edit_note),
+                  label: Text(
+                    openingCorrection
+                        ? 'Memuat kondisi terbaru...'
+                        : 'Buat catatan koreksi',
                   ),
                 ),
               ),
-              child: const Text('Lihat catatan yang dikoreksi'),
-            ),
+            ],
+            if (data['correctsEventId'] != null) ...[
+              if (data['correctionReason'] != null)
+                InfoLine('Alasan koreksi', data['correctionReason'].toString()),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).push<void>(
+                    MaterialPageRoute(
+                      builder: (_) => HistoryDetailScreen(
+                        gateway: widget.gateway,
+                        eventId: data['correctsEventId'] as String,
+                      ),
+                    ),
+                  ),
+                  child: const Text('Lihat catatan yang dikoreksi'),
+                ),
+              ),
+            ],
           ],
-        ],
-      ),
+        );
+      },
     ),
   );
 }

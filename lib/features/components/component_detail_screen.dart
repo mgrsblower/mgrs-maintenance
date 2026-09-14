@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../app/app_theme.dart';
 import '../../app/gateway.dart';
-import '../../shared/async_state_view.dart';
+import '../../design_system/components/mgrs_app_bar.dart';
+import '../../design_system/components/mgrs_state_view.dart';
+import '../../design_system/components/mgrs_status_badge.dart';
+import '../../design_system/mgrs_tokens.dart';
+import '../../shared/async_state_view.dart' show conditionDisplayLabel;
 import '../../shared/pressable.dart';
 import '../history/history_screen.dart';
 import '../maintenance/checking_screen.dart';
@@ -43,11 +46,11 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
   }
 
   void reload() => setState(() {
-        future = Component.load(widget.gateway, widget.id);
-        futureHistory = widget.gateway.fetchComponentHistory(widget.id);
-        _orderUsageFuture = null;
-        _loadedCode = null;
-      });
+    future = Component.load(widget.gateway, widget.id);
+    futureHistory = widget.gateway.fetchComponentHistory(widget.id);
+    _orderUsageFuture = null;
+    _loadedCode = null;
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -55,73 +58,22 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
       future: future,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(
-            backgroundColor: AppTokens.canvas,
-            body: SafeArea(
-              child: Column(
-                children: [
-                  _buildTopAppBar(context, 'Memuat...'),
-                  const Expanded(
-                    child: Center(
-                      child: CircularProgressIndicator(color: Color(0xFF147CC1)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          return const Scaffold(
+            backgroundColor: MgrsColors.canvas,
+            appBar: MgrsDetailAppBar(title: 'Detail Komponen'),
+            body: MgrsStateView.loading(title: 'Memuat detail komponen...'),
           );
         }
 
         if (snapshot.hasError || !snapshot.hasData) {
           return Scaffold(
-            backgroundColor: AppTokens.canvas,
-            body: SafeArea(
-              child: Column(
-                children: [
-                  _buildTopAppBar(context, 'Detail Komponen'),
-                  Expanded(
-                    child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.error_outline_rounded,
-                              size: 44,
-                              color: Color(0xFFDC2626),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              failureMessage(snapshot.error),
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontFamily: 'Plus Jakarta Sans',
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF991B1B),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton.icon(
-                              onPressed: reload,
-                              icon: const Icon(Icons.refresh_rounded, size: 18),
-                              label: const Text('Coba Lagi'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF147CC1),
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            backgroundColor: MgrsColors.canvas,
+            appBar: const MgrsDetailAppBar(title: 'Detail Komponen'),
+            body: MgrsStateView.error(
+              title: 'Detail komponen gagal dimuat',
+              message: 'Periksa koneksi, lalu muat data terbaru.',
+              actionLabel: 'Muat data terbaru',
+              onAction: reload,
             ),
           );
         }
@@ -129,29 +81,43 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
         final comp = snapshot.data!;
         if (_loadedCode != comp.code) {
           _loadedCode = comp.code;
-          _orderUsageFuture = widget.gateway.fetchComponentOrderUsageHistory(comp.code);
+          _orderUsageFuture = widget.gateway.fetchComponentOrderUsageHistory(
+            comp.code,
+          );
         }
 
         return Scaffold(
-          backgroundColor: AppTokens.canvas,
+          backgroundColor: MgrsColors.canvas,
+          appBar: const MgrsDetailAppBar(title: 'Detail Komponen'),
           body: SafeArea(
+            top: false,
             bottom: false,
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding: const EdgeInsets.fromLTRB(
+                MgrsSpacing.lg,
+                MgrsSpacing.md,
+                MgrsSpacing.lg,
+                MgrsSpacing.xl,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildTopAppBar(context, comp.kind),
-                  const SizedBox(height: 16),
+                  Text(
+                    comp.kind,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: MgrsColors.muted),
+                  ),
+                  const SizedBox(height: MgrsSpacing.md),
                   _buildIdentityCard(context, comp),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: MgrsSpacing.base),
                   _buildCurrentConditionCard(context, comp),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: MgrsSpacing.base),
                   _buildOrderUsageCard(context, comp),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: MgrsSpacing.base),
                   _buildHistoryCard(context),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: MgrsSpacing.xl),
                 ],
               ),
             ),
@@ -164,417 +130,119 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
     );
   }
 
-  // Top App Bar: Back button circle + Title "Detail Komponen \n Unit MGRS • Kepala" + Ellipsis button
-  Widget _buildTopAppBar(BuildContext context, String kind) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            PressableScale(
-              onTap: () => Navigator.of(context).pop(),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.chevron_left_rounded,
-                    color: Color(0xFF0F172A),
-                    size: 24,
-                  ),
-                ),
-              ),
+  // Card 1: Identity Card
+  Widget _buildIdentityCard(BuildContext context, Component comp) {
+    final label = conditionDisplayLabel(comp.condition);
+    final lastCheck = comp.lastCheckingAt;
+    final lastService = comp.lastServiceAt;
+
+    return Container(
+      padding: const EdgeInsets.all(MgrsSpacing.lg),
+      decoration: BoxDecoration(
+        color: MgrsColors.surface,
+        borderRadius: BorderRadius.circular(MgrsRadii.card),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            comp.code,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: MgrsColors.ink,
+              fontWeight: FontWeight.w700,
             ),
-            const SizedBox(width: 14),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Detail Komponen',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF0F172A),
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                Text(
-                  'Unit MGRS • $kind',
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
-              ],
+          ),
+          const SizedBox(height: MgrsSpacing.sm),
+          MgrsStatusBadge(label),
+          const SizedBox(height: MgrsSpacing.base),
+          const Divider(height: 1, color: MgrsColors.line),
+          const SizedBox(height: MgrsSpacing.base),
+          _detailValue(context, 'Jenis komponen', comp.kind),
+          if (lastCheck != null && lastCheck.isNotEmpty) ...[
+            const SizedBox(height: MgrsSpacing.md),
+            _detailValue(
+              context,
+              'Pemeriksaan terakhir',
+              lastCheck.length >= 10 ? lastCheck.substring(0, 10) : lastCheck,
             ),
           ],
+          if (lastService != null && lastService.isNotEmpty) ...[
+            const SizedBox(height: MgrsSpacing.md),
+            _detailValue(
+              context,
+              'Servis terakhir',
+              lastService.length >= 10
+                  ? lastService.substring(0, 10)
+                  : lastService,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _detailValue(BuildContext context, String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(
+            context,
+          ).textTheme.labelMedium?.copyWith(color: MgrsColors.muted),
         ),
-        PressableScale(
-          onTap: () {},
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.more_horiz_rounded,
-                color: Color(0xFF0F172A),
-                size: 20,
-              ),
-            ),
+        const SizedBox(height: MgrsSpacing.xs),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: MgrsColors.ink,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
     );
   }
 
-  // Card 1: Identity Card
-  Widget _buildIdentityCard(
-    BuildContext context,
-    Component comp,
-  ) {
-    final label = conditionDisplayLabel(comp.condition);
-    final isGood = comp.condition == 'Layak Pakai' || comp.condition == 'OK';
-    final isService = comp.condition == 'Service' || comp.condition == 'Rusak Berat';
-    final badgeColor = isGood
-        ? const Color(0xFF10B981)
-        : (isService ? const Color(0xFFEF4444) : const Color(0xFFF59E0B));
-    final lastCheckStr = comp.lastCheckingAt != null && comp.lastCheckingAt!.length >= 10
-        ? comp.lastCheckingAt!.substring(0, 10)
-        : 'Belum tercatat';
-    final serviceStr = comp.lastServiceAt != null && comp.lastServiceAt!.length >= 10
-        ? 'Servis: ${comp.lastServiceAt!.substring(0, 10)}'
-        : 'Tercatat di MGRS';
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    comp.code,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'Komponen ${comp.kind} Utama',
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  color: badgeColor,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 5,
-                      height: 5,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      label,
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.only(top: 14),
-            decoration: const BoxDecoration(
-              border: Border(
-                top: BorderSide(color: Color(0xFFF1F5F9)),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Pemeriksaan Terakhir',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        lastCheckStr,
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  width: 1,
-                  height: 32,
-                  color: const Color(0xFFE2E8F0),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Status Layanan',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        serviceStr,
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          FutureBuilder<List<Map<String, Object?>>>(
-            future: _orderUsageFuture,
-            builder: (context, usageSnap) {
-              final usageList = usageSnap.data ?? [];
-              final usageCount = usageList.length;
-              final isZero = usageCount == 0;
-              final badgeBg = isZero
-                  ? const Color(0xFFF1F5F9)
-                  : (usageCount <= 5
-                      ? const Color(0xFFDCFCE7)
-                      : (usageCount <= 15 ? const Color(0xFFFEF3C7) : const Color(0xFFF1F5F9)));
-              final badgeText = isZero
-                  ? const Color(0xFF475569)
-                  : (usageCount <= 5
-                      ? const Color(0xFF166534)
-                      : (usageCount <= 15 ? const Color(0xFF92400E) : const Color(0xFF334155)));
-
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.repeat_rounded, size: 16, color: Color(0xFF2563EB)),
-                        SizedBox(width: 6),
-                        Text(
-                          'Total Pemakaian di Orderan',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF334155),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: badgeBg,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        '$usageCount kali pakai',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: badgeText,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
   // Card 2: Catatan Kondisi Terkini
   Widget _buildCurrentConditionCard(BuildContext context, Component comp) {
-    final note = comp.note != null && comp.note!.trim().isNotEmpty
-        ? comp.note!.trim()
-        : 'Tidak ada catatan kondisi khusus untuk komponen ini.';
-    final dateStr = comp.lastCheckingAt != null && comp.lastCheckingAt!.length >= 10
-        ? comp.lastCheckingAt!.substring(0, 10)
-        : 'Belum tercatat';
-
+    final note = comp.note?.trim();
+    final date = comp.lastCheckingAt;
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(MgrsSpacing.lg),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
+        color: MgrsColors.surface,
+        borderRadius: BorderRadius.circular(MgrsRadii.card),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Catatan Kondisi Terkini',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              Text(
-                dateStr,
-                style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
           Text(
-            note,
-            style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF334155),
-              height: 1.45,
+            'Catatan Kondisi Terkini',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: MgrsColors.ink,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.only(top: 12),
-            decoration: const BoxDecoration(
-              border: Border(
-                top: BorderSide(color: Color(0xFFF1F5F9)),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE0E7FF),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.verified_outlined,
-                      size: 14,
-                      color: Color(0xFF4338CA),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  comp.lastCheckingAt != null
-                      ? 'Pemeriksaan terakhir: $dateStr'
-                      : 'Belum pernah dilakukan pemeriksaan',
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
-              ],
+          const SizedBox(height: MgrsSpacing.md),
+          Text(
+            note != null && note.isNotEmpty
+                ? note
+                : 'Tidak ada catatan kondisi khusus untuk komponen ini.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: note != null && note.isNotEmpty
+                  ? MgrsColors.ink
+                  : MgrsColors.muted,
             ),
           ),
+          if (date != null && date.isNotEmpty) ...[
+            const SizedBox(height: MgrsSpacing.md),
+            Text(
+              'Pemeriksaan terakhir: ${date.length >= 10 ? date.substring(0, 10) : date}',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: MgrsColors.muted),
+            ),
+          ],
         ],
       ),
     );
@@ -583,236 +251,117 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
   // Card: Riwayat Pemakaian di Orderan Sewa
   Widget _buildOrderUsageCard(BuildContext context, Component comp) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(MgrsSpacing.lg),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
+        color: MgrsColors.surface,
+        borderRadius: BorderRadius.circular(MgrsRadii.card),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.event_note_rounded, size: 16, color: Color(0xFF2563EB)),
-                  ),
-                  const SizedBox(width: 10),
-                  const Text(
-                    'Riwayat Pemakaian di Orderan',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                ],
-              ),
-              FutureBuilder<List<Map<String, Object?>>>(
-                future: _orderUsageFuture,
-                builder: (context, snap) {
-                  final count = snap.data?.length ?? 0;
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '$count orderan',
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF475569),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
+          Text(
+            'Riwayat Pemakaian di Orderan',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: MgrsColors.ink,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: MgrsSpacing.base),
           FutureBuilder<List<Map<String, Object?>>>(
             future: _orderUsageFuture,
             builder: (context, snap) {
               if (snap.connectionState == ConnectionState.waiting) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF2563EB)),
-                    ),
-                  ),
+                return const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
                 );
               }
-
-              final items = snap.data ?? [];
+              if (snap.hasError) {
+                return Text(
+                  'Riwayat pemakaian belum dapat dimuat.',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: MgrsColors.danger),
+                );
+              }
+              final items = snap.data ?? const [];
               if (items.isEmpty) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFF1F5F9)),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.info_outline_rounded, size: 18, color: Color(0xFF94A3B8)),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Komponen ini belum pernah dipakai pada orderan sewa.',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 12,
-                            color: Color(0xFF64748B),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                return Text(
+                  'Belum ada riwayat pemakaian yang tersimpan.',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: MgrsColors.muted),
                 );
               }
-
               return Column(
-                children: items.map((item) {
-                  final namaEvent = item['nama_event']?.toString() ?? 'Sewa Blower';
-                  final namaClient = item['nama_client']?.toString() ?? '-';
-                  final tanggal = item['tanggal']?.toString() ?? '';
-                  final dateStr = tanggal.length >= 10 ? tanggal.substring(0, 10) : tanggal;
-                  final status = item['status_orderan']?.toString() ?? '-';
-                  final unitIdx = item['unit_index'];
-                  final roleSlot = item['role_slot']?.toString() ?? '';
-                  final isDone = status.toLowerCase() == 'selesai';
-
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                namaEvent,
-                                style: const TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF0F172A),
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: isDone ? const Color(0xFFDCFCE7) : const Color(0xFFEFF6FF),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                status,
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDone ? const Color(0xFF166534) : const Color(0xFF1D4ED8),
-                                ),
-                              ),
-                            ),
-                          ],
+                children: items
+                    .map((item) {
+                      final event = item['nama_event']?.toString();
+                      final client = item['nama_client']?.toString();
+                      final status = item['status_orderan']?.toString();
+                      final date = item['tanggal']?.toString();
+                      final unit = item['unit_index'];
+                      final role = item['role_slot']?.toString();
+                      return Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: MgrsSpacing.base,
                         ),
-                        const SizedBox(height: 6),
-                        Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.person_outline_rounded, size: 12, color: Color(0xFF64748B)),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                namaClient,
-                                style: const TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 12,
-                                  color: Color(0xFF475569),
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE2E8F0),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                'Unit $unitIdx • $roleSlot',
-                                style: const TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF334155),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(Icons.calendar_today_rounded, size: 11, color: Color(0xFF94A3B8)),
-                            const SizedBox(width: 4),
-                            Text(
-                              dateStr,
-                              style: const TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 11,
-                                color: Color(0xFF94A3B8),
-                              ),
-                            ),
-                            if (item['orderan_id'] != null) ...[
-                              const Text(' • ', style: TextStyle(color: Color(0xFF94A3B8))),
+                            if (event != null && event.isNotEmpty)
                               Text(
-                                '#${item['orderan_id']}',
-                                style: const TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 11,
-                                  color: Color(0xFF94A3B8),
-                                ),
+                                event,
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(
+                                      color: MgrsColors.ink,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                            if (status != null && status.isNotEmpty) ...[
+                              const SizedBox(height: MgrsSpacing.sm),
+                              MgrsStatusBadge(status),
+                            ],
+                            if (client != null && client.isNotEmpty) ...[
+                              const SizedBox(height: MgrsSpacing.sm),
+                              _detailValue(context, 'Klien', client),
+                            ],
+                            if (unit != null ||
+                                (role != null && role.isNotEmpty)) ...[
+                              const SizedBox(height: MgrsSpacing.sm),
+                              _detailValue(
+                                context,
+                                'Penempatan',
+                                [
+                                  if (unit != null) 'Unit $unit',
+                                  if (role != null && role.isNotEmpty) role,
+                                ].join(' · '),
                               ),
                             ],
+                            if (date != null && date.isNotEmpty) ...[
+                              const SizedBox(height: MgrsSpacing.sm),
+                              _detailValue(
+                                context,
+                                'Tanggal',
+                                date.length >= 10
+                                    ? date.substring(0, 10)
+                                    : date,
+                              ),
+                            ],
+                            if (item['orderan_id'] != null) ...[
+                              const SizedBox(height: MgrsSpacing.sm),
+                              _detailValue(
+                                context,
+                                'ID orderan',
+                                item['orderan_id'].toString(),
+                              ),
+                            ],
+                            const SizedBox(height: MgrsSpacing.base),
+                            const Divider(height: 1, color: MgrsColors.line),
                           ],
                         ),
-                      ],
-                    ),
-                  );
-                }).toList(),
+                      );
+                    })
+                    .toList(growable: false),
               );
             },
           ),
@@ -826,16 +375,8 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
+        color: MgrsColors.surface,
+        borderRadius: BorderRadius.circular(MgrsRadii.card),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -872,7 +413,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     fontFamily: 'Inter',
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: AppTokens.primary,
+                    color: MgrsColors.operational,
                   ),
                 ),
               ),
@@ -891,21 +432,25 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     final title = activity == 'service'
                         ? 'Tindakan Servis'
                         : (activity == 'periodic_check'
-                            ? 'Pemeriksaan Berkala'
-                            : 'Pemeriksaan Manual');
-                    final recordedAt = item['recordedAt']?.toString() ?? '';
-                    final dateText = recordedAt.length >= 10
+                              ? 'Pemeriksaan Berkala'
+                              : 'Pemeriksaan Manual');
+                    final recordedAt = item['recordedAt']?.toString();
+                    final dateText =
+                        recordedAt != null && recordedAt.length >= 10
                         ? recordedAt.substring(0, 10)
-                        : 'Baru saja';
-                    final after =
-                        item['after'] is Map ? item['after'] as Map : null;
-                    final cond = after?['condition']?.toString() ?? 'OK';
-                    final actor = item['actor']?.toString() ?? 'Petugas';
-                    final dotColor = cond == 'OK'
-                        ? const Color(0xFF10B981)
-                        : (cond == 'Service' || cond == 'Rusak Berat'
-                            ? const Color(0xFFEF4444)
-                            : const Color(0xFFF59E0B));
+                        : recordedAt;
+                    final after = item['after'] is Map
+                        ? item['after'] as Map
+                        : null;
+                    final cond = after?['condition']?.toString();
+                    final actor = item['actor']?.toString();
+                    final dotColor = cond == null
+                        ? MgrsColors.muted
+                        : (cond == 'OK'
+                              ? MgrsColors.success
+                              : (cond == 'Service' || cond == 'Rusak Berat'
+                                    ? MgrsColors.danger
+                                    : MgrsColors.warning));
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
@@ -947,27 +492,35 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                                         color: Color(0xFF0F172A),
                                       ),
                                     ),
-                                    Text(
-                                      dateText,
-                                      style: const TextStyle(
-                                        fontFamily: 'Inter',
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w500,
-                                        color: Color(0xFF64748B),
+                                    if (dateText != null && dateText.isNotEmpty)
+                                      Flexible(
+                                        child: Text(
+                                          dateText,
+                                          textAlign: TextAlign.end,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                color: MgrsColors.muted,
+                                              ),
+                                        ),
                                       ),
-                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 2),
-                                Text(
-                                  '${conditionDisplayLabel(cond)} • $actor',
-                                  style: const TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFF64748B),
+                                if (cond != null || actor != null) ...[
+                                  const SizedBox(height: MgrsSpacing.xs),
+                                  Text(
+                                    [
+                                      if (cond != null)
+                                        conditionDisplayLabel(cond),
+                                      if (actor != null && actor.isNotEmpty)
+                                        actor,
+                                    ].join(' · '),
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(color: MgrsColors.muted),
                                   ),
-                                ),
+                                ],
                               ],
                             ),
                           ),
@@ -1072,8 +625,9 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color:
-                            isDamaged ? const Color(0xFF334155) : Colors.white,
+                        color: isDamaged
+                            ? const Color(0xFF334155)
+                            : Colors.white,
                       ),
                     ),
                   ],
@@ -1121,8 +675,9 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color:
-                            isDamaged ? Colors.white : const Color(0xFF334155),
+                        color: isDamaged
+                            ? Colors.white
+                            : const Color(0xFF334155),
                       ),
                     ),
                   ],
@@ -1158,7 +713,11 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.remove_red_eye_outlined, size: 16, color: Color(0xFF64748B)),
+              Icon(
+                Icons.remove_red_eye_outlined,
+                size: 16,
+                color: Color(0xFF64748B),
+              ),
               SizedBox(width: 8),
               Text(
                 'Mode Pantau Status • Hanya Baca',

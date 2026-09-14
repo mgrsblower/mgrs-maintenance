@@ -46,7 +46,9 @@ class SignedInGateway extends MaintenanceGateway {
       'total': 24,
       'completed': 19,
       'period': {
-        'opensAt': DateTime.now().add(const Duration(days: 6, hours: 1)).toIso8601String(),
+        'opensAt': DateTime.now()
+            .add(const Duration(days: 6, hours: 1))
+            .toIso8601String(),
       },
     };
   }
@@ -81,7 +83,9 @@ class SignedInGateway extends MaintenanceGateway {
 }
 
 void main() {
-  testWidgets('HomeScreen renders exact Paper layout components', (tester) async {
+  testWidgets('HomeScreen renders exact Paper layout components', (
+    tester,
+  ) async {
     final gateway = SignedInGateway();
     const user = UserProfile('u-1', 'Tim Service', fullName: 'Salman Alfarras');
 
@@ -97,14 +101,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Selamat Pagi!'), findsOneWidget);
+    expect(find.text('Selamat datang'), findsOneWidget);
     expect(find.text('Salman Alfarras'), findsOneWidget);
-    expect(find.text('Pengingat!'), findsOneWidget);
-    expect(find.text('Pengecekan Unit\nBerkala'), findsOneWidget);
+    expect(find.text('Pengecekan unit berkala'), findsOneWidget);
     expect(find.text('6'), findsOneWidget);
-    expect(find.text('Hari Lagi'), findsOneWidget);
+    expect(find.text('hari lagi'), findsOneWidget);
     expect(find.text('Status Unit Blower'), findsOneWidget);
-    expect(find.text('Total 24 mesin aktif dipantau'), findsOneWidget);
+    expect(find.text('24 unit dipantau'), findsOneWidget);
     expect(find.text('Beroperasi'), findsOneWidget);
     expect(find.text('Perlu Servis'), findsOneWidget);
     expect(find.text('Kendala'), findsOneWidget);
@@ -151,108 +154,108 @@ void main() {
     expect(find.text('Beranda'), findsOneWidget);
   });
 
-  testWidgets('HomeScreen displays dynamic user profile fullName and initials', (
-    tester,
-  ) async {
-    final gateway = SignedInGateway();
-    const user = UserProfile(
-      'u-2',
-      'Tim Service',
-      fullName: 'Budi Santoso',
-      username: 'budi_s',
-    );
+  testWidgets(
+    'HomeScreen displays dynamic user profile fullName and initials',
+    (tester) async {
+      final gateway = SignedInGateway();
+      const user = UserProfile(
+        'u-2',
+        'Tim Service',
+        fullName: 'Budi Santoso',
+        username: 'budi_s',
+      );
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: HomeScreen(
-          gateway: gateway,
-          user: user,
-          onNavigateToTab: (_) {},
-          onOpenScanner: () {},
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HomeScreen(
+            gateway: gateway,
+            user: user,
+            onNavigateToTab: (_) {},
+            onOpenScanner: () {},
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Budi Santoso'), findsOneWidget);
-    expect(find.text('BS'), findsOneWidget);
-  });
-
-  testWidgets('HomeScreen renders orders with very long address without horizontal overflow', (
-    tester,
-  ) async {
-    final gateway = SignedInGateway();
-    // Simulate narrow mobile screen (360x740)
-    tester.view.physicalSize = const Size(360, 740);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(() {
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-    });
-
-    const user = UserProfile(
-      'u-3',
-      'Tim Service',
-      fullName: 'Muhammad Dzaki Al-Fatih Pratama Kusuma Atmaja',
-    );
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: HomeScreen(
-          gateway: gateway,
-          user: user,
-          onNavigateToTab: (_) {},
-          onOpenScanner: () {},
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    // Verify no RenderFlex overflow exception occurred
-    expect(tester.takeException(), isNull);
-    expect(find.byType(HomeScreen), findsOneWidget);
-  });
+      expect(find.text('Budi Santoso'), findsOneWidget);
+      expect(find.text('BS'), findsOneWidget);
+    },
+  );
 
   testWidgets(
-      'Tapping user header opens profile bottom sheet with logout option',
-      (tester) async {
-    final gateway = SignedInGateway();
-    const user = UserProfile(
-      'u-4',
-      'Tim Service',
-      fullName: 'Ahmad Dahlan',
-      username: 'ahmad_d',
-    );
+    'HomeScreen renders orders with very long address without horizontal overflow',
+    (tester) async {
+      final gateway = SignedInGateway();
+      // Simulate narrow mobile screen (360x740)
+      tester.view.physicalSize = const Size(360, 740);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: HomeScreen(
-          gateway: gateway,
-          user: user,
-          onNavigateToTab: (_) {},
-          onOpenScanner: () {},
+      const user = UserProfile(
+        'u-3',
+        'Tim Service',
+        fullName: 'Muhammad Dzaki Al-Fatih Pratama Kusuma Atmaja',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HomeScreen(
+            gateway: gateway,
+            user: user,
+            onNavigateToTab: (_) {},
+            onOpenScanner: () {},
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    // Tap user header
-    await tester.tap(find.text('Ahmad Dahlan'));
-    await tester.pumpAndSettle();
+      // Verify no RenderFlex overflow exception occurred
+      expect(tester.takeException(), isNull);
+      expect(find.byType(HomeScreen), findsOneWidget);
+    },
+  );
 
-    // Verify bottom sheet opened
-    expect(find.text('Profil Pengguna'), findsOneWidget);
-    expect(find.text('Tim Service'), findsWidgets);
-    expect(find.text('@ahmad_d'), findsOneWidget);
-    expect(find.text('Keluar dari Akun'), findsOneWidget);
+  testWidgets(
+    'Tapping user header opens profile bottom sheet with logout option',
+    (tester) async {
+      final gateway = SignedInGateway();
+      const user = UserProfile(
+        'u-4',
+        'Tim Service',
+        fullName: 'Ahmad Dahlan',
+        username: 'ahmad_d',
+      );
 
-    // Tap Keluar dari Akun
-    await tester.tap(find.text('Keluar dari Akun'));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HomeScreen(
+            gateway: gateway,
+            user: user,
+            onNavigateToTab: (_) {},
+            onOpenScanner: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    // Verify confirmation dialog
-    expect(find.text('Konfirmasi Keluar'), findsOneWidget);
-    expect(find.text('Ya, Keluar'), findsOneWidget);
-  });
+      // Tap user header
+      await tester.tap(find.text('Ahmad Dahlan'));
+      await tester.pumpAndSettle();
+
+      // Verify bottom sheet opened
+      expect(find.text('Profil Pengguna'), findsOneWidget);
+      expect(find.text('Tim Service'), findsWidgets);
+      expect(find.text('@ahmad_d'), findsOneWidget);
+      expect(find.text('Keluar dari akun'), findsOneWidget);
+      await tester.tap(find.text('Keluar dari akun'));
+      await tester.pumpAndSettle();
+
+      // Verify confirmation dialog
+      expect(find.text('Keluar dari akun?'), findsOneWidget);
+      expect(find.text('Keluar'), findsOneWidget);
+    },
+  );
 }
-

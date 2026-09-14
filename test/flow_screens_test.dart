@@ -18,7 +18,8 @@ class MockGateway extends MaintenanceGateway {
   @override
   Stream<void> get authChanges => const Stream.empty();
   @override
-  Future<UserProfile?> profile() async => const UserProfile('u-1', 'Tim Service');
+  Future<UserProfile?> profile() async =>
+      const UserProfile('u-1', 'Tim Service');
   @override
   Future<void> signIn(String identifier, String password) async {}
   @override
@@ -57,7 +58,7 @@ class MockGateway extends MaintenanceGateway {
           'code': 'KPL-2026-084',
           'kind': 'Kepala',
           'status': 'completed',
-        }
+        },
       ],
     };
   }
@@ -114,23 +115,20 @@ class MockGateway extends MaintenanceGateway {
 }
 
 void main() {
-  testWidgets('OrderDetailScreen renders exact Paper details and contact button', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: OrderDetailScreen(),
-      ),
-    );
-    await tester.pumpAndSettle();
+  testWidgets(
+    'OrderDetailScreen renders exact Paper details and contact button',
+    (tester) async {
+      await tester.pumpWidget(const MaterialApp(home: OrderDetailScreen()));
+      await tester.pumpAndSettle();
 
-    expect(find.text('ORD-2026-088'), findsOneWidget);
-    expect(find.text('Detail Orderan'), findsOneWidget);
-    expect(find.text('Jadwal belum ditentukan'), findsOneWidget);
-    expect(find.text('4 Unit'), findsOneWidget);
-    expect(find.text('PT Pertamina (Persero)'), findsWidgets);
-    expect(find.text('Hubungi Pemesan'), findsOneWidget);
-  });
+      expect(find.text('ORD-2026-088'), findsOneWidget);
+      expect(find.text('Detail Orderan'), findsOneWidget);
+      expect(find.text('Jadwal belum ditentukan'), findsOneWidget);
+      expect(find.text('4 Unit'), findsOneWidget);
+      expect(find.text('PT Pertamina (Persero)'), findsWidgets);
+      expect(find.text('Hubungi Pemesan'), findsOneWidget);
+    },
+  );
 
   testWidgets('ActionCenterScreen switches between Update Kondisi and Servis', (
     tester,
@@ -150,18 +148,23 @@ void main() {
 
     // Verify Tab 1: Update Kondisi
     expect(find.text('Pusat Tindakan'), findsOneWidget);
-    expect(find.text('Pemeriksaan Periode Berjalan: 142/148 Selesai'), findsOneWidget);
+    expect(
+      find.text('Pemeriksaan periode berjalan: 142 dari 148 selesai'),
+      findsOneWidget,
+    );
     expect(find.text('KPL-2026-084'), findsOneWidget);
 
     // Switch to Tab 2: Servis via icon
     await tester.tap(find.byIcon(Icons.build_rounded).first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Antrean Unit Bermasalah: 5 Unit Butuh Tindakan'), findsOneWidget);
+    expect(find.text('5 unit membutuhkan tindakan servis'), findsOneWidget);
     expect(find.text('TBG-2026-039'), findsOneWidget);
   });
 
-  testWidgets('CheckingScreen renders Form Update Kondisi (U3-1)', (tester) async {
+  testWidgets('CheckingScreen renders Form Update Kondisi (U3-1)', (
+    tester,
+  ) async {
     final gateway = MockGateway();
     final component = Component({
       'id': 'c-1',
@@ -193,7 +196,9 @@ void main() {
     expect(find.text('Simpan & Selesaikan Tugas'), findsOneWidget);
   });
 
-  testWidgets('CheckingScreen renders Form Catat Servis (11R-1)', (tester) async {
+  testWidgets('CheckingScreen renders Form Catat Servis (11R-1)', (
+    tester,
+  ) async {
     final gateway = MockGateway();
     final component = Component({
       'id': 'c-2',
@@ -225,12 +230,10 @@ void main() {
     expect(find.text('Simpan & Selesaikan Servis'), findsOneWidget);
   });
 
-  testWidgets('HomeSkeletonScreen renders loading placeholders', (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: HomeSkeletonScreen(),
-      ),
-    );
+  testWidgets('HomeSkeletonScreen renders loading placeholders', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: HomeSkeletonScreen()));
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.byType(HomeSkeletonScreen), findsOneWidget);
@@ -259,95 +262,96 @@ void main() {
   });
 
   testWidgets(
-      'AssetCatalogScreen sorts codes ascending from small to big across filters',
-      (tester) async {
-    final gateway = DynamicMockGateway([
-      {
-        'id': '1',
-        'nomor_stiker': 'K-10',
-        'jenis_komponen': 'Kepala',
-        'kondisi': 'OK',
-      },
-      {
-        'id': '2',
-        'nomor_stiker': 'K-02',
-        'jenis_komponen': 'Kepala',
-        'kondisi': 'OK',
-      },
-      {
-        'id': '3',
-        'nomor_stiker': 'K-01',
-        'jenis_komponen': 'Kepala',
-        'kondisi': 'OK',
-      },
-      {
-        'id': '4',
-        'nomor_stiker': 'B-05',
-        'jenis_komponen': 'Batang',
-        'kondisi': 'OK',
-      },
-      {
-        'id': '5',
-        'nomor_stiker': 'B-01',
-        'jenis_komponen': 'Batang',
-        'kondisi': 'OK',
-      },
-      {
-        'id': '6',
-        'nomor_stiker': 'T-02',
-        'jenis_komponen': 'Tabung',
-        'kondisi': 'OK',
-      },
-      {
-        'id': '7',
-        'nomor_stiker': 'T-01',
-        'jenis_komponen': 'Tabung',
-        'kondisi': 'OK',
-      },
-    ]);
-    await tester.pumpWidget(
-      MaterialApp(
-        home: AssetCatalogScreen(
-          gateway: gateway,
-          onNavigateToTab: (_) {},
-          onOpenScanner: () {},
+    'AssetCatalogScreen sorts codes ascending from small to big across filters',
+    (tester) async {
+      final gateway = DynamicMockGateway([
+        {
+          'id': '1',
+          'nomor_stiker': 'K-10',
+          'jenis_komponen': 'Kepala',
+          'kondisi': 'OK',
+        },
+        {
+          'id': '2',
+          'nomor_stiker': 'K-02',
+          'jenis_komponen': 'Kepala',
+          'kondisi': 'OK',
+        },
+        {
+          'id': '3',
+          'nomor_stiker': 'K-01',
+          'jenis_komponen': 'Kepala',
+          'kondisi': 'OK',
+        },
+        {
+          'id': '4',
+          'nomor_stiker': 'B-05',
+          'jenis_komponen': 'Batang',
+          'kondisi': 'OK',
+        },
+        {
+          'id': '5',
+          'nomor_stiker': 'B-01',
+          'jenis_komponen': 'Batang',
+          'kondisi': 'OK',
+        },
+        {
+          'id': '6',
+          'nomor_stiker': 'T-02',
+          'jenis_komponen': 'Tabung',
+          'kondisi': 'OK',
+        },
+        {
+          'id': '7',
+          'nomor_stiker': 'T-01',
+          'jenis_komponen': 'Tabung',
+          'kondisi': 'OK',
+        },
+      ]);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AssetCatalogScreen(
+            gateway: gateway,
+            onNavigateToTab: (_) {},
+            onOpenScanner: () {},
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    // Verify all rendered
-    expect(find.text('K-01'), findsOneWidget);
-    expect(find.text('K-02'), findsOneWidget);
-    expect(find.text('K-10'), findsOneWidget);
-    expect(find.text('B-01'), findsOneWidget);
-    expect(find.text('B-05'), findsOneWidget);
-    expect(find.text('T-01'), findsOneWidget);
-    expect(find.text('T-02'), findsOneWidget);
+      // Verify all rendered
+      expect(find.text('K-01'), findsOneWidget);
+      expect(find.text('K-02'), findsOneWidget);
+      expect(find.text('K-10'), findsOneWidget);
+      expect(find.text('B-01'), findsOneWidget);
+      expect(find.text('B-05'), findsOneWidget);
+      expect(find.text('T-01'), findsOneWidget);
+      expect(find.text('T-02'), findsOneWidget);
 
-    // Verify ascending order: K-01 < K-02 < K-10 < B-01 < B-05
-    final posK01 = tester.getTopLeft(find.text('K-01')).dy;
-    final posK02 = tester.getTopLeft(find.text('K-02')).dy;
-    final posK10 = tester.getTopLeft(find.text('K-10')).dy;
-    final posB01 = tester.getTopLeft(find.text('B-01')).dy;
-    final posB05 = tester.getTopLeft(find.text('B-05')).dy;
-    expect(posK01 < posK02, isTrue);
-    expect(posK02 < posK10, isTrue);
-    expect(posK10 < posB01, isTrue);
-    expect(posB01 < posB05, isTrue);
+      // Verify ascending order: K-01 < K-02 < K-10 < B-01 < B-05
+      final posK01 = tester.getTopLeft(find.text('K-01')).dy;
+      final posK02 = tester.getTopLeft(find.text('K-02')).dy;
+      final posK10 = tester.getTopLeft(find.text('K-10')).dy;
+      final posB01 = tester.getTopLeft(find.text('B-01')).dy;
+      final posB05 = tester.getTopLeft(find.text('B-05')).dy;
+      expect(posK01 < posK02, isTrue);
+      expect(posK02 < posK10, isTrue);
+      expect(posK10 < posB01, isTrue);
+      expect(posB01 < posB05, isTrue);
 
-    // Tap filter tab "Batang"
-    await tester.tap(find.text('Batang'));
-    await tester.pumpAndSettle();
+      // Tap filter tab "Batang"
+      await tester.tap(find.text('Batang'));
+      await tester.pumpAndSettle();
 
-    // Kepala should not be present
-    expect(find.text('K-01'), findsNothing);
-    expect(find.text('B-01'), findsOneWidget);
-    expect(find.text('B-05'), findsOneWidget);
-    final posB01Filter = tester.getTopLeft(find.text('B-01')).dy;
-    final posB05Filter = tester.getTopLeft(find.text('B-05')).dy;
-    expect(posB01Filter < posB05Filter, isTrue);
-  });
+      // Kepala should not be present
+      expect(find.text('K-01'), findsNothing);
+      expect(find.text('B-01'), findsOneWidget);
+      expect(find.text('B-05'), findsOneWidget);
+      final posB01Filter = tester.getTopLeft(find.text('B-01')).dy;
+      final posB05Filter = tester.getTopLeft(find.text('B-05')).dy;
+      expect(posB01Filter < posB05Filter, isTrue);
+    },
+  );
 
   testWidgets('ComponentDetailScreen renders dynamic history from gateway', (
     tester,
@@ -355,110 +359,107 @@ void main() {
     final gateway = DynamicMockGateway();
     await tester.pumpWidget(
       MaterialApp(
-        home: ComponentDetailScreen(
-          gateway: gateway,
-          id: 'c-test-1',
-        ),
+        home: ComponentDetailScreen(gateway: gateway, id: 'c-test-1'),
       ),
     );
     await tester.pumpAndSettle();
 
     expect(find.text('Riwayat Pemeriksaan & Servis'), findsOneWidget);
     expect(find.text('Tindakan Servis'), findsOneWidget);
-    expect(find.text('Layak Pakai • Teknisi Hendra'), findsOneWidget);
+    expect(find.text('Layak Pakai · Teknisi Hendra'), findsOneWidget);
   });
 
   testWidgets(
-      'CheckingScreen submitting Update Kondisi shows success modal and can pop',
-      (tester) async {
-    final gateway = MockGateway();
-    final component = Component({
-      'id': 'c-1',
-      'code': 'KPL-2026-084',
-      'kind': 'Kepala',
-      'condition': 'OK',
-      'usable': 'Ya',
-      'impairedFunction': 'Tidak Ada',
-      'note': 'Kondisi katup & konektor bersih.',
-      'version': '1',
-      'lastCheckingAt': '2026-08-24T00:00:00Z',
-    });
+    'CheckingScreen submitting Update Kondisi shows success modal and can pop',
+    (tester) async {
+      final gateway = MockGateway();
+      final component = Component({
+        'id': 'c-1',
+        'code': 'KPL-2026-084',
+        'kind': 'Kepala',
+        'condition': 'OK',
+        'usable': 'Ya',
+        'impairedFunction': 'Tidak Ada',
+        'note': 'Kondisi katup & konektor bersih.',
+        'version': '1',
+        'lastCheckingAt': '2026-08-24T00:00:00Z',
+      });
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: CheckingScreen(
-          gateway: gateway,
-          component: component,
-          service: false,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CheckingScreen(
+            gateway: gateway,
+            component: component,
+            service: false,
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    final submitButton = find.text('Simpan & Selesaikan Tugas');
-    expect(submitButton, findsOneWidget);
-    await tester.tap(submitButton);
-    await tester.pumpAndSettle();
+      final submitButton = find.text('Simpan & Selesaikan Tugas');
+      expect(submitButton, findsOneWidget);
+      await tester.tap(submitButton);
+      await tester.pumpAndSettle();
 
-    expect(find.text('Pemeriksaan Berhasil!'), findsOneWidget);
-    expect(find.text('Layak Pakai (OK)'), findsOneWidget);
-    expect(find.text('Selesai & Kembali'), findsOneWidget);
+      expect(find.text('Pemeriksaan Berhasil!'), findsOneWidget);
+      expect(find.text('Layak Pakai (OK)'), findsOneWidget);
+      expect(find.text('Selesai & Kembali'), findsOneWidget);
 
-    await tester.tap(find.text('Selesai & Kembali'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Selesai & Kembali'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Pemeriksaan Berhasil!'), findsNothing);
-  });
+      expect(find.text('Pemeriksaan Berhasil!'), findsNothing);
+    },
+  );
 
   testWidgets(
-      'CheckingScreen submitting Catat Servis shows success modal with action detail',
-      (tester) async {
-    final gateway = MockGateway();
-    final component = Component({
-      'id': 'c-2',
-      'code': 'TBG-2026-039',
-      'kind': 'Tabung',
-      'condition': 'Service',
-      'usable': 'Tidak',
-      'impairedFunction': 'Bocor katup',
-      'note': 'Tekanan turun.',
-      'version': '1',
-      'lastCheckingAt': '2026-08-24T00:00:00Z',
-    });
+    'CheckingScreen submitting Catat Servis shows success modal with action detail',
+    (tester) async {
+      final gateway = MockGateway();
+      final component = Component({
+        'id': 'c-2',
+        'code': 'TBG-2026-039',
+        'kind': 'Tabung',
+        'condition': 'Service',
+        'usable': 'Tidak',
+        'impairedFunction': 'Bocor katup',
+        'note': 'Tekanan turun.',
+        'version': '1',
+        'lastCheckingAt': '2026-08-24T00:00:00Z',
+      });
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: CheckingScreen(
-          gateway: gateway,
-          component: component,
-          service: true,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CheckingScreen(
+            gateway: gateway,
+            component: component,
+            service: true,
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    final submitButton = find.text('Simpan & Selesaikan Servis');
-    expect(submitButton, findsOneWidget);
-    await tester.tap(submitButton);
-    await tester.pumpAndSettle();
+      final submitButton = find.text('Simpan & Selesaikan Servis');
+      expect(submitButton, findsOneWidget);
+      await tester.tap(submitButton);
+      await tester.pumpAndSettle();
 
-    expect(find.text('Laporan Servis Berhasil!'), findsOneWidget);
-    expect(find.text('Selesai & Kembali'), findsOneWidget);
+      expect(find.text('Laporan Servis Berhasil!'), findsOneWidget);
+      expect(find.text('Selesai & Kembali'), findsOneWidget);
 
-    await tester.tap(find.text('Selesai & Kembali'));
-    await tester.pumpAndSettle();
-    expect(find.text('Laporan Servis Berhasil!'), findsNothing);
-  });
+      await tester.tap(find.text('Selesai & Kembali'));
+      await tester.pumpAndSettle();
+      expect(find.text('Laporan Servis Berhasil!'), findsNothing);
+    },
+  );
 
-  testWidgets('ComponentDetailScreen renders quick action buttons',
-      (tester) async {
+  testWidgets('ComponentDetailScreen renders quick action buttons', (
+    tester,
+  ) async {
     final gateway = DynamicMockGateway();
     await tester.pumpWidget(
       MaterialApp(
-        home: ComponentDetailScreen(
-          gateway: gateway,
-          id: 'c-test-1',
-        ),
+        home: ComponentDetailScreen(gateway: gateway, id: 'c-test-1'),
       ),
     );
     await tester.pumpAndSettle();
@@ -467,8 +468,9 @@ void main() {
     expect(find.text('Catat Servis'), findsOneWidget);
   });
 
-  testWidgets('ScanScreen renders scanner top bar and components',
-      (tester) async {
+  testWidgets('ScanScreen renders scanner top bar and components', (
+    tester,
+  ) async {
     final gateway = MockGateway();
     final testComp = Component({
       'id': 'c-1',
@@ -494,45 +496,46 @@ void main() {
   });
 
   testWidgets(
-      'ScanScreen renders honest idle guide when no component scanned, never creates fake c-1',
-      (tester) async {
-    final gateway = MockGateway();
-    await tester.pumpWidget(
-      MaterialApp(
-        home: ScanScreen(gateway: gateway),
-      ),
-    );
-    await tester.pump();
+    'ScanScreen renders honest idle guide when no component scanned, never creates fake c-1',
+    (tester) async {
+      final gateway = MockGateway();
+      await tester.pumpWidget(MaterialApp(home: ScanScreen(gateway: gateway)));
+      await tester.pump();
 
-    expect(find.text('Scanner Cepat Lapangan'), findsOneWidget);
-    expect(find.text('Arahkan Kamera ke Barcode Komponen'), findsOneWidget);
-    expect(find.text('Buka Detail'), findsNothing);
-    expect(find.text('c-1'), findsNothing);
-  });
+      expect(find.text('Scanner Cepat Lapangan'), findsOneWidget);
+      expect(find.text('Arahkan Kamera ke Barcode Komponen'), findsOneWidget);
+      expect(find.text('Buka Detail'), findsNothing);
+      expect(find.text('c-1'), findsNothing);
+    },
+  );
 
   testWidgets(
-      'AssetCatalogScreen renders empty state when database returns 0 components',
-      (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: AssetCatalogScreen(
-          gateway: EmptyMockGateway(),
-          onNavigateToTab: (_) {},
-          onOpenScanner: () {},
+    'AssetCatalogScreen renders empty state when database returns 0 components',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AssetCatalogScreen(
+            gateway: EmptyMockGateway(),
+            onNavigateToTab: (_) {},
+            onOpenScanner: () {},
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Tidak ada komponen ditemukan'), findsOneWidget);
-    expect(find.text('0 item terdaftar • Kepala, Batang, Tabung'), findsOneWidget);
-    // Make sure old default fake codes never appear
-    expect(find.text('KPL-2026-001'), findsNothing);
-  });
+      expect(find.text('Database komponen masih kosong'), findsOneWidget);
+      expect(
+        find.text('Belum ada komponen yang tersimpan di MGRS.'),
+        findsOneWidget,
+      );
+      // Make sure old default fake codes never appear
+      expect(find.text('KPL-2026-001'), findsNothing);
+    },
+  );
 
-  testWidgets(
-      'CheckingScreen does not claim success when server RPC fails',
-      (tester) async {
+  testWidgets('CheckingScreen does not claim success when server RPC fails', (
+    tester,
+  ) async {
     final gateway = ErrorMockGateway();
     final component = Component({
       'id': 'c-1',
@@ -566,76 +569,76 @@ void main() {
   });
 
   testWidgets(
-      'UpcomingOrdersScreen renders real list of orders and filters by search',
-      (tester) async {
-    final gateway = MockGateway();
-    await tester.pumpWidget(
-      MaterialApp(
-        home: UpcomingOrdersScreen(gateway: gateway),
-      ),
-    );
-    await tester.pumpAndSettle();
+    'UpcomingOrdersScreen renders real list of orders and filters by search',
+    (tester) async {
+      final gateway = MockGateway();
+      await tester.pumpWidget(
+        MaterialApp(home: UpcomingOrdersScreen(gateway: gateway)),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Orderan Mendatang'), findsOneWidget);
-    expect(find.text('Festival Musik Senayan'), findsOneWidget);
-    expect(find.text('Expo Industri Kemayoran'), findsOneWidget);
-    expect(find.text('8 Unit'), findsOneWidget);
-    expect(find.text('5 Unit'), findsOneWidget);
+      expect(find.text('Orderan Mendatang'), findsOneWidget);
+      expect(find.text('Festival Musik Senayan'), findsOneWidget);
+      expect(find.text('Expo Industri Kemayoran'), findsOneWidget);
+      expect(find.text('8 Unit'), findsOneWidget);
+      expect(find.text('5 Unit'), findsOneWidget);
 
-    // Filter by search query
-    await tester.enterText(find.byType(TextField), 'Senayan');
-    await tester.pumpAndSettle();
+      // Filter by search query
+      await tester.enterText(find.byType(TextField), 'Senayan');
+      await tester.pumpAndSettle();
 
-    expect(find.text('Festival Musik Senayan'), findsOneWidget);
-    expect(find.text('Expo Industri Kemayoran'), findsNothing);
-  });
+      expect(find.text('Festival Musik Senayan'), findsOneWidget);
+      expect(find.text('Expo Industri Kemayoran'), findsNothing);
+    },
+  );
 
   testWidgets(
-      'OrderDetailScreen renders dynamic OrderanSewa with Google Maps and WhatsApp actions',
-      (tester) async {
-    const order = OrderanSewa(
-      id: 'ORD-DYN-999',
-      orderanId: 'ORD-20260909-999',
-      namaEvent: 'Konser Musik Gelora Bung Karno',
-      namaClient: 'PT Promotor Jaya',
-      alamat: 'GBK Senayan Pintu 10',
-      jumlahUnit: 12,
-      namaPic: 'Hendra Setiawan',
-      nomorWhatsapp: '081122334455',
-      linkGmaps: 'https://maps.google.com/?q=GBK',
-      statusOrderan: 'Siap Dipasang',
-      catatanOrderan:
-          'Harap pasang sebelum jam 10 pagi [SEWA_HARI:3] [TGL_EVENT:2026-09-12]',
-    );
+    'OrderDetailScreen renders dynamic OrderanSewa with Google Maps and WhatsApp actions',
+    (tester) async {
+      const order = OrderanSewa(
+        id: 'ORD-DYN-999',
+        orderanId: 'ORD-20260909-999',
+        namaEvent: 'Konser Musik Gelora Bung Karno',
+        namaClient: 'PT Promotor Jaya',
+        alamat: 'GBK Senayan Pintu 10',
+        jumlahUnit: 12,
+        namaPic: 'Hendra Setiawan',
+        nomorWhatsapp: '081122334455',
+        linkGmaps: 'https://maps.google.com/?q=GBK',
+        statusOrderan: 'Siap Dipasang',
+        catatanOrderan:
+            'Harap pasang sebelum jam 10 pagi [SEWA_HARI:3] [TGL_EVENT:2026-09-12]',
+      );
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: OrderDetailScreen(order: order),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        const MaterialApp(home: OrderDetailScreen(order: order)),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('ORD-20260909-999'), findsOneWidget);
-    expect(
-        find.text('Nama Event: Konser Musik Gelora Bung Karno'), findsOneWidget);
-    expect(find.text('GBK Senayan Pintu 10'), findsOneWidget);
-    expect(find.text('12 Unit'), findsOneWidget);
-    expect(find.text('3 Hari'), findsOneWidget);
-    expect(find.text('Catatan Orderan'), findsOneWidget);
-    expect(find.text('Harap pasang sebelum jam 10 pagi'), findsOneWidget);
-    expect(find.text('Data Pemesan'), findsOneWidget);
-    expect(find.text('PT Promotor Jaya'), findsWidgets);
-    expect(find.text('081122334455'), findsOneWidget);
-    expect(find.text('Buka di Google Maps'), findsOneWidget);
-    expect(find.text('Hubungi Pemesan'), findsOneWidget);
-  });
+      expect(find.text('ORD-20260909-999'), findsOneWidget);
+      expect(
+        find.text('Nama Event: Konser Musik Gelora Bung Karno'),
+        findsOneWidget,
+      );
+      expect(find.text('GBK Senayan Pintu 10'), findsOneWidget);
+      expect(find.text('12 Unit'), findsOneWidget);
+      expect(find.text('3 Hari'), findsOneWidget);
+      expect(find.text('Catatan Orderan'), findsOneWidget);
+      expect(find.text('Harap pasang sebelum jam 10 pagi'), findsOneWidget);
+      expect(find.text('Data Pemesan'), findsOneWidget);
+      expect(find.text('PT Promotor Jaya'), findsWidgets);
+      expect(find.text('081122334455'), findsOneWidget);
+      expect(find.text('Buka di Google Maps'), findsOneWidget);
+      expect(find.text('Hubungi Pemesan'), findsOneWidget);
+    },
+  );
 
-  testWidgets('SplashScreen triggers onFinish callback cleanly', (tester) async {
+  testWidgets('SplashScreen triggers onFinish callback cleanly', (
+    tester,
+  ) async {
     var finished = false;
     await tester.pumpWidget(
-      MaterialApp(
-        home: SplashScreen(onFinish: () => finished = true),
-      ),
+      MaterialApp(home: SplashScreen(onFinish: () => finished = true)),
     );
     await tester.pumpAndSettle();
     expect(finished, isTrue);
@@ -670,7 +673,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Home was kept alive, so homeFetchCount did not increment when returning to Beranda!
-    expect(homeFetchCount, 3); // 1 for Home, 1 for Aset, 1 for Servis. Returning to Home did NOT re-fetch!
+    expect(
+      homeFetchCount,
+      3,
+    ); // 1 for Home, 1 for Aset, 1 for Servis. Returning to Home did NOT re-fetch!
     expect(find.text('Test User'), findsOneWidget);
   });
 }

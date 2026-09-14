@@ -1,6 +1,10 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../app/gateway.dart';
+import '../../design_system/components/mgrs_search_field.dart';
+import '../../design_system/components/mgrs_state_view.dart';
+import '../../design_system/components/mgrs_status_badge.dart';
+import '../../design_system/mgrs_tokens.dart';
 import '../../shared/bottom_nav_bar.dart';
 import '../../shared/pressable.dart';
 import '../maintenance/checking_screen.dart';
@@ -69,8 +73,10 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
         Future.delayed(const Duration(milliseconds: 200), () {
           if (mounted) {
             setState(() {
-              _visibleUpdateCount =
-                  math.min(_visibleUpdateCount + _pageSize, total);
+              _visibleUpdateCount = math.min(
+                _visibleUpdateCount + _pageSize,
+                total,
+              );
               _isLoadingMore = false;
             });
           }
@@ -83,8 +89,10 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
         Future.delayed(const Duration(milliseconds: 200), () {
           if (mounted) {
             setState(() {
-              _visibleServiceCount =
-                  math.min(_visibleServiceCount + _pageSize, total);
+              _visibleServiceCount = math.min(
+                _visibleServiceCount + _pageSize,
+                total,
+              );
               _isLoadingMore = false;
             });
           }
@@ -117,72 +125,65 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
       error = null;
     });
     try {
-      final summary =
-          await widget.gateway.fetchTasksSummary(forceRefresh: forceRefresh);
+      final summary = await widget.gateway.fetchTasksSummary(
+        forceRefresh: forceRefresh,
+      );
       if (!mounted) return;
-      if (summary.isNotEmpty) {
-        if (summary['total'] is int) totalTasks = summary['total'] as int;
-        if (summary['completed'] is int) {
-          completedTasks = summary['completed'] as int;
-        }
-        if (summary['items'] is List) {
-          updateKondisiList = (summary['items'] as List).map((t) {
-            final code = (t['code'] ?? '').toString();
-            final kind = (t['kind'] ?? '').toString();
-            final status = (t['status'] ?? '').toString();
-            final isDone = status == 'completed' || status == 'completed_late';
-            return {
-              'id': (t['componentId'] ?? t['id'] ?? '').toString(),
-              'code': code,
-              'kind': 'Komponen $kind Utama',
-              'condition': isDone ? 'Selesai' : 'Perlu Diperiksa',
-              'conditionColor': isDone
-                  ? const Color(0xFF10B981)
-                  : const Color(0xFFF59E0B),
-              'description':
-                  'Tugas pemeriksaan periode ini untuk kelayakan unit $code.',
-              'lastChecked': isDone ? 'Selesai diperiksa' : 'Jadwal periode aktif',
-              'taskId': (t['id'] ?? '').toString(),
-            };
-          }).toList();
-        }
-      }
+      totalTasks = summary['total'] is int ? summary['total'] as int : 0;
+      completedTasks = summary['completed'] is int
+          ? summary['completed'] as int
+          : 0;
+      final tasks = summary['items'] is List
+          ? summary['items'] as List
+          : const [];
+      updateKondisiList = tasks.map((t) {
+        final code = (t['code'] ?? '').toString();
+        final kind = (t['kind'] ?? '').toString();
+        final status = (t['status'] ?? '').toString();
+        final isDone = status == 'completed' || status == 'completed_late';
+        return {
+          'id': (t['componentId'] ?? t['id'] ?? '').toString(),
+          'code': code,
+          'kind': 'Komponen $kind Utama',
+          'condition': isDone ? 'Selesai' : 'Perlu Diperiksa',
+          'description':
+              'Tugas pemeriksaan periode ini untuk kelayakan unit $code.',
+          'lastChecked': isDone ? 'Selesai diperiksa' : 'Jadwal periode aktif',
+          'taskId': (t['id'] ?? '').toString(),
+        };
+      }).toList();
 
-      final components =
-          await widget.gateway.fetchComponents(forceRefresh: forceRefresh);
+      final components = await widget.gateway.fetchComponents(
+        forceRefresh: forceRefresh,
+      );
       if (!mounted) return;
-      if (components.isNotEmpty) {
-        final needsService = components.where((c) {
-          final cond = (c['kondisi'] ?? c['condition'] ?? '').toString();
-          return {'Service', 'Rusak Berat', 'Rusak Ringan'}.contains(cond);
-        }).toList();
+      final needsService = components.where((c) {
+        final cond = (c['kondisi'] ?? c['condition'] ?? '').toString();
+        return {'Service', 'Rusak Berat', 'Rusak Ringan'}.contains(cond);
+      }).toList();
 
-        servicePendingCount = needsService.length;
-        serviceList = needsService.map((c) {
-          final cond =
-              (c['kondisi'] ?? c['condition'] ?? 'Service').toString();
-          final color = cond == 'Service' || cond == 'Rusak Berat'
-              ? const Color(0xFFEF4444)
-              : const Color(0xFFF59E0B);
-          final updated = (c['updated_at'] ?? '').toString();
-          final dateStr =
-              updated.length >= 10 ? updated.substring(0, 10) : 'Tercatat';
-          return {
-            'id': (c['id'] ?? '').toString(),
-            'code': (c['nomor_stiker'] ?? c['code'] ?? '').toString(),
-            'kind':
-                'Komponen ${(c['jenis_komponen'] ?? c['kind'] ?? '')} Utama',
-            'condition':
-                cond == 'Service' ? 'Perlu Servis' : (cond == 'Rusak Berat' ? 'Gangguan Fungsi' : 'Rusak Ringan'),
-            'conditionColor': color,
-            'description': (c['keterangan'] ??
-                    c['note'] ??
-                    'Terindikasi kendala fisik, membutuhkan tindakan servis teknisi.')
-                .toString(),
-            'reporter': dateStr,
-          };
-        }).toList();
-      }
+      servicePendingCount = needsService.length;
+      serviceList = needsService.map((c) {
+        final cond = (c['kondisi'] ?? c['condition'] ?? 'Service').toString();
+        final updated = (c['updated_at'] ?? '').toString();
+        final dateStr = updated.length >= 10
+            ? updated.substring(0, 10)
+            : 'Tercatat';
+        return {
+          'id': (c['id'] ?? '').toString(),
+          'code': (c['nomor_stiker'] ?? c['code'] ?? '').toString(),
+          'kind': 'Komponen ${(c['jenis_komponen'] ?? c['kind'] ?? '')} Utama',
+          'condition': cond == 'Service'
+              ? 'Perlu Servis'
+              : (cond == 'Rusak Berat' ? 'Gangguan Fungsi' : 'Rusak Ringan'),
+          'description':
+              (c['keterangan'] ??
+                      c['note'] ??
+                      'Terindikasi kendala fisik, membutuhkan tindakan servis teknisi.')
+                  .toString(),
+          'reporter': dateStr,
+        };
+      }).toList();
     } catch (e) {
       if (mounted) setState(() => error = e);
     } finally {
@@ -215,9 +216,9 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
     } catch (e) {
       if (mounted) {
         Navigator.of(context, rootNavigator: true).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(failureMessage(e))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(failureMessage(e))));
       }
       return;
     }
@@ -245,7 +246,7 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFFBFBFB),
+      backgroundColor: MgrsColors.canvas,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -253,34 +254,40 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () => loadData(forceRefresh: true),
-                color: const Color(0xFF2563EB),
+                color: MgrsColors.operational,
                 child: SingleChildScrollView(
                   controller: scrollController,
                   physics: const AlwaysScrollableScrollPhysics(
                     parent: BouncingScrollPhysics(),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: MgrsSpacing.lg,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const SizedBox(height: 10),
+                        const SizedBox(height: MgrsSpacing.md),
                         _buildHeader(context),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: MgrsSpacing.base),
                         _buildSegmentedControl(context),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: MgrsSpacing.md),
                         _buildSearchBarWithScan(context),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: MgrsSpacing.md),
                         if (activeSegment == 0) ...[
-                          _buildPeriodSummaryBanner(context),
-                          const SizedBox(height: 14),
+                          if (!isLoading || updateKondisiList.isNotEmpty) ...[
+                            _buildPeriodSummaryBanner(context),
+                            const SizedBox(height: MgrsSpacing.md),
+                          ],
                           _buildUpdateKondisiList(context),
                         ] else ...[
-                          _buildServicePriorityBanner(context),
-                          const SizedBox(height: 14),
+                          if (!isLoading || serviceList.isNotEmpty) ...[
+                            _buildServicePriorityBanner(context),
+                            const SizedBox(height: MgrsSpacing.md),
+                          ],
                           _buildServisList(context),
                         ],
-                        const SizedBox(height: 110), // Spacing for bottom nav
+                        const SizedBox(height: 110),
                       ],
                     ),
                   ),
@@ -302,55 +309,23 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
 
   // Header: "Pusat Tindakan \n Pencatatan kondisi & perbaikan unit" + Option Menu
   Widget _buildHeader(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Pusat Tindakan',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
-                  letterSpacing: -0.4,
-                ),
-              ),
-              SizedBox(height: 2),
-              Text(
-                'Pencatatan kondisi & perbaikan unit',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-            ],
+        Text(
+          'Pusat Tindakan',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: MgrsColors.ink,
+            letterSpacing: -0.4,
           ),
         ),
-        const SizedBox(width: 8),
-        PressableScale(
-          onTap: () {},
-          child: Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.more_horiz_rounded,
-                color: Color(0xFF0F172A),
-                size: 20,
-              ),
-            ),
-          ),
+        const SizedBox(height: MgrsSpacing.xs),
+        Text(
+          'Pencatatan kondisi dan perbaikan unit',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: MgrsColors.muted),
         ),
       ],
     );
@@ -358,112 +333,92 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
 
   // 2-Segment Control: [Update Kondisi] & [Servis]
   Widget _buildSegmentedControl(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+    return Semantics(
+      container: true,
+      label: 'Jenis tindakan',
+      child: Container(
+        padding: const EdgeInsets.all(MgrsSpacing.xs),
+        decoration: BoxDecoration(
+          color: MgrsColors.line,
+          borderRadius: BorderRadius.circular(MgrsRadii.compact),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: _buildSegment(
+                context,
+                index: 0,
+                icon: Icons.edit_note_rounded,
+                label: 'Perbarui Kondisi',
+              ),
+            ),
+            Expanded(
+              child: _buildSegment(
+                context,
+                index: 1,
+                icon: Icons.build_rounded,
+                label: 'Servis',
+              ),
+            ),
+          ],
+        ),
       ),
-      child: Row(
-        children: [
-          // Segment 0: Update Kondisi
-          Expanded(
-            child: PressableScale(
-              onTap: () => setState(() => activeSegment = 0),
-              child: Container(
-                height: 38,
-                decoration: BoxDecoration(
-                  color: activeSegment == 0 ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: activeSegment == 0
-                      ? const [
-                          BoxShadow(
-                            color: Color(0x0F0F172A),
-                            blurRadius: 6,
-                            offset: Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.edit_note_rounded,
-                      size: 18,
-                      color: activeSegment == 0
-                          ? const Color(0xFF0F172A)
-                          : const Color(0xFF64748B),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Perbarui Kondisi',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 13,
-                        fontWeight: activeSegment == 0
+    );
+  }
+
+  Widget _buildSegment(
+    BuildContext context, {
+    required int index,
+    required IconData icon,
+    required String label,
+  }) {
+    final selected = activeSegment == index;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: PressableScale(
+        onTap: () => setState(() {
+          activeSegment = index;
+          _isLoadingMore = false;
+        }),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: MgrsSizes.minTouch),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: selected ? MgrsColors.surface : Colors.transparent,
+              borderRadius: BorderRadius.circular(MgrsRadii.control),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: MgrsSpacing.sm),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    size: 18,
+                    color: selected ? MgrsColors.ink : MgrsColors.muted,
+                  ),
+                  const SizedBox(width: MgrsSpacing.xs),
+                  Flexible(
+                    child: Text(
+                      label,
+                      maxLines: 2,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: selected ? MgrsColors.ink : MgrsColors.muted,
+                        fontWeight: selected
                             ? FontWeight.w700
                             : FontWeight.w600,
-                        color: activeSegment == 0
-                            ? const Color(0xFF0F172A)
-                            : const Color(0xFF64748B),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
-          // Segment 1: Servis
-          Expanded(
-            child: PressableScale(
-              onTap: () => setState(() => activeSegment = 1),
-              child: Container(
-                height: 38,
-                decoration: BoxDecoration(
-                  color: activeSegment == 1 ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: activeSegment == 1
-                      ? const [
-                          BoxShadow(
-                            color: Color(0x0F0F172A),
-                            blurRadius: 6,
-                            offset: Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.build_rounded,
-                      size: 16,
-                      color: activeSegment == 1
-                          ? const Color(0xFF0F172A)
-                          : const Color(0xFF64748B),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Servis',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 13,
-                        fontWeight: activeSegment == 1
-                            ? FontWeight.w700
-                            : FontWeight.w600,
-                        color: activeSegment == 1
-                            ? const Color(0xFF0F172A)
-                            : const Color(0xFF64748B),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -473,65 +428,17 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
     return Row(
       children: [
         Expanded(
-          child: Container(
-            height: 42,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.search_rounded,
-                    size: 18, color: Color(0xFF94A3B8)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: searchController,
-                    onChanged: (_) => setState(() {}),
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 13,
-                      color: Color(0xFF0F172A),
-                    ),
-                    decoration: const InputDecoration(
-                      hintText: 'Ketik Kode...',
-                      hintStyle: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 13,
-                        color: Color(0xFF94A3B8),
-                      ),
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                      filled: false,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          child: MgrsSearchField(
+            controller: searchController,
+            hintText: 'Cari kode komponen',
+            onChanged: (_) => setState(() {}),
           ),
         ),
-        const SizedBox(width: 10),
-        GestureDetector(
-          onTap: widget.onOpenScanner,
-          child: Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFBFDBFE)),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.qr_code_scanner_rounded,
-                color: Color(0xFF2563EB),
-                size: 20,
-              ),
-            ),
-          ),
+        const SizedBox(width: MgrsSpacing.sm),
+        IconButton.filledTonal(
+          tooltip: 'Pindai kode komponen',
+          onPressed: widget.onOpenScanner,
+          icon: const Icon(Icons.qr_code_scanner_rounded),
         ),
       ],
     );
@@ -539,94 +446,73 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
 
   // Banner: "Pemeriksaan Periode: X/Y Selesai" + Z%
   Widget _buildPeriodSummaryBanner(BuildContext context) {
-    final pct =
-        totalTasks > 0 ? ((completedTasks / totalTasks) * 100).round() : 0;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFBBF7D0)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                const CircleAvatar(radius: 4, backgroundColor: Color(0xFF16A34A)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Pemeriksaan Periode Berjalan: $completedTasks/$totalTasks Selesai',
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF15803D),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '$pct%',
-            style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF16A34A),
-            ),
-          ),
-        ],
-      ),
+    final pct = totalTasks > 0
+        ? ((completedTasks / totalTasks) * 100).round()
+        : 0;
+    return _buildSummaryBanner(
+      context,
+      icon: Icons.check_circle_outline,
+      text:
+          'Pemeriksaan periode berjalan: $completedTasks dari $totalTasks selesai',
+      trailing: '$pct%',
+      foreground: MgrsColors.success,
+      background: MgrsColors.successSoft,
     );
   }
 
   // Banner: "Antrean Unit Bermasalah: 5 Unit Butuh Tindakan" + "Prioritas"
   Widget _buildServicePriorityBanner(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFEF2F2),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFFECACA)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                const CircleAvatar(radius: 4, backgroundColor: Color(0xFFDC2626)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Antrean Unit Bermasalah: $servicePendingCount Unit Butuh Tindakan',
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFFB91C1C),
-                    ),
-                  ),
+    return _buildSummaryBanner(
+      context,
+      icon: Icons.warning_amber_rounded,
+      text: '$servicePendingCount unit membutuhkan tindakan servis',
+      trailing: 'Prioritas',
+      foreground: MgrsColors.danger,
+      background: MgrsColors.dangerSoft,
+    );
+  }
+
+  Widget _buildSummaryBanner(
+    BuildContext context, {
+    required IconData icon,
+    required String text,
+    required String trailing,
+    required Color foreground,
+    required Color background,
+  }) {
+    return Semantics(
+      container: true,
+      label: '$text. $trailing',
+      child: ExcludeSemantics(
+        child: Container(
+          padding: const EdgeInsets.all(MgrsSpacing.md),
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: BorderRadius.circular(MgrsRadii.compact),
+          ),
+          child: Wrap(
+            spacing: MgrsSpacing.sm,
+            runSpacing: MgrsSpacing.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Icon(icon, size: 20, color: foreground),
+              Text(
+                text,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: foreground,
+                  fontWeight: FontWeight.w600,
                 ),
-              ],
-            ),
+              ),
+              Text(
+                trailing,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: foreground,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          const Text(
-            'Prioritas',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFFDC2626),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -634,654 +520,233 @@ class _ActionCenterScreenState extends State<ActionCenterScreen>
   // Update Kondisi Items List
   Widget _buildUpdateKondisiList(BuildContext context) {
     if (isLoading && updateKondisiList.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 48),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(color: Color(0xFF147CC1)),
-              SizedBox(height: 14),
-              Text(
-                'Memuat daftar tugas pemeriksaan...',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 13,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-            ],
-          ),
-        ),
+      return const MgrsStateView.loading(
+        title: 'Memuat daftar tugas pemeriksaan...',
       );
     }
-
     if (error != null && updateKondisiList.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-        child: Column(
-          children: [
-            const Icon(Icons.error_outline_rounded,
-                size: 40, color: Color(0xFFDC2626)),
-            const SizedBox(height: 12),
-            Text(
-              failureMessage(error),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF991B1B),
-              ),
-            ),
-            const SizedBox(height: 14),
-            ElevatedButton.icon(
-              onPressed: loadData,
-              icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('Coba Lagi'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF147CC1),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
-        ),
+      return MgrsStateView.error(
+        title: 'Tugas pemeriksaan gagal dimuat',
+        message: 'Periksa koneksi lalu muat data terbaru.',
+        actionLabel: 'Muat data terbaru',
+        onAction: () => loadData(forceRefresh: true),
       );
     }
-
     final items = _getFilteredUpdateItems();
     if (items.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 40),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.assignment_turned_in_outlined,
-                  size: 44, color: Color(0xFF94A3B8)),
-              SizedBox(height: 12),
-              Text(
-                'Tidak ada tugas pemeriksaan aktif',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Jadwal berkala dimulai pada Sabtu keempat setiap bulan.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 12,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-            ],
-          ),
-        ),
+      final query = searchController.text.trim();
+      if (updateKondisiList.isNotEmpty && query.isNotEmpty) {
+        return MgrsStateView.noResults(
+          query: query,
+          onReset: () => setState(() {
+            searchController.clear();
+            _visibleUpdateCount = _pageSize;
+          }),
+        );
+      }
+      return MgrsStateView.empty(
+        title: 'Belum ada tugas pemeriksaan',
+        message: 'Tugas baru akan muncul saat jadwal pemeriksaan tersedia.',
+        actionLabel: 'Muat data terbaru',
+        onAction: () => loadData(forceRefresh: true),
       );
     }
+    return _buildTaskList(context, items, isService: false);
+  }
 
-    final visibleItems = items.take(_visibleUpdateCount).toList();
+  // Servis Items List (with "Catat Servis" button)
+  Widget _buildServisList(BuildContext context) {
+    if (isLoading && serviceList.isEmpty) {
+      return const MgrsStateView.loading(
+        title: 'Memuat antrean unit bermasalah...',
+      );
+    }
+    if (error != null && serviceList.isEmpty) {
+      return MgrsStateView.error(
+        title: 'Antrean servis gagal dimuat',
+        message: 'Periksa koneksi lalu muat data terbaru.',
+        actionLabel: 'Muat data terbaru',
+        onAction: () => loadData(forceRefresh: true),
+      );
+    }
+    final items = _getFilteredServiceItems();
+    if (items.isEmpty) {
+      final query = searchController.text.trim();
+      if (serviceList.isNotEmpty && query.isNotEmpty) {
+        return MgrsStateView.noResults(
+          query: query,
+          onReset: () => setState(() {
+            searchController.clear();
+            _visibleServiceCount = _pageSize;
+          }),
+        );
+      }
+      return MgrsStateView.empty(
+        title: 'Belum ada unit dalam antrean servis',
+        message: 'Unit yang membutuhkan perbaikan akan muncul di sini.',
+        actionLabel: 'Muat data terbaru',
+        onAction: () => loadData(forceRefresh: true),
+      );
+    }
+    return _buildTaskList(context, items, isService: true);
+  }
 
+  Widget _buildTaskList(
+    BuildContext context,
+    List<Map<String, dynamic>> items, {
+    required bool isService,
+  }) {
+    final visibleCount = isService ? _visibleServiceCount : _visibleUpdateCount;
+    final visibleItems = items.take(visibleCount);
     return Column(
       children: [
-        ...visibleItems.map((item) {
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x0A0F172A),
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item['code'] as String,
-                            style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF0F172A),
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                          Text(
-                            item['kind'] as String,
-                            style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: item['conditionColor'] as Color,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 5,
-                            height: 5,
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            item['condition'] as String,
-                            style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  item['description'] as String,
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 13,
-                    color: Color(0xFF334155),
-                    height: 1.45,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.only(top: 10),
-                  decoration: const BoxDecoration(
-                    border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          item['lastChecked'] as String,
-                          style: const TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF94A3B8),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      InkWell(
-                        onTap: () => openActionForm(item, false),
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2563EB),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.check_rounded,
-                                  size: 14, color: Colors.white),
-                              SizedBox(width: 4),
-                              Text(
-                                'Perbarui Kondisi',
-                                style: TextStyle(
-                                  fontFamily: 'Plus Jakarta Sans',
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        }),
-        if (_isLoadingMore && activeSegment == 0)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
+        for (final item in visibleItems)
+          _buildTaskCard(context, item, isService),
+        if (_isLoadingMore && activeSegment == (isService ? 1 : 0))
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: MgrsSpacing.base),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SizedBox(
-                  width: 16,
-                  height: 16,
+                const SizedBox.square(
+                  dimension: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Color(0xFF2563EB),
+                    color: MgrsColors.operational,
                   ),
                 ),
-                SizedBox(width: 10),
-                Text(
-                  'Memuat tugas selanjutnya...',
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF64748B),
+                const SizedBox(width: MgrsSpacing.sm),
+                Flexible(
+                  child: Text(
+                    isService
+                        ? 'Memuat unit servis selanjutnya...'
+                        : 'Memuat tugas selanjutnya...',
                   ),
                 ),
               ],
             ),
           )
-        else if (_visibleUpdateCount < items.length)
+        else if (visibleCount < items.length)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Center(
-              child: InkWell(
-                onTap: _loadMore,
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.keyboard_arrow_down_rounded,
-                          size: 18, color: Color(0xFF2563EB)),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Muat Lebih Banyak (${items.length - _visibleUpdateCount} tugas tersisa)',
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF2563EB),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+            padding: const EdgeInsets.symmetric(vertical: MgrsSpacing.md),
+            child: TextButton.icon(
+              onPressed: _loadMore,
+              icon: const Icon(Icons.keyboard_arrow_down_rounded),
+              label: Text(
+                'Muat lebih banyak (${items.length - visibleCount} tersisa)',
               ),
             ),
           )
         else if (items.length > _pageSize)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Center(
-              child: Text(
-                'Menampilkan seluruh ${items.length} tugas pemeriksaan',
-                style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF94A3B8),
-                ),
-              ),
+            padding: const EdgeInsets.symmetric(vertical: MgrsSpacing.base),
+            child: Text(
+              'Seluruh ${items.length} ${isService ? 'unit servis' : 'tugas pemeriksaan'} ditampilkan',
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: MgrsColors.muted),
             ),
           ),
       ],
     );
   }
 
-  // Servis Items List (with "Catat Servis" button)
-  Widget _buildServisList(BuildContext context) {
-    if (isLoading && serviceList.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 48),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+  Widget _buildTaskCard(
+    BuildContext context,
+    Map<String, dynamic> item,
+    bool isService,
+  ) {
+    final condition = item['condition'] as String;
+    final tone = condition == 'Selesai'
+        ? MgrsStatusTone.success
+        : condition == 'Gangguan Fungsi'
+        ? MgrsStatusTone.danger
+        : MgrsStatusTone.warning;
+    return Container(
+      margin: const EdgeInsets.only(bottom: MgrsSpacing.md),
+      padding: const EdgeInsets.all(MgrsSpacing.base),
+      decoration: BoxDecoration(
+        color: MgrsColors.surface,
+        borderRadius: BorderRadius.circular(MgrsRadii.card),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: MgrsSpacing.sm,
+            runSpacing: MgrsSpacing.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              CircularProgressIndicator(color: Color(0xFF147CC1)),
-              SizedBox(height: 14),
               Text(
-                'Memuat antrean unit bermasalah...',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 13,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (error != null && serviceList.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-        child: Column(
-          children: [
-            const Icon(Icons.error_outline_rounded,
-                size: 40, color: Color(0xFFDC2626)),
-            const SizedBox(height: 12),
-            Text(
-              failureMessage(error),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF991B1B),
-              ),
-            ),
-            const SizedBox(height: 14),
-            ElevatedButton.icon(
-              onPressed: loadData,
-              icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('Coba Lagi'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF147CC1),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final items = _getFilteredServiceItems();
-    if (items.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 40),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.check_circle_outline_rounded,
-                  size: 44, color: Color(0xFF10B981)),
-              SizedBox(height: 12),
-              Text(
-                'Semua unit dalam kondisi prima',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 14,
+                item['code'] as String,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF0F172A),
+                  color: MgrsColors.ink,
                 ),
               ),
-              SizedBox(height: 4),
-              Text(
-                'Tidak ada komponen yang sedang membutuhkan servis.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 12,
-                  color: Color(0xFF64748B),
-                ),
-              ),
+              MgrsStatusBadge(condition, tone: tone),
             ],
           ),
-        ),
-      );
-    }
-
-    final visibleItems = items.take(_visibleServiceCount).toList();
-
-    return Column(
-      children: [
-        ...visibleItems.map((item) {
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x0A0F172A),
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item['code'] as String,
-                            style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF0F172A),
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                          Text(
-                            item['kind'] as String,
-                            style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: item['conditionColor'] as Color,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        item['condition'] as String,
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  item['description'] as String,
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 13,
-                    color: Color(0xFF334155),
-                    height: 1.45,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.only(top: 10),
-                  decoration: const BoxDecoration(
-                    border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          item['reporter'] as String,
-                          style: const TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF64748B),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      InkWell(
-                        onTap: () => openActionForm(item, true),
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2563EB),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.build_rounded,
-                                  size: 13, color: Colors.white),
-                              SizedBox(width: 5),
-                              Text(
-                                'Catat Servis',
-                                style: TextStyle(
-                                  fontFamily: 'Plus Jakarta Sans',
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        }),
-        if (_isLoadingMore && activeSegment == 1)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Color(0xFF2563EB),
-                  ),
-                ),
-                SizedBox(width: 10),
-                Text(
-                  'Memuat unit servis selanjutnya...',
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
-              ],
-            ),
-          )
-        else if (_visibleServiceCount < items.length)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Center(
-              child: InkWell(
-                onTap: _loadMore,
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.keyboard_arrow_down_rounded,
-                          size: 18, color: Color(0xFF2563EB)),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Muat Lebih Banyak (${items.length - _visibleServiceCount} unit tersisa)',
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF2563EB),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          )
-        else if (items.length > _pageSize)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Center(
-              child: Text(
-                'Menampilkan seluruh ${items.length} unit butuh servis',
-                style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF94A3B8),
-                ),
-              ),
-            ),
+          const SizedBox(height: MgrsSpacing.xs),
+          Text(
+            item['kind'] as String,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: MgrsColors.muted),
           ),
-      ],
+          const SizedBox(height: MgrsSpacing.md),
+          Text(
+            item['description'] as String,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: MgrsColors.ink),
+          ),
+          const SizedBox(height: MgrsSpacing.md),
+          const Divider(height: 1, color: MgrsColors.line),
+          const SizedBox(height: MgrsSpacing.sm),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final metadata = Text(
+                item[isService ? 'reporter' : 'lastChecked'] as String,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: MgrsColors.muted),
+              );
+              final action = FilledButton.icon(
+                onPressed: () => openActionForm(item, isService),
+                icon: Icon(
+                  isService ? Icons.build_rounded : Icons.check_rounded,
+                  size: 18,
+                ),
+                label: Text(isService ? 'Catat servis' : 'Perbarui kondisi'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: MgrsColors.operational,
+                  minimumSize: const Size(0, MgrsSizes.minTouch),
+                ),
+              );
+              if (constraints.maxWidth < 330 ||
+                  MediaQuery.textScalerOf(context).scale(1) > 1.4) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    metadata,
+                    const SizedBox(height: MgrsSpacing.sm),
+                    action,
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: metadata),
+                  const SizedBox(width: MgrsSpacing.sm),
+                  Flexible(child: action),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }
