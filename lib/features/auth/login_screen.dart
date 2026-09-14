@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:rive/rive.dart';
-import '../../app/app_theme.dart';
-import '../../app/gateway.dart';
-import '../../shared/pressable.dart';
+import 'package:mgrs_maintenance/app/gateway.dart';
+import 'package:mgrs_maintenance/design_system/components/mgrs_button.dart';
+import 'package:mgrs_maintenance/design_system/layout/mgrs_screen.dart';
+import 'package:mgrs_maintenance/design_system/mgrs_tokens.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({
@@ -22,7 +22,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final form = GlobalKey<FormState>();
   final identifier = TextEditingController();
   final password = TextEditingController();
-
   final identifierFocusNode = FocusNode();
   final passwordFocusNode = FocusNode();
 
@@ -30,30 +29,8 @@ class _LoginScreenState extends State<LoginScreen> {
   bool hidden = true;
   String? error;
 
-  /// Rive controller and state machine inputs
-  StateMachineController? _riveController;
-  SMIBool? _lookOnEmail;
-  SMINumber? _followOnEmail;
-  SMIBool? _lookOnPassword;
-  SMIBool? _peekOnPassword;
-  SMITrigger? _triggerSuccess;
-  SMITrigger? _triggerFail;
-
-  @override
-  void initState() {
-    super.initState();
-    identifierFocusNode.addListener(() {
-      _lookOnEmail?.change(identifierFocusNode.hasFocus);
-    });
-
-    passwordFocusNode.addListener(() {
-      _lookOnPassword?.change(passwordFocusNode.hasFocus);
-    });
-  }
-
   @override
   void dispose() {
-    _riveController?.dispose();
     identifier.dispose();
     password.dispose();
     identifierFocusNode.dispose();
@@ -66,10 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
     identifierFocusNode.unfocus();
     passwordFocusNode.unfocus();
 
-    if (!form.currentState!.validate()) {
-      _triggerFail?.fire();
-      return;
-    }
+    if (!form.currentState!.validate()) return;
 
     setState(() {
       busy = true;
@@ -78,323 +52,156 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       await widget.gateway.signIn(identifier.text.trim(), password.text);
-      _triggerSuccess?.fire();
-      // Allow user to briefly enjoy the success celebration animation
-      await Future.delayed(const Duration(milliseconds: 1400));
       if (mounted) widget.onSignedIn();
-    } catch (e) {
-      _triggerFail?.fire();
-      if (mounted) setState(() => error = failureMessage(e));
+    } catch (exception) {
+      if (!mounted) return;
+      setState(() {
+        error = exception is AppFailure
+            ? exception.message
+            : const AppFailure('unknown').message;
+      });
     } finally {
       if (mounted) setState(() => busy = false);
     }
   }
 
-  void _onTogglePasswordVisibility() {
-    setState(() {
-      hidden = !hidden;
-      _peekOnPassword?.change(!hidden);
-    });
-  }
-
-  static bool get _isTestEnvironment {
-    return WidgetsBinding.instance.runtimeType
-        .toString()
-        .contains('TestWidgetsFlutterBinding');
-  }
-
-  Widget _buildBearAnimation() {
-    if (_isTestEnvironment) {
-      return Container(
-        height: 300,
-        width: 300,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.08),
-          shape: BoxShape.circle,
-        ),
-        child: const Center(
-          child: Icon(
-            Icons.pets_rounded,
-            size: 80,
-            color: Colors.white70,
-          ),
-        ),
-      );
-    }
-
-    return SizedBox(
-      height: 300,
-      width: 300,
-      child: RiveAnimation.asset(
-        'assets/animation/auth_teddy.riv',
-        fit: BoxFit.fitHeight,
-        onInit: (artboard) {
-          final controller = StateMachineController.fromArtboard(
-            artboard,
-            'Login Machine',
-          );
-
-          if (controller == null) return;
-          artboard.addController(controller);
-          _riveController = controller;
-
-          _lookOnEmail = controller.getBoolInput('isFocus');
-          _followOnEmail = controller.getNumberInput('numLook');
-          _lookOnPassword = controller.getBoolInput('isPrivateField');
-          _peekOnPassword = controller.getBoolInput('isPrivateFieldShow');
-          _triggerSuccess = controller.getTriggerInput('successTrigger');
-          _triggerFail = controller.getTriggerInput('failTrigger');
-        },
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1C3E66),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 380),
+      body: MgrsScreen(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight:
+                MediaQuery.sizeOf(context).height -
+                MediaQuery.paddingOf(context).vertical -
+                MgrsSpacing.lg,
+          ),
+          child: Center(
+            child: Form(
+              key: form,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Animated Guardian Polar Bear (Rive) - positioned right on top of card
-                  Transform.translate(
-                    offset: const Offset(0, 14),
-                    child: _buildBearAnimation(),
+                  const Icon(
+                    Icons.build_circle_outlined,
+                    size: 48,
+                    color: MgrsColors.action,
+                    semanticLabel: 'MGRS Maintenance',
                   ),
-
-                  // Form Card (White rounded card matching reference design)
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x33000000),
-                          blurRadius: 20,
-                          offset: Offset(0, 8),
-                        ),
-                      ],
+                  const SizedBox(height: MgrsSpacing.lg),
+                  Text(
+                    'Masuk ke MGRS',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: MgrsColors.ink,
+                      fontWeight: FontWeight.w600,
                     ),
-                    padding: const EdgeInsets.all(20),
-                    child: Form(
-                      key: form,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Label: Email / Akun
-                          const Text(
-                            'Email / Akun MGRS',
-                            style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF334155),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          TextFormField(
-                            controller: identifier,
-                            focusNode: identifierFocusNode,
-                            enabled: !busy,
-                            autofillHints: const [AutofillHints.username],
-                            textInputAction: TextInputAction.next,
-                            onChanged: (val) {
-                              _followOnEmail?.change((val.length * 1.5).clamp(0, 100));
-                            },
-                            style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF0F172A),
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Masukkan email atau username...',
-                              hintStyle: const TextStyle(
-                                fontFamily: 'Plus Jakarta Sans',
-                                fontSize: 13,
-                                color: Color(0xFF94A3B8),
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 13,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFF1C3E66),
-                                  width: 1.5,
-                                ),
-                              ),
-                            ),
-                            validator: (v) => v == null || v.trim().isEmpty
-                                ? 'Masukkan akun MGRS.'
-                                : null,
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Label: Password
-                          const Text(
-                            'Kata Sandi',
-                            style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF334155),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          TextFormField(
-                            controller: password,
-                            focusNode: passwordFocusNode,
-                            enabled: !busy,
-                            obscureText: hidden,
-                            autofillHints: const [AutofillHints.password],
-                            onFieldSubmitted: (_) => submit(),
-                            style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF0F172A),
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Masukkan kata sandi...',
-                              hintStyle: const TextStyle(
-                                fontFamily: 'Plus Jakarta Sans',
-                                fontSize: 13,
-                                color: Color(0xFF94A3B8),
-                              ),
-                              suffixIcon: IconButton(
-                                tooltip: hidden
-                                    ? 'Tampilkan kata sandi'
-                                    : 'Sembunyikan kata sandi',
-                                onPressed: _onTogglePasswordVisibility,
-                                icon: Icon(
-                                  hidden
-                                      ? Icons.visibility_off_outlined
-                                      : Icons.visibility_outlined,
-                                  size: 20,
-                                  color: const Color(0xFF1C3E66),
-                                ),
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 13,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFF1C3E66),
-                                  width: 1.5,
-                                ),
-                              ),
-                            ),
-                            validator: (v) => v == null || v.isEmpty
-                                ? 'Masukkan kata sandi.'
-                                : null,
-                          ),
-
-                          // Error alert if any
-                          if (error != null) ...[
-                            const SizedBox(height: 14),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFEF2F2),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: const Color(0xFFFECACA)),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.error_outline_rounded,
-                                    size: 18,
-                                    color: AppTokens.danger,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      error!,
-                                      style: const TextStyle(
-                                        fontFamily: 'Plus Jakarta Sans',
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: AppTokens.danger,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 24),
-
-                          // Login / Masuk Button
-                          PressableScale(
-                            child: SizedBox(
-                              width: double.infinity,
-                              height: 46,
-                              child: FilledButton(
-                                onPressed: busy ? null : submit,
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: const Color(0xFF1C3E66),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: busy
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
-                                        ),
-                                      )
-                                    : const Text(
-                                        'Masuk',
-                                        style: TextStyle(
-                                          fontFamily: 'Plus Jakarta Sans',
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                              ),
-                            ),
-                          ),
-                        ],
+                  ),
+                  const SizedBox(height: MgrsSpacing.sm),
+                  Text(
+                    'Gunakan akun operasional untuk melanjutkan.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: MgrsColors.muted),
+                  ),
+                  const SizedBox(height: MgrsSpacing.section),
+                  Text(
+                    'Email atau username',
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
+                  const SizedBox(height: MgrsSpacing.sm),
+                  TextFormField(
+                    controller: identifier,
+                    focusNode: identifierFocusNode,
+                    enabled: !busy,
+                    autofillHints: const [AutofillHints.username],
+                    textInputAction: TextInputAction.next,
+                    onFieldSubmitted: (_) => passwordFocusNode.requestFocus(),
+                    decoration: const InputDecoration(
+                      hintText: 'Email atau username',
+                      prefixIcon: Icon(Icons.person_outline),
+                    ),
+                    validator: (value) => value == null || value.trim().isEmpty
+                        ? 'Masukkan email atau username.'
+                        : null,
+                  ),
+                  const SizedBox(height: MgrsSpacing.base),
+                  Text(
+                    'Kata sandi',
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
+                  const SizedBox(height: MgrsSpacing.sm),
+                  TextFormField(
+                    controller: password,
+                    focusNode: passwordFocusNode,
+                    enabled: !busy,
+                    obscureText: hidden,
+                    autofillHints: const [AutofillHints.password],
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => submit(),
+                    decoration: InputDecoration(
+                      hintText: 'Kata sandi',
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      suffixIcon: IconButton(
+                        tooltip: hidden
+                            ? 'Tampilkan kata sandi'
+                            : 'Sembunyikan kata sandi',
+                        onPressed: busy
+                            ? null
+                            : () => setState(() => hidden = !hidden),
+                        icon: Icon(
+                          hidden
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                        ),
                       ),
                     ),
+                    validator: (value) => value == null || value.isEmpty
+                        ? 'Masukkan kata sandi.'
+                        : null,
+                  ),
+                  if (error != null) ...[
+                    const SizedBox(height: MgrsSpacing.base),
+                    Semantics(
+                      liveRegion: true,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: MgrsColors.dangerSoft,
+                          borderRadius: BorderRadius.circular(
+                            MgrsRadii.control,
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(MgrsSpacing.md),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: MgrsColors.danger,
+                              ),
+                              const SizedBox(width: MgrsSpacing.sm),
+                              Expanded(
+                                child: Text(
+                                  error!,
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(color: MgrsColors.danger),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: MgrsSpacing.xl),
+                  MgrsButton.primary(
+                    label: 'Masuk',
+                    icon: Icons.login,
+                    loading: busy,
+                    onPressed: submit,
                   ),
                 ],
               ),
