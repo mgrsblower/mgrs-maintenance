@@ -1,10 +1,11 @@
 # MGRS-Maintenance
 
-Aplikasi terpisah untuk pemeriksaan dan servis Kepala, Batang, dan Tabung dengan database MGRS bersama.
+MGRS-Maintenance adalah aplikasi operasional mobile dengan database MGRS bersama. Mode Service menangani pemeriksaan dan servis Kepala, Batang, serta Tabung. Mode PIC menangani order, alokasi komponen, invoice, pembayaran, dan ekspor PDF; Admin dapat berpindah mode melalui profil.
 
 - [PRD](PRD.md)
 - [Implementation plan](docs/superpowers/plans/2026-09-06-mgrs-maintenance-implementation.md)
 - [Implementation ledger](docs/evidence/implementation-ledger.md)
+- [Redesign screen matrix](docs/evidence/redesign-screen-matrix.md)
 - [Android QA evidence](docs/evidence/android-qa.md)
 - [Database compatibility](docs/decisions/002-shared-database.md)
 

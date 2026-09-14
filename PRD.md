@@ -11,11 +11,11 @@ Dokumen ini membedakan keputusan pengguna, usulan aturan MVP, dan hal teknis yan
 
 ### 1.1 Masalah
 
-Petugas membutuhkan aplikasi dengan cakupan kecil untuk mengetahui kondisi komponen dan mencatat pemeriksaan serta servis. Pekerjaan tersebut harus dapat dilakukan langsung melalui barcode atau kode komponen, tanpa melalui pemasangan, pesanan, atau alokasi.
+Petugas membutuhkan aplikasi operasional dengan dua mode. Mode Service dipakai untuk mengetahui kondisi komponen serta mencatat pemeriksaan dan servis. Mode PIC dipakai untuk mengelola order, alokasi komponen, dan invoice.
 
 ### 1.2 Solusi
 
-MGRS-Maintenance adalah aplikasi terpisah yang menggunakan database MGRS yang sama. Aplikasi menangani Kepala, Batang, dan Tabung dengan alur: temukan komponen, lihat kondisi, catat pemeriksaan atau servis, lalu simpan kondisi terbaru beserta riwayatnya.
+MGRS-Maintenance adalah aplikasi terpisah yang menggunakan database MGRS yang sama. Mode Service menangani Kepala, Batang, dan Tabung dengan alur: temukan komponen, lihat kondisi, catat pemeriksaan atau servis, lalu simpan kondisi terbaru beserta riwayatnya. Mode PIC menangani pembuatan dan pembatalan order, alokasi komponen ke order, pembuatan invoice, pencatatan pembayaran, dan ekspor invoice.
 
 Pengecekan berkala berlangsung sebulan sekali pada Sabtu keempat setiap bulan dan Minggu setelahnya. Pengecekan manual dan servis tetap dapat dicatat kapan saja.
 
@@ -27,25 +27,26 @@ Pengecekan berkala berlangsung sebulan sekali pada Sabtu keempat setiap bulan da
 | Objek | Kepala, Batang, dan Tabung |
 | Identitas | Setiap komponen sudah memiliki barcode atau kode unik |
 | Data | Tetap menggunakan database MGRS yang sama |
-| Hubungan operasional | Tidak memiliki hubungan alur dengan pemasangan, pesanan, atau alokasi |
+| Mode operasional | Service untuk pemeriksaan dan servis; PIC untuk order, alokasi, dan invoice |
 | Interaksi | Scanner/manual untuk menemukan dan memeriksa komponen |
 | Mutasi | Pemeriksaan dan maintenance dapat memperbarui kondisi |
 | Jadwal | Sabtu keempat setiap bulan sampai Minggu berikutnya |
-| Akses pembaruan | Tim Service, Tim Pemasangan, dan Admin |
+| Akses pembaruan | Tim Service, Tim Pemasangan, PIC Pemasangan, dan Admin sesuai mode operasional |
 
 ### 1.4 Kriteria keberhasilan
 
 Target berikut adalah usulan penerimaan MVP, bukan hasil pengujian yang sudah tercapai.
 
 1. Seluruh barcode sampel Kepala, Batang, dan Tabung yang valid membuka komponen yang tepat; tidak ada pembaruan terhadap komponen lain.
-2. Seluruh transaksi berhasil menyimpan kondisi dan riwayat secara konsisten; kegagalan tidak meninggalkan salah satunya tersimpan sendiri.
-3. Seluruh percobaan akses tulis oleh akun nonaktif atau role di luar tiga role yang disepakati ditolak oleh server.
+2. Seluruh transaksi maintenance pada mode Service berhasil menyimpan kondisi dan riwayat secara konsisten; kegagalan tidak meninggalkan salah satunya tersimpan sendiri.
+3. Seluruh percobaan akses tulis oleh akun nonaktif atau role yang tidak berwenang pada mode aktif ditolak oleh server.
 4. Seluruh kasus kalender, batas waktu, dan pemeriksaan terlambat dalam matriks QA menghasilkan periode dan status yang benar.
 5. Pada perangkat dan jaringan pilot yang disepakati, target p95 pencarian hingga detail tampil maksimal 3 detik dan penyimpanan maksimal 3 detik. Pengukuran minimal 30 percobaan per alur, tidak termasuk waktu petugas mengisi formulir.
 
 ## 2. User Experience & Functionality
 
 ### 2.1 Pengguna dan hak akses
+Hak akses berikut berlaku pada mode Service.
 
 | Kemampuan | Admin | Tim Service | Tim Pemasangan |
 | --- | --- | --- | --- |
@@ -54,15 +55,15 @@ Target berikut adalah usulan penerimaan MVP, bukan hasil pengujian yang sudah te
 | Catat pemeriksaan dan ubah kondisi | Ya | Ya | Ya |
 | Catat servis dan kondisi hasil servis | Ya | Ya | Ya |
 | Hapus/ubah catatan riwayat yang sudah disimpan | Tidak dalam MVP | Tidak dalam MVP | Tidak dalam MVP |
-| Mengubah pemasangan, alokasi, atau status penggunaan | Tidak | Tidak | Tidak |
+| Mengubah pemasangan, alokasi, atau status penggunaan melalui pencatatan maintenance | Tidak | Tidak | Tidak |
 
-Usulan akses MVP: menggunakan akun MGRS aktif yang sudah ada. Role lain, termasuk `PIC Pemasangan`, tidak otomatis mendapat akses aplikasi ini. Pengelolaan akun tetap dilakukan melalui mekanisme MGRS yang ada. Ketiga role memiliki kemampuan pencatatan yang sama tanpa tahap approval tambahan.
+Usulan akses MVP menggunakan akun MGRS aktif yang sudah ada. Tim Service dan Tim Pemasangan mengakses mode Service. `PIC Pemasangan` mengakses mode PIC. Admin dapat membuka kedua mode dan berganti mode melalui profil. Pengelolaan akun tetap dilakukan melalui mekanisme MGRS yang ada.
 
-Nama Tim Pemasangan adalah identitas role pengguna; tidak menambahkan fitur atau ketergantungan pemasangan pada aplikasi.
+Tim Pemasangan adalah identitas role pada mode Service. PIC Pemasangan adalah role operasional untuk order, alokasi, dan invoice. Hak setiap role tetap diverifikasi pada server untuk operasi yang dilindungi.
 
 ### 2.2 Navigasi dan layar
 
-Navigasi utama yang diusulkan: **Scan**, **Berkala**, dan **Riwayat**. Akun dan keluar tersedia dari menu profil sederhana.
+Navigasi utama mode Service adalah **Beranda**, **Aset**, **Servis**, dan **Scan**. Navigasi utama mode PIC adalah **Beranda**, **Orderan**, dan **Invoice**. Akun Admin dapat mengganti mode melalui menu profil.
 
 | Layar | Konten/tindakan utama |
 | --- | --- |
@@ -84,15 +85,19 @@ Kondisi selalu ditampilkan dengan teks, bukan warna saja. Jika tidak ada riwayat
 
 **Servis:** Scan/masukkan kode → Detail → Catat Servis → Isi masalah, tindakan, dan hasil pemeriksaan setelah servis → Simpan → Kondisi dan riwayat diperbarui.
 
+**Order PIC:** Orderan → Buat order atau pilih order → Atur detail dan alokasi komponen → Simpan atau batalkan sesuai status order.
+
+**Invoice PIC:** Invoice → Pilih sumber order atau reimbursement manual → Susun invoice → Simpan → Catat pembayaran atau ekspor PDF.
+
 Membuka detail atau memindai barcode tidak mencatat pemeriksaan dan tidak mengubah kondisi.
 
 ### 2.4 User stories dan acceptance criteria
 
 #### US-01 — Akses akun
 
-Sebagai anggota Tim Service, Tim Pemasangan, atau Admin, saya ingin masuk dengan akun MGRS agar pencatatan terhubung dengan identitas saya.
+Sebagai anggota Tim Service, Tim Pemasangan, atau Admin pada mode Service, saya ingin masuk dengan akun MGRS agar pencatatan terhubung dengan identitas saya.
 
-- Hanya akun aktif dengan salah satu dari tiga role tersebut dapat mengakses fungsi aplikasi.
+- Hanya akun aktif dengan role yang memiliki akses mode Service dapat mengakses fungsi maintenance.
 - Pemeriksaan role dan status aktif diterapkan pada server untuk setiap operasi yang dilindungi; menyembunyikan tombol saja tidak cukup.
 - Petugas pencatat berasal dari sesi autentikasi, tidak dapat diganti melalui isian formulir.
 - Sesi kedaluwarsa meminta login kembali dan tidak menampilkan klaim penyimpanan berhasil.
@@ -115,7 +120,7 @@ Sebagai petugas, saya ingin melihat kondisi dan riwayat terakhir agar mengetahui
 - Detail menampilkan identitas, kondisi terbaru, kelayakan, gangguan fungsi, dan catatan dari sumber data yang sesuai.
 - Tanggal pemeriksaan terakhir berasal dari riwayat pemeriksaan; tanggal servis ditampilkan terpisah.
 - Refresh membaca perubahan yang disimpan oleh aplikasi lain pada database bersama.
-- Tidak ada pencarian order, persyaratan pemasangan, atau perubahan status penggunaan untuk membuka detail.
+- Dalam mode Service, detail komponen dapat dibuka tanpa pencarian order atau persyaratan pemasangan, dan tindakan ini tidak mengubah status penggunaan.
 
 #### US-04 — Mencatat pemeriksaan
 
@@ -191,12 +196,13 @@ Oktober 2026 memiliki Sabtu kelima pada 31 Oktober; jadwal tetap 24–25 Oktober
 
 ### 2.6 Batas MVP
 
-- Tidak ada pemasangan, order, alokasi, reservasi, approval order, invoice, atau pengubahan status penggunaan.
+- Mode PIC mencakup pembuatan dan pembatalan order, alokasi komponen, pembuatan invoice dari order atau reimbursement manual, pencatatan pembayaran, serta ekspor invoice.
+- Eksekusi pemasangan lapangan, reservasi terpisah, approval order, dan pengubahan status penggunaan di luar transisi order atau alokasi yang sudah ditetapkan tidak termasuk MVP.
 - Tidak membuat master komponen, barcode baru, atau database operasional duplikat.
 - Tidak mencakup kabel rol dan aksesori di luar Kepala/Batang/Tabung.
 - Tidak mencakup pengelolaan akun, stok suku cadang, penugasan teknisi, anggaran, dan approval servis.
 - Tidak menyediakan penulisan offline atau sinkronisasi antrean pada MVP. Gangguan jaringan harus terlihat dan tidak boleh menghasilkan sukses semu.
-- Foto, push notification, checklist teknis per jenis, ekspor, dan analitik lanjutan adalah pengembangan berikutnya, bukan syarat MVP.
+- Foto, push notification, checklist teknis per jenis, ekspor rekap atau pelaporan di luar alur invoice, dan analitik lanjutan adalah pengembangan berikutnya, bukan syarat MVP. Ekspor PDF invoice tetap termasuk MVP mode PIC.
 - Form awal memakai kondisi, kelayakan, gangguan fungsi, dan catatan. Butir checklist teknis tidak dikarang sebelum divalidasi dengan tim lapangan.
 
 ## 3. AI System Requirements (If Applicable)
@@ -244,7 +250,7 @@ Referensi yang diperiksa:
 
 **INT-01 — Identitas:** lookup mengikuti format barcode sebenarnya dan identitas master. Relasi baru memakai ID master yang stabil; stiker/jenis tetap tersedia untuk kompatibilitas riwayat lama. Keunikan stiker dan format barcode harus diuji dengan sampel ketiga jenis.
 
-**INT-02 — Batas mutasi:** hanya kondisi, kelayakan, gangguan fungsi, keterangan yang relevan, metadata perubahan, dan riwayat maintenance yang boleh ditulis. `status_penggunaan`, pemasangan, order, alokasi, dan reservasi tidak boleh diubah sebagai efek samping, termasuk melalui trigger database.
+**INT-02 — Batas mutasi maintenance:** transaksi pemeriksaan atau servis pada mode Service hanya boleh menulis kondisi, kelayakan, gangguan fungsi, keterangan yang relevan, metadata perubahan, dan riwayat maintenance. Transaksi tersebut tidak boleh mengubah `status_penggunaan`, pemasangan, order, alokasi, atau reservasi sebagai efek samping, termasuk melalui trigger database. Operasi mode PIC mengikuti kontrak order, alokasi, dan invoice yang terpisah.
 
 **INT-03 — Atomisitas:** perubahan master, riwayat, audit kondisi sebelumnya/sesudahnya, dan penyelesaian tugas berkala bila relevan harus berada dalam satu transaksi server. Jika satu bagian gagal, semua dibatalkan.
 
@@ -271,7 +277,7 @@ Temuan ini adalah batas integrasi yang perlu ditangani pada tahap fondasi, bukan
 ### 4.5 Keamanan dan privasi
 
 - Gunakan autentikasi MGRS dan verifikasi profil aktif serta role pada server.
-- Kebijakan database membatasi operasi pada data dan field yang dibutuhkan; jangan memberi akses luas ke domain order atau pengguna.
+- Kebijakan database membatasi operasi pada data dan field yang dibutuhkan oleh mode serta role aktif. Akses ke domain order dan invoice hanya diberikan kepada role PIC dan Admin yang berwenang.
 - Kunci administratif/service-role tidak boleh berada di aplikasi klien. Konfigurasi publik mengikuti mekanisme klien yang sah.
 - Identitas pencatat dan timestamp audit ditentukan oleh server, bukan dipercayai dari payload klien.
 - Riwayat disimpan tanpa fungsi hapus/edit pada MVP. Kebijakan retensi mengikuti pengelolaan MGRS dan tidak diubah oleh aplikasi baru.
@@ -287,8 +293,9 @@ Temuan ini adalah batas integrasi yang perlu ditangani pada tahap fondasi, bukan
 
 | Skenario wajib | Hasil yang diharapkan |
 | --- | --- |
-| Login tiga role yang disepakati | Baca dan tulis maintenance diperbolehkan |
-| PIC Pemasangan, akun nonaktif, atau tanpa sesi | Akses yang dilindungi ditolak server |
+| Login role mode Service yang disepakati | Baca dan tulis maintenance diperbolehkan |
+| PIC Pemasangan atau Admin pada mode PIC | Operasi order, alokasi, dan invoice yang sesuai role diperbolehkan |
+| Akun nonaktif, role tanpa hak mode, atau tanpa sesi | Akses yang dilindungi ditolak server |
 | Scan masing-masing jenis, kode manual, barcode tidak dikenal | Detail tepat atau pesan kesalahan yang sesuai |
 | Kamera ditolak, frame berulang, keluar dari scanner | Input manual tersedia; tidak ada aksi ganda; kamera berhenti |
 | Pemeriksaan OK dan rusak, servis berhasil atau belum berhasil | Nilai dan riwayat sesuai input serta validasi |
@@ -302,7 +309,7 @@ Temuan ini adalah batas integrasi yang perlu ditangani pada tahap fondasi, bukan
 | Hasil pemeriksaan rusak, tetapi pemeriksaan fisik selesai | Tugas selesai, kondisi tetap sesuai hasil |
 | Dua kali cek pada periode sama, dua periode terlambat | Hitungan per periode tidak ganda; satu pemeriksaan tidak menutup dua periode |
 | Komponen baru sesudah pembukaan periode, aktivasi di tengah bulan | Tidak mengubah target beku atau menciptakan tunggakan retroaktif |
-| Baca hasil dari MGRS lama setelah update baru | Kondisi dan riwayat tetap kompatibel; tidak ada perubahan pemasangan/alokasi |
+| Baca hasil dari MGRS lama setelah pencatatan maintenance baru | Kondisi dan riwayat tetap kompatibel; pencatatan maintenance tidak mengubah pemasangan/alokasi |
 
 ## 5. Risks & Roadmap
 
@@ -311,7 +318,7 @@ Temuan ini adalah batas integrasi yang perlu ditangani pada tahap fondasi, bukan
 | Risiko | Dampak | Penanganan |
 | --- | --- | --- |
 | Trigger/service lama mengubah status penggunaan | Efek samping pada operasional MGRS | Audit write path dan trigger; uji invariant sebelum aktivasi |
-| RLS menolak Tim Pemasangan atau terlalu longgar | Fitur gagal atau akses melampaui kebutuhan | Verifikasi tiga role di server dengan kasus positif dan negatif |
+| RLS menolak Tim Pemasangan atau terlalu longgar | Fitur mode Service gagal atau akses melampaui kebutuhan | Verifikasi tiga role mode Service di server dengan kasus positif dan negatif |
 | Pembaruan dari beberapa aplikasi | Kondisi terbaru tertimpa | Transaksi dan pemeriksaan versi lintas penulis |
 | Riwayat tersimpan tetapi master gagal | Data tidak konsisten | Satu transaksi server dan idempotensi |
 | Riwayat lama hanya terhubung melalui stiker | Salah relasi bila stiker berubah/tidak unik | Audit identitas; gunakan ID stabil pada relasi baru |
@@ -329,12 +336,12 @@ Temuan ini adalah batas integrasi yang perlu ditangani pada tahap fondasi, bukan
 - Tentukan perubahan backend terkecil untuk transaksi kondisi/riwayat, akses Tim Pemasangan, konflik, idempotensi, dan jadwal bulanan.
 - Siapkan lingkungan uji. Keluaran: kontrak integrasi dan rencana implementasi yang dapat ditinjau; belum mengubah produksi.
 
-**MVP — Scan, kondisi, pemeriksaan, servis, dan jadwal**
+**MVP — Mode Service dan PIC**
 
-- Implementasi login tiga role, scan/manual, detail, form pemeriksaan, form servis, serta riwayat.
-- Implementasi periode bulanan, daftar target, dan penyelesaian tugas dengan label terlambat.
+- Implementasi mode Service: login role terkait, scan/manual, detail, form pemeriksaan, form servis, riwayat, periode bulanan, daftar target, dan penyelesaian tugas dengan label terlambat.
+- Implementasi mode PIC: beranda, pembuatan dan pembatalan order, detail serta alokasi komponen, daftar dan pembuatan invoice, pembayaran, serta ekspor PDF.
 - Verifikasi seluruh acceptance criteria dan matriks QA pada perangkat target serta database uji.
-- Pilot dengan perwakilan tiga role dan sampel ketiga jenis komponen. Rilis jika seluruh gerbang penerimaan terpenuhi.
+- Pilot dengan perwakilan role setiap mode dan sampel ketiga jenis komponen. Rilis jika seluruh gerbang penerimaan terpenuhi.
 
 **v1.1 — Peningkatan berdasarkan pilot**
 
@@ -342,12 +349,12 @@ Kandidat: foto temuan, checklist per jenis yang divalidasi tim, pengingat, dan a
 
 **v2.0 — Kebutuhan lanjutan jika terbukti diperlukan**
 
-Kandidat: draft offline/sinkronisasi, ekspor rekap, dan analisis kerusakan berulang. Tetap mempertahankan pemisahan dari pemasangan dan alokasi.
+Kandidat: draft offline/sinkronisasi, ekspor rekap, dan analisis kerusakan berulang. Pencatatan maintenance tetap tidak boleh mengubah status pemasangan atau alokasi sebagai efek samping.
 
 ### 5.3 Definisi selesai MVP
 
-- Seluruh fungsi MVP dapat dijalankan end-to-end oleh ketiga role pada perangkat target.
-- Tidak ada perubahan status penggunaan atau data pemasangan/alokasi akibat pencatatan maintenance.
+- Seluruh fungsi MVP dapat dijalankan end-to-end oleh role yang berwenang pada mode Service dan PIC di perangkat target.
+- Pencatatan maintenance tidak mengubah status penggunaan atau data pemasangan/alokasi sebagai efek samping.
 - Kondisi, riwayat, audit, dan status tugas yang relevan tersimpan atomik serta tahan pengulangan permintaan.
 - Aturan Sabtu keempat dan Minggu berikutnya terbukti melalui pengujian kalender dan tampilan jadwal.
 - Kegagalan jaringan, sesi kedaluwarsa, kode tidak dikenal, dan konflik data memiliki hasil yang teruji.
@@ -367,6 +374,6 @@ Kandidat: draft offline/sinkronisasi, ekspor rekap, dan analisis kerusakan berul
 ### 5.5 Pemeriksaan dokumen
 
 - Keputusan pengguna dibedakan dari usulan dan ketidakpastian teknis.
-- Ketiga jenis komponen, tiga role, database bersama, dan batas tanpa pemasangan tercakup.
+- Keempat role, kedua mode operasional, ketiga jenis komponen, database bersama, dan batas mutasi maintenance tercakup.
 - Waktu kalender, terlambat, duplikasi, akses server, dan efek samping kode lama memiliki kriteria penerimaan.
 - Tidak ada stack, migrasi produksi, atau hasil pengujian aplikasi yang dinyatakan sebagai fakta tanpa bukti.
