@@ -38,3 +38,8 @@ flutter:
     - assets/animation/auth_teddy.riv
     - assets/animation/splash_mgrs.json
     - assets/icons/
+    - assets/fonts/
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Variable.ttf
