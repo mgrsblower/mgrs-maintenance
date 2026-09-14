@@ -9,3 +9,4 @@ Task 6: complete (focused tests 34/34 pass; scoped analyzer clean; review clean;
 Task 7: complete (focused checking/controller/flow tests pass; analyzer reports no Task 7 diagnostics; independent review clean after contract fixes)
 Task 8: complete (focused visual/cancellation/allocation tests 37/37 pass; scoped analyzer clean; zero RenderFlex overflows at 320 px and 200% text scale)
 Task 9: complete (picker state parity tests 7/7 and allocation regressions 3/3 pass; scoped analyzer/LSP clean; manual web QA passed loaded, empty, error/retry, no-results, and 320 px states)
+Task 10: complete (invoice visual, PIC flow, and PDF regressions 27/27 pass; scoped analyzer clean; web build and manual desktop/320 px QA pass; full analyzer retains one pre-existing maintenance info)

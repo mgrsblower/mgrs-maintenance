@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../app/gateway.dart';
+import '../../design_system/mgrs_tokens.dart';
 import '../../shared/pressable.dart';
 import 'invoice_model.dart';
 
@@ -95,7 +96,9 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal memperbarui status: $e'),
+          content: Text(e is AppFailure
+              ? e.message
+              : 'Status pembayaran belum dapat disimpan. Silakan coba lagi.'),
           backgroundColor: const Color(0xFF9F2F2D),
         ),
       );
@@ -108,8 +111,10 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
     final isLunas = remaining == 0 && _currentPaidAmount > 0;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(MgrsRadii.compact),
+      ),
+      backgroundColor: MgrsColors.surface,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 380),

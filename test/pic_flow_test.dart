@@ -427,7 +427,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Orderan Baru'), findsOneWidget);
+      expect(find.text('Buat order'), findsOneWidget);
     });
 
     testWidgets('ScanScreen in read-only mode for PIC hides action buttons', (

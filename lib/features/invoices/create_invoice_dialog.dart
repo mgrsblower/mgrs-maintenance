@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../app/gateway.dart';
+import '../../design_system/mgrs_tokens.dart';
 import '../schedule/order_model.dart';
 import 'invoice_model.dart';
 
@@ -154,7 +155,9 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
       setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal membuat invoice: $e'),
+          content: Text(e is AppFailure
+              ? e.message
+              : 'Invoice belum dapat dibuat. Silakan coba lagi.'),
           backgroundColor: const Color(0xFFDC2626),
         ),
       );
@@ -164,8 +167,10 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: MgrsColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(MgrsRadii.compact),
+      ),
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500, maxHeight: 750),
@@ -178,13 +183,17 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Buat Invoice Baru',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
+                  const Expanded(
+                    child: Text(
+                      'Buat Invoice Baru',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                      ),
                     ),
                   ),
                   IconButton(

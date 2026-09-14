@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../app/gateway.dart';
+import '../../design_system/mgrs_tokens.dart';
 import '../schedule/order_model.dart';
 import '../../shared/pressable.dart';
 import 'invoice_adjustment_editor.dart';
@@ -266,7 +267,9 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal menyimpan invoice: $e'),
+          content: Text(e is AppFailure
+              ? e.message
+              : 'Invoice belum dapat disimpan. Silakan coba lagi.'),
           backgroundColor: const Color(0xFF9F2F2D),
         ),
       );
@@ -325,8 +328,10 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      backgroundColor: MgrsColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(MgrsRadii.compact),
+      ),
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480, maxHeight: 750),

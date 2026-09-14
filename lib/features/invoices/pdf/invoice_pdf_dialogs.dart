@@ -2,11 +2,13 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
+import '../../../app/gateway.dart';
+import '../../../design_system/mgrs_tokens.dart';
+import '../../../services/native_pdf_service.dart';
 import '../../schedule/order_model.dart';
 import '../invoice_model.dart';
 import 'invoice_pdf_download.dart';
 import 'invoice_pdf_export_service.dart';
-import '../../../services/native_pdf_service.dart';
 
 class InvoicePdfExportHelper {
   static Future<void> exportWithModalProgress({
@@ -29,10 +31,10 @@ class InvoicePdfExportHelper {
           child: Dialog(
             key: const Key('invoice-pdf-progress-dialog'),
             insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-            backgroundColor: Colors.white,
+            backgroundColor: MgrsColors.surface,
             elevation: 8,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(MgrsRadii.compact),
             ),
             child: SizedBox(
               width: 320,
@@ -167,8 +169,10 @@ class InvoicePdfExportHelper {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Gagal mengekspor PDF: $e'),
-          backgroundColor: const Color(0xFF9F2F2D),
+          content: Text(e is AppFailure
+              ? e.message
+              : 'PDF belum dapat diekspor. Silakan coba lagi.'),
+          backgroundColor: MgrsColors.danger,
           duration: const Duration(seconds: 4),
         ),
       );
@@ -196,10 +200,10 @@ class InvoicePdfExportHelper {
         child: Dialog(
           key: const Key('invoice-pdf-success-dialog'),
           insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          backgroundColor: Colors.white,
+          backgroundColor: MgrsColors.surface,
           elevation: 8,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(MgrsRadii.compact),
           ),
           child: SizedBox(
             width: 320,
@@ -299,7 +303,9 @@ class InvoicePdfExportHelper {
                                     if (!dialogContext.mounted) return;
                                     ScaffoldMessenger.of(dialogContext).showSnackBar(
                                       SnackBar(
-                                        content: Text(e.toString()),
+                                        content: Text(e is AppFailure
+                                            ? e.message
+                                            : 'PDF belum dapat dibuka. Silakan coba lagi.'),
                                         backgroundColor: const Color(0xFF9F2F2D),
                                         duration: const Duration(seconds: 4),
                                       ),
@@ -340,7 +346,9 @@ class InvoicePdfExportHelper {
                                   if (!dialogContext.mounted) return;
                                   ScaffoldMessenger.of(dialogContext).showSnackBar(
                                     SnackBar(
-                                      content: Text(e.toString()),
+                                      content: Text(e is AppFailure
+                                          ? e.message
+                                          : 'PDF belum dapat dibagikan. Silakan coba lagi.'),
                                       backgroundColor: const Color(0xFF9F2F2D),
                                       duration: const Duration(seconds: 4),
                                     ),
@@ -409,4 +417,3 @@ String _storageLocationDescription() {
   } catch (_) {}
   return 'Tersimpan di folder Downloads/MGRS';
 }
-
