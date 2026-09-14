@@ -1,7 +1,10 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mgrs_maintenance/app/app.dart';
 import 'package:mgrs_maintenance/app/gateway.dart';
+import 'package:mgrs_maintenance/features/home/home_screen.dart';
 import 'package:mgrs_maintenance/features/invoices/invoice_model.dart';
 import 'package:mgrs_maintenance/features/schedule/order_model.dart';
 
@@ -30,8 +33,16 @@ class MockAdminGateway extends MaintenanceGateway {
     bool forceRefresh = false,
   }) async {
     return [
-      {'kode_aset': 'BLW-01', 'nama_komponen': 'Blower Fan Unit 01', 'kondisi': 'OK'},
-      {'kode_aset': 'PMP-02', 'nama_komponen': 'Water Pump 02', 'kondisi': 'Service'},
+      {
+        'kode_aset': 'BLW-01',
+        'nama_komponen': 'Blower Fan Unit 01',
+        'kondisi': 'OK',
+      },
+      {
+        'kode_aset': 'PMP-02',
+        'nama_komponen': 'Water Pump 02',
+        'kondisi': 'Service',
+      },
     ];
   }
 
@@ -77,8 +88,10 @@ class MockAdminGateway extends MaintenanceGateway {
 }
 
 void main() {
-  testWidgets('Admin user can switch between Mode PIC and Mode Servis safely via profile sheet',
-      (WidgetTester tester) async {
+  testWidgets('admin role switch resets a non-home tab to Beranda', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
     final gateway = MockAdminGateway();
     const adminUser = UserProfile(
       'admin-1',
@@ -89,48 +102,100 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        home: MaintenanceHome(
-          gateway: gateway,
-          user: adminUser,
-        ),
+        home: MaintenanceHome(gateway: gateway, user: adminUser),
       ),
     );
     await tester.pumpAndSettle();
 
-    // 1. Initial default state for Admin is Mode Servis (Maintenance Technician flow)
-    expect(find.text('Aset'), findsOneWidget);
-    expect(find.text('Servis'), findsOneWidget);
-
-    // 2. Tap profile avatar in header to open profile sheet
-    final avatarFinder = find.text('SA'); // Initials of Super Administrator
-    expect(avatarFinder, findsOneWidget);
-    await tester.tap(avatarFinder);
+    final serviceHome = tester.widget<HomeScreen>(find.byType(HomeScreen));
+    serviceHome.onNavigateToTab(1);
     await tester.pumpAndSettle();
+    expect(
+      tester
+          .getSemantics(find.bySemanticsLabel('Aset'))
+          .getSemanticsData()
+          .flagsCollection
+          .isSelected,
+      ui.Tristate.isTrue,
+    );
 
-    // 3. Verify Mode Tampilan (Khusus Admin) section is present in sheet
-    expect(find.text('Mode Tampilan (Khusus Admin)'), findsOneWidget);
-    expect(find.text('Mode PIC'), findsOneWidget);
-    expect(find.text('Mode Servis'), findsOneWidget);
-
-    // 4. Tap "Mode PIC" to switch to PIC order & invoice flow
-    await tester.tap(find.text('Mode PIC'));
+    serviceHome.onSwitchAdminMode!(AdminAppMode.pic);
     await tester.pumpAndSettle();
-
-    // 5. Verify now switched to PIC Mode
-    expect(find.text('Orderan'), findsWidgets);
-    expect(find.text('Invoice'), findsWidgets);
     expect(find.text('Total Orderan\nBulan Ini'), findsOneWidget);
-
-    // 6. Tap avatar in PIC header to switch back to Servis
-    await tester.tap(find.text('SA'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Mode Tampilan (Khusus Admin)'), findsOneWidget);
-    await tester.tap(find.text('Mode Servis'));
-    await tester.pumpAndSettle();
-
-    // 7. Verify back to Mode Servis
-    expect(find.text('Aset'), findsOneWidget);
-    expect(find.text('Servis'), findsOneWidget);
+    expect(
+      tester
+          .getSemantics(find.bySemanticsLabel('Beranda'))
+          .getSemanticsData()
+          .flagsCollection
+          .isSelected,
+      ui.Tristate.isTrue,
+    );
+    semantics.dispose();
   });
+
+  testWidgets(
+    'Admin user can switch between Mode PIC and Mode Servis safely via profile sheet',
+    (WidgetTester tester) async {
+      final semantics = tester.ensureSemantics();
+      final gateway = MockAdminGateway();
+      const adminUser = UserProfile(
+        'admin-1',
+        'Admin',
+        fullName: 'Super Administrator',
+        username: 'admin',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MaintenanceHome(gateway: gateway, user: adminUser),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 1. Initial default state for Admin is Mode Servis (Maintenance Technician flow)
+      expect(find.text('Aset'), findsOneWidget);
+      expect(find.text('Servis'), findsOneWidget);
+
+      // 2. Tap profile avatar in header to open profile sheet
+      final avatarFinder = find.text('SA'); // Initials of Super Administrator
+      expect(avatarFinder, findsOneWidget);
+      await tester.tap(avatarFinder);
+      await tester.pumpAndSettle();
+
+      // 3. Verify Mode Tampilan (Khusus Admin) section is present in sheet
+      expect(find.text('Mode Tampilan (Khusus Admin)'), findsOneWidget);
+      expect(find.text('Mode PIC'), findsOneWidget);
+      expect(find.text('Mode Servis'), findsOneWidget);
+
+      // 4. Tap "Mode PIC" to switch to PIC order & invoice flow
+      await tester.tap(find.text('Mode PIC'));
+      await tester.pumpAndSettle();
+
+      // 5. Verify now switched to PIC Mode
+      expect(find.text('Orderan'), findsWidgets);
+      expect(find.text('Invoice'), findsWidgets);
+      expect(find.text('Total Orderan\nBulan Ini'), findsOneWidget);
+      expect(
+        tester
+            .getSemantics(find.bySemanticsLabel('Beranda'))
+            .getSemanticsData()
+            .flagsCollection
+            .isSelected,
+        ui.Tristate.isTrue,
+      );
+
+      // 6. Tap avatar in PIC header to switch back to Servis
+      await tester.tap(find.text('SA'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mode Tampilan (Khusus Admin)'), findsOneWidget);
+      await tester.tap(find.text('Mode Servis'));
+      await tester.pumpAndSettle();
+
+      // 7. Verify back to Mode Servis
+      expect(find.text('Aset'), findsOneWidget);
+      expect(find.text('Servis'), findsOneWidget);
+      semantics.dispose();
+    },
+  );
 }

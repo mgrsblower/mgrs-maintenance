@@ -31,9 +31,9 @@ class _MaintenanceAppState extends State<MaintenanceApp>
   late final StreamSubscription<void> subscription;
 
   static bool get _isTestEnvironment {
-    return WidgetsBinding.instance.runtimeType
-        .toString()
-        .contains('TestWidgetsFlutterBinding');
+    return WidgetsBinding.instance.runtimeType.toString().contains(
+      'TestWidgetsFlutterBinding',
+    );
   }
 
   late bool splashCompleted = _isTestEnvironment;
@@ -95,12 +95,10 @@ class _MaintenanceAppState extends State<MaintenanceApp>
     debugShowCheckedModeBanner: false,
     theme: maintenanceTheme(),
     home: !splashCompleted
-        ? SplashScreen(
-            onFinish: () => setState(() => splashCompleted = true),
-          )
+        ? SplashScreen(onFinish: () => setState(() => splashCompleted = true))
         : (user == null
-            ? LoginScreen(gateway: widget.gateway, onSignedIn: reload)
-            : MaintenanceHome(gateway: widget.gateway, user: user!)),
+              ? LoginScreen(gateway: widget.gateway, onSignedIn: reload)
+              : MaintenanceHome(gateway: widget.gateway, user: user!)),
     builder: (context, child) => Stack(
       children: [
         ?child,
@@ -111,8 +109,8 @@ class _MaintenanceAppState extends State<MaintenanceApp>
               child: SafeArea(
                 child: checking
                     ? (user != null
-                        ? const HomeSkeletonScreen()
-                        : const Center(child: CircularProgressIndicator()))
+                          ? const HomeSkeletonScreen()
+                          : const Center(child: CircularProgressIndicator()))
                     : PageBody(
                         children: [
                           const SizedBox(height: 48),
@@ -251,8 +249,6 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
   @override
   Widget build(BuildContext context) {
     final isPic = effectiveIsPic;
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final scrimHeight = 98.0 + bottomInset;
 
     final children = isPic
         ? [
@@ -260,27 +256,19 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
               gateway: widget.gateway,
               user: widget.user,
               adminMode: widget.user.isAdmin ? _adminMode : null,
-              onSwitchAdminMode:
-                  widget.user.isAdmin ? _switchAdminMode : null,
+              onSwitchAdminMode: widget.user.isAdmin ? _switchAdminMode : null,
               onOpenOrdersTab: () => _onNavigateToTab(1),
               onOpenInvoicesTab: () => _onNavigateToTab(2),
             ),
-            UpcomingOrdersScreen(
-              gateway: widget.gateway,
-              user: widget.user,
-            ),
-            InvoiceListScreen(
-              gateway: widget.gateway,
-              user: widget.user,
-            ),
+            UpcomingOrdersScreen(gateway: widget.gateway, user: widget.user),
+            InvoiceListScreen(gateway: widget.gateway, user: widget.user),
           ]
         : [
             HomeScreen(
               gateway: widget.gateway,
               user: widget.user,
               adminMode: widget.user.isAdmin ? _adminMode : null,
-              onSwitchAdminMode:
-                  widget.user.isAdmin ? _switchAdminMode : null,
+              onSwitchAdminMode: widget.user.isAdmin ? _switchAdminMode : null,
               showBottomNav: false,
               onNavigateToTab: _onNavigateToTab,
               onOpenScanner: openScannerModal,
@@ -300,43 +288,15 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
           ];
 
     return Scaffold(
-      extendBody: true,
-      backgroundColor: const Color(0xFFFBFBFB),
-      body: Stack(
-        children: [
-          FadeTransition(
-            opacity: _fadeAnimation,
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (index) => setState(() => tab = index),
-              physics: const BouncingScrollPhysics(),
-              children: children,
-            ),
-          ),
-          // Native iOS style bottom gradient scrim (fades content softly beneath floating navbar)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: scrimHeight,
-            child: IgnorePointer(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      const Color(0xFFFBFBFB).withValues(alpha: 0.96),
-                      const Color(0xFFFBFBFB).withValues(alpha: 0.65),
-                      const Color(0xFFFBFBFB).withValues(alpha: 0.0),
-                    ],
-                    stops: const [0.0, 0.50, 1.0],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+      backgroundColor: AppTokens.canvas,
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: PageView(
+          controller: _pageController,
+          onPageChanged: (index) => setState(() => tab = index),
+          physics: const BouncingScrollPhysics(),
+          children: children,
+        ),
       ),
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: tab,
