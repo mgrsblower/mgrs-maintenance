@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mgrs_maintenance/design_system/components/mgrs_state_view.dart';
+
 import '../app/app_theme.dart';
 import '../app/gateway.dart';
 
@@ -33,17 +35,14 @@ class AsyncStateView<T> extends StatelessWidget {
     future: future,
     builder: (context, snapshot) {
       if (snapshot.connectionState != ConnectionState.done) {
-        return const Center(child: CircularProgressIndicator());
+        return const MgrsStateView.loading();
       }
       if (snapshot.hasError) {
-        return PageBody(
-          children: [
-            const Icon(Icons.cloud_off_outlined, size: 40),
-            const SizedBox(height: 16),
-            Text(failureMessage(snapshot.error), textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            OutlinedButton(onPressed: retry, child: const Text('Coba lagi')),
-          ],
+        return MgrsStateView.error(
+          title: 'Data gagal dimuat',
+          message: failureMessage(snapshot.error),
+          actionLabel: 'Coba lagi',
+          onAction: retry,
         );
       }
       return builder(snapshot.data as T);
@@ -87,7 +86,10 @@ String usableDisplayLabel(Object? value) {
   if (value == true || value == 'true' || value == 'Ya' || value == 'ya') {
     return 'Layak Digunakan';
   }
-  if (value == false || value == 'false' || value == 'Tidak' || value == 'tidak') {
+  if (value == false ||
+      value == 'false' ||
+      value == 'Tidak' ||
+      value == 'tidak') {
     return 'Tidak Boleh Digunakan';
   }
   return value.toString();
@@ -103,8 +105,18 @@ String periodDisplayLabel(String? periodId) {
     final monthNum = int.tryParse(parts[1]);
     if (monthNum != null && monthNum >= 1 && monthNum <= 12) {
       const months = [
-        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        'Januari',
+        'Februari',
+        'Maret',
+        'April',
+        'Mei',
+        'Juni',
+        'Juli',
+        'Agustus',
+        'September',
+        'Oktober',
+        'November',
+        'Desember',
       ];
       return '${months[monthNum - 1]} $year';
     }

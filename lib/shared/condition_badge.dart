@@ -1,25 +1,16 @@
 import 'package:flutter/material.dart';
-import '../app/app_theme.dart';
+import 'package:mgrs_maintenance/design_system/components/mgrs_status_badge.dart';
 
 class ConditionBadge extends StatelessWidget {
   const ConditionBadge(this.value, {super.key});
   final String value;
   @override
-  Widget build(BuildContext context) {
-    final color = value == 'OK'
-        ? AppTokens.success
+  Widget build(BuildContext context) => MgrsStatusBadge(
+    value,
+    tone: value == 'OK'
+        ? MgrsStatusTone.success
         : value == 'Rusak Ringan'
-        ? AppTokens.warning
-        : AppTokens.danger;
-    return Chip(
-      avatar: Icon(
-        value == 'OK' ? Icons.check_circle_outline : Icons.info_outline,
-        color: color,
-        size: 18,
-      ),
-      label: Text(value, style: TextStyle(color: color)),
-      side: BorderSide(color: color.withValues(alpha: .3)),
-      backgroundColor: color.withValues(alpha: .06),
-    );
-  }
+        ? MgrsStatusTone.warning
+        : MgrsStatusTone.danger,
+  );
 }
