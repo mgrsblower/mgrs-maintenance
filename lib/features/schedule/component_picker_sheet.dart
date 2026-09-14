@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../app/gateway.dart';
 
-/// Shows a bottom sheet to pick a blower component (Kepala, Batang, or Tabung)
-/// sorted by wear-and-tear (usage counts ascending).
+import '../../app/gateway.dart';
+import '../../design_system/components/mgrs_search_field.dart';
+import '../../design_system/components/mgrs_state_view.dart';
+import '../../design_system/components/mgrs_status_badge.dart';
+import '../../design_system/mgrs_tokens.dart';
+
+/// Shows a bottom sheet to pick a blower component, ordered by least use.
 Future<String?> showComponentPickerSheet(
   BuildContext context, {
   required MaintenanceGateway gateway,
@@ -14,7 +18,7 @@ Future<String?> showComponentPickerSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (ctx) => ComponentPickerSheet(
+    builder: (context) => ComponentPickerSheet(
       gateway: gateway,
       kind: kind,
       usageCounts: usageCounts,
@@ -42,11 +46,11 @@ class ComponentPickerSheet extends StatefulWidget {
 }
 
 class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
-  final TextEditingController _searchCtrl = TextEditingController();
-  bool _isLoading = true;
-  String? _error;
-  List<Map<String, Object?>> _allComponents = [];
-  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+  var _components = <Map<String, Object?>>[];
+  var _isLoading = true;
+  var _hasError = false;
+  var _query = '';
 
   @override
   void initState() {
@@ -56,313 +60,402 @@ class _ComponentPickerSheetState extends State<ComponentPickerSheet> {
 
   @override
   void dispose() {
-    _searchCtrl.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   Future<void> _loadComponents() async {
     setState(() {
       _isLoading = true;
-      _error = null;
+      _hasError = false;
     });
 
     try {
       final items = await widget.gateway.fetchComponents(kind: widget.kind);
-      // Filter usable components: boleh_dipakai == 'Ya' and not 'Rusak Berat'
-      final filtered = items.where((item) {
-        final boleh = item['boleh_dipakai']?.toString().trim().toLowerCase();
-        final kondisi = item['kondisi']?.toString().trim().toLowerCase();
-        final isAllowed = boleh == 'ya' || boleh == 'true';
-        final isNotSevere = kondisi != 'rusak berat';
-        return isAllowed && isNotSevere;
+      final usable = items.where((item) {
+        final permission = item['boleh_dipakai']
+            ?.toString()
+            .trim()
+            .toLowerCase();
+        final condition = item['kondisi']?.toString().trim().toLowerCase();
+        return permission == 'ya' && condition != 'rusak berat';
       }).toList();
-
-      // Sort by usage count ascending, then sticker name
-      filtered.sort((a, b) {
-        final stickerA = a['nomor_stiker']?.toString() ?? '';
-        final stickerB = b['nomor_stiker']?.toString() ?? '';
-        final countA = widget.usageCounts[stickerA] ?? 0;
-        final countB = widget.usageCounts[stickerB] ?? 0;
-
-        if (countA != countB) {
-          return countA.compareTo(countB);
-        }
-        return stickerA.compareTo(stickerB);
+      usable.sort((left, right) {
+        final leftSticker = left['nomor_stiker']?.toString() ?? '';
+        final rightSticker = right['nomor_stiker']?.toString() ?? '';
+        final usageComparison = (widget.usageCounts[leftSticker] ?? 0)
+            .compareTo(widget.usageCounts[rightSticker] ?? 0);
+        return usageComparison != 0
+            ? usageComparison
+            : leftSticker.compareTo(rightSticker);
       });
 
-      if (mounted) {
-        setState(() {
-          _allComponents = filtered;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString();
-          _isLoading = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _components = usable;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _hasError = true;
+        _isLoading = false;
+      });
     }
   }
 
-  Color _badgeBgColor(int count) {
-    if (count <= 5) return const Color(0xFFDCFCE7); // Light green
-    if (count <= 15) return const Color(0xFFFEF3C7); // Light amber
-    return const Color(0xFFF1F5F9); // Slate grey
+  List<Map<String, Object?>> get _visibleComponents {
+    final normalizedQuery = _query.trim().toLowerCase();
+    if (normalizedQuery.isEmpty) return _components;
+    return _components.where((component) {
+      return component.values.any(
+        (value) => value.toString().toLowerCase().contains(normalizedQuery),
+      );
+    }).toList();
   }
 
-  Color _badgeTextColor(int count) {
-    if (count <= 5) return const Color(0xFF166534); // Dark green
-    if (count <= 15) return const Color(0xFF92400E); // Dark amber
-    return const Color(0xFF475569); // Slate dark
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() => _query = '');
   }
 
   @override
   Widget build(BuildContext context) {
-    final displayedItems = _allComponents.where((item) {
-      if (_searchQuery.isEmpty) return true;
-      final sticker = (item['nomor_stiker']?.toString() ?? '').toLowerCase();
-      return sticker.contains(_searchQuery.toLowerCase());
-    }).toList();
-
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.75,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Drag handle
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 10, bottom: 6),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
+    return SafeArea(
+      top: false,
+      child: FractionallySizedBox(
+        heightFactor: 0.82,
+        child: Material(
+          color: MgrsColors.surface,
+          clipBehavior: Clip.antiAlias,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(MgrsRadii.sheet),
             ),
           ),
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 16, 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Pilih ${widget.kind} Blower',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      const Text(
-                        'Urutan atas adalah unit tersegar / paling jarang dipakai',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                    ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const _SheetHandle(),
+              _PickerHeader(kind: widget.kind),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  MgrsSpacing.lg,
+                  MgrsSpacing.sm,
+                  MgrsSpacing.lg,
+                  MgrsSpacing.md,
+                ),
+                child: MgrsSearchField(
+                  controller: _searchController,
+                  hintText: 'Cari stiker atau detail ${widget.kind}',
+                  onChanged: (value) => setState(() => _query = value),
+                  onClear: () => setState(() => _query = ''),
+                ),
+              ),
+              const Divider(height: 1, color: MgrsColors.line),
+              Expanded(child: _buildBody()),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return MgrsStateView.loading(title: 'Memuat komponen ${widget.kind}...');
+    }
+    if (_hasError) {
+      return MgrsStateView.error(
+        title: 'Komponen gagal dimuat',
+        message: 'Periksa koneksi internet Anda lalu coba lagi.',
+        actionLabel: 'Muat data terbaru',
+        onAction: _loadComponents,
+      );
+    }
+    if (_components.isEmpty) {
+      return MgrsStateView.empty(
+        title: 'Belum ada ${widget.kind} siap pakai',
+        message: 'Komponen yang tersedia belum memenuhi syarat penggunaan.',
+        actionLabel: 'Tutup',
+        onAction: () => Navigator.of(context).pop(),
+      );
+    }
+
+    final visibleComponents = _visibleComponents;
+    if (visibleComponents.isEmpty) {
+      return MgrsStateView.noResults(query: _query, onReset: _clearSearch);
+    }
+
+    final hasCurrentSelection = widget.currentSticker != null;
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(
+        MgrsSpacing.lg,
+        MgrsSpacing.base,
+        MgrsSpacing.lg,
+        MgrsSpacing.xl,
+      ),
+      itemCount: visibleComponents.length + (hasCurrentSelection ? 1 : 0),
+      separatorBuilder: (context, index) =>
+          const SizedBox(height: MgrsSpacing.sm),
+      itemBuilder: (context, index) {
+        if (hasCurrentSelection && index == 0) {
+          return _ClearSelectionTile(
+            onTap: () => Navigator.of(context).pop(''),
+          );
+        }
+        final componentIndex = hasCurrentSelection ? index - 1 : index;
+        final component = visibleComponents[componentIndex];
+        final sticker = component['nomor_stiker']?.toString() ?? '-';
+        return _ComponentTile(
+          sticker: sticker,
+          condition: component['kondisi']?.toString() ?? 'OK',
+          usageCount: widget.usageCounts[sticker] ?? 0,
+          isSelected: sticker == widget.currentSticker,
+          onTap: () => Navigator.of(context).pop(sticker),
+        );
+      },
+    );
+  }
+}
+
+class _SheetHandle extends StatelessWidget {
+  const _SheetHandle();
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Container(
+      margin: const EdgeInsets.only(top: MgrsSpacing.md),
+      width: 40,
+      height: MgrsSpacing.xs,
+      decoration: BoxDecoration(
+        color: MgrsColors.line,
+        borderRadius: BorderRadius.circular(MgrsRadii.pill),
+      ),
+    ),
+  );
+}
+
+class _PickerHeader extends StatelessWidget {
+  const _PickerHeader({required this.kind});
+
+  final String kind;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(
+      MgrsSpacing.lg,
+      MgrsSpacing.sm,
+      MgrsSpacing.md,
+      0,
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Pilih $kind Blower',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: MgrsColors.ink,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: MgrsSpacing.xs),
+              Text(
+                'Paling jarang dipakai ditampilkan lebih dahulu.',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: MgrsColors.muted),
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          tooltip: 'Tutup pemilih komponen',
+          constraints: const BoxConstraints.tightFor(
+            width: MgrsSizes.minTouch,
+            height: MgrsSizes.minTouch,
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.close, color: MgrsColors.muted),
+        ),
+      ],
+    ),
+  );
+}
+
+class _ClearSelectionTile extends StatelessWidget {
+  const _ClearSelectionTile({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: MgrsColors.dangerSoft,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(MgrsRadii.compact),
+      side: const BorderSide(color: MgrsColors.danger),
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: InkWell(
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: MgrsSizes.minTouch),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: MgrsSpacing.base,
+            vertical: MgrsSpacing.md,
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.remove_circle_outline, color: MgrsColors.danger),
+              SizedBox(width: MgrsSpacing.md),
+              Expanded(
+                child: Text(
+                  'Kosongkan pilihan',
+                  style: TextStyle(
+                    color: MgrsColors.danger,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close, color: Color(0xFF64748B)),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
-          ),
-          // Search box
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: TextField(
-              controller: _searchCtrl,
-              decoration: InputDecoration(
-                hintText: 'Cari stiker ${widget.kind} (contoh: 01)...',
-                prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFF94A3B8)),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, size: 18),
-                        onPressed: () {
-                          _searchCtrl.clear();
-                          setState(() => _searchQuery = '');
-                        },
-                      )
-                    : null,
-                filled: true,
-                fillColor: const Color(0xFFF8FAFC),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                ),
               ),
-              onChanged: (val) => setState(() => _searchQuery = val.trim()),
-            ),
+            ],
           ),
-          const Divider(height: 16),
-          // Body
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Gagal memuat komponen: $_error',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(color: Colors.red),
-                            ),
-                            const SizedBox(height: 8),
-                            ElevatedButton(
-                              onPressed: _loadComponents,
-                              child: const Text('Coba Lagi'),
-                            ),
-                          ],
-                        ),
-                      )
-                    : displayedItems.isEmpty
-                        ? Center(
-                            child: Text(
-                              _searchQuery.isNotEmpty
-                                  ? 'Tidak ada ${widget.kind} dengan kode "$_searchQuery"'
-                                  : 'Belum ada data ${widget.kind} yang siap pakai',
-                              style: const TextStyle(color: Color(0xFF64748B)),
-                            ),
-                          )
-                        : ListView.separated(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            itemCount: displayedItems.length + (widget.currentSticker != null ? 1 : 0),
-                            separatorBuilder: (_, _) => const SizedBox(height: 8),
-                            itemBuilder: (context, index) {
-                              // Optional "Kosongkan Pilihan" at top if currently selected
-                              if (widget.currentSticker != null && index == 0) {
-                                return ListTile(
-                                  dense: true,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    side: BorderSide(color: Colors.grey.shade300),
-                                  ),
-                                  leading: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
-                                  title: const Text(
-                                    'Kosongkan Pilihan',
-                                    style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600),
-                                  ),
-                                  onTap: () => Navigator.of(context).pop(''),
-                                );
-                              }
+        ),
+      ),
+    ),
+  );
+}
 
-                              final itemIndex = widget.currentSticker != null ? index - 1 : index;
-                              final item = displayedItems[itemIndex];
-                              final sticker = item['nomor_stiker']?.toString() ?? '-';
-                              final kondisi = item['kondisi']?.toString() ?? 'OK';
-                              final count = widget.usageCounts[sticker] ?? 0;
-                              final isSelected = sticker == widget.currentSticker;
+class _ComponentTile extends StatelessWidget {
+  const _ComponentTile({
+    required this.sticker,
+    required this.condition,
+    required this.usageCount,
+    required this.isSelected,
+    required this.onTap,
+  });
 
-                              return InkWell(
-                                onTap: () => Navigator.of(context).pop(sticker),
-                                borderRadius: BorderRadius.circular(12),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: isSelected ? const Color(0xFFEFF6FF) : Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: isSelected ? const Color(0xFF3B82F6) : const Color(0xFFE2E8F0),
-                                      width: isSelected ? 1.5 : 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: isSelected ? const Color(0xFFDBEAFE) : const Color(0xFFF1F5F9),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Icon(
-                                          Icons.qr_code_2,
-                                          size: 20,
-                                          color: isSelected ? const Color(0xFF2563EB) : const Color(0xFF475569),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              sticker,
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                                color: isSelected ? const Color(0xFF1E40AF) : const Color(0xFF0F172A),
-                                              ),
-                                            ),
-                                            Text(
-                                              'Kondisi: $kondisi',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey.shade600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      // Wear-and-tear badge
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: _badgeBgColor(count),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            if (count <= 5)
-                                              const Padding(
-                                                padding: EdgeInsets.only(right: 4),
-                                                child: Icon(Icons.eco, size: 12, color: Color(0xFF166534)),
-                                              ),
-                                            Text(
-                                              '${count}x pakai',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                                color: _badgeTextColor(count),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      if (isSelected) ...[
-                                        const SizedBox(width: 8),
-                                        const Icon(Icons.check_circle, color: Color(0xFF2563EB), size: 20),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
+  final String sticker;
+  final String condition;
+  final int usageCount;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: isSelected ? const Color(0xFFEAF5FC) : MgrsColors.surface,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(MgrsRadii.compact),
+      side: BorderSide(
+        color: isSelected ? MgrsColors.operational : MgrsColors.line,
+        width: isSelected ? 2 : 1,
+      ),
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: InkWell(
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: MgrsSizes.minTouch),
+        child: Padding(
+          padding: const EdgeInsets.all(MgrsSpacing.base),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.qr_code_2,
+                    color: MgrsColors.operational,
+                    size: 24,
+                  ),
+                  const SizedBox(width: MgrsSpacing.md),
+                  Expanded(
+                    child: Text(
+                      sticker,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: MgrsColors.ink,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  if (isSelected) const _SelectedBadge(),
+                ],
+              ),
+              const SizedBox(height: MgrsSpacing.md),
+              Wrap(
+                spacing: MgrsSpacing.sm,
+                runSpacing: MgrsSpacing.sm,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  MgrsStatusBadge(condition),
+                  _UsageBadge(usageCount: usageCount),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _SelectedBadge extends StatelessWidget {
+  const _SelectedBadge();
+
+  @override
+  Widget build(BuildContext context) => const Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(Icons.check_circle, size: 18, color: MgrsColors.operational),
+      SizedBox(width: MgrsSpacing.xs),
+      Text(
+        'Terpilih',
+        style: TextStyle(
+          color: MgrsColors.operational,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ],
+  );
+}
+
+class _UsageBadge extends StatelessWidget {
+  const _UsageBadge({required this.usageCount});
+
+  final int usageCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = usageCount <= 5
+        ? MgrsColors.success
+        : usageCount <= 15
+        ? MgrsColors.warning
+        : MgrsColors.muted;
+    final background = usageCount <= 5
+        ? MgrsColors.successSoft
+        : usageCount <= 15
+        ? MgrsColors.warningSoft
+        : MgrsColors.canvas;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(MgrsRadii.pill),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: MgrsSpacing.md,
+          vertical: MgrsSpacing.sm,
+        ),
+        child: Text(
+          '${usageCount}x pakai',
+          style: Theme.of(
+            context,
+          ).textTheme.labelMedium?.copyWith(color: color),
+        ),
       ),
     );
   }
