@@ -1,8 +1,12 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+
 import '../../app/gateway.dart';
-import '../../shared/pressable.dart';
+import '../../design_system/components/mgrs_app_bar.dart';
+import '../../design_system/components/mgrs_button.dart';
+import '../../design_system/components/mgrs_multiline_field.dart';
+import '../../design_system/components/mgrs_status_badge.dart';
+import '../../design_system/mgrs_tokens.dart';
 import '../components/component.dart';
 import 'submission_controller.dart';
 
@@ -27,1251 +31,541 @@ class CheckingScreen extends StatefulWidget {
 }
 
 class _CheckingScreenState extends State<CheckingScreen> {
-  final form = GlobalKey<FormState>();
-  final note = TextEditingController(),
-      impaired = TextEditingController(),
-      problem = TextEditingController(),
-      action = TextEditingController(),
-      summary = TextEditingController(),
-      reason = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final _note = TextEditingController();
+  final _impaired = TextEditingController();
+  final _problem = TextEditingController();
+  final _action = TextEditingController();
+  final _summary = TextEditingController();
+  final _reason = TextEditingController();
+  final _problemFocus = FocusNode();
+  final _actionFocus = FocusNode();
+  final _noteFocus = FocusNode();
+  final _impairedFocus = FocusNode();
+  final _reasonFocus = FocusNode();
 
-  late Component component;
-  late final SubmissionController submission;
-  String? condition, usable;
-  String summaryAction = 'keep';
-  bool dirty = false, leaving = false, refreshing = false;
-  String? refreshError;
+  late Component _component;
+  late final SubmissionController _submission;
+  String? _condition;
+  String? _usable;
+  String _summaryAction = 'keep';
+  bool _dirty = false;
+  bool _leaving = false;
+  bool _refreshing = false;
+  bool _showValidation = false;
+  bool _refreshFailed = false;
+
+  bool get _blocked => _submission.locked || _refreshing ||
+      _submission.state == SubmissionState.conflict;
+  bool get _isProblemCondition => _condition != null && _condition != 'OK';
 
   @override
   void initState() {
     super.initState();
-    component = widget.component;
-    submission = SubmissionController(widget.gateway);
-
-    // Initial defaults
+    _component = widget.component;
+    _submission = SubmissionController(widget.gateway);
     if (!widget.service) {
-      condition = 'OK'; // Default Layak Pakai
-      usable = 'Ya';
-    } else {
-      problem.text =
-          'Indikasi penurunan tekanan drastis & kebocoran paking segel tabung.';
-      action.text =
-          'Penggantian karet O-Ring segel baru, pembersihan drat tabung, dan tes kompresi tekanan 10 bar selama 15 menit normal.';
-      condition = 'OK';
-      usable = 'Ya';
+      _condition = 'OK';
+      _usable = 'Ya';
     }
   }
 
   @override
   void dispose() {
-    for (final c in [note, impaired, problem, action, summary, reason]) {
-      c.dispose();
+    for (final controller in [_note, _impaired, _problem, _action, _summary, _reason]) {
+      controller.dispose();
     }
+    _problemFocus.dispose();
+    _actionFocus.dispose();
+    _noteFocus.dispose();
+    _impairedFocus.dispose();
+    _reasonFocus.dispose();
     super.dispose();
   }
 
-  bool get severe => {'Rusak Berat', 'Service', 'Hilang'}.contains(condition);
-  bool get blocked => submission.locked || refreshing;
-  bool get canSaveAsManual =>
-      widget.taskId != null &&
-      submission.state == SubmissionState.failed &&
-      submission.error is AppFailure &&
-      (submission.error as AppFailure).code == 'task_not_open';
+  void _changed([String? _]) {
+    if (!_dirty) setState(() => _dirty = true);
+  }
 
-  Future<void> leave() async {
-    if (leaving || (!dirty && !blocked)) {
-      Navigator.pop(context);
+  Future<void> _leave() async {
+    if (_leaving || (!_dirty && !_blocked)) {
+      if (mounted) Navigator.maybePop(context);
       return;
     }
     final discard = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Batalkan isian?'),
-        content: const Text(
-          'Perubahan yang belum disimpan akan hilang jika kembali.',
-        ),
+        content: const Text('Perubahan yang belum disimpan akan hilang jika kembali.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Tetap di sini'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Buang isian'),
           ),
         ],
       ),
     );
     if (discard == true && mounted) {
-      setState(() => leaving = true);
-      Navigator.pop(context);
+      setState(() => _leaving = true);
+      Navigator.maybePop(context);
     }
   }
 
-  Future<void> refresh() async {
-    setState(() {
-      refreshing = true;
-      refreshError = null;
-    });
-    try {
-      final latest = await Component.load(widget.gateway, component.id);
-      if (!mounted) return;
-      setState(() {
-        component = latest;
-        submission.state = SubmissionState.idle;
-        submission.error = null;
-      });
-    } catch (e) {
-      if (mounted) setState(() => refreshError = failureMessage(e));
-    } finally {
-      if (mounted) setState(() => refreshing = false);
+  bool _validate() {
+    final missingProblem = widget.service && _problem.text.trim().isEmpty;
+    final missingAction = widget.service && _action.text.trim().isEmpty;
+    final missingCondition = _condition == null;
+    final missingNote = _isProblemCondition && _note.text.trim().isEmpty;
+    final missingImpaired = _isProblemCondition && _impaired.text.trim().isEmpty;
+    final missingReason =
+        widget.correctsEventId != null && _reason.text.trim().isEmpty;
+    setState(() => _showValidation = missingProblem || missingAction ||
+        missingCondition || missingNote || missingImpaired || missingReason);
+    if (missingProblem) {
+      _problemFocus.requestFocus();
+    } else if (missingAction) {
+      _actionFocus.requestFocus();
+    } else if (missingNote) {
+      _noteFocus.requestFocus();
+    } else if (missingImpaired) {
+      _impairedFocus.requestFocus();
+    } else if (missingReason) {
+      _reasonFocus.requestFocus();
     }
+    return !_showValidation;
   }
 
-  Future<void> save() async {
-    if (!(form.currentState?.validate() ?? false)) return;
-    if (condition == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih status kondisi terlebih dahulu.')),
-      );
-      return;
-    }
-
-    if (condition != 'OK' && !widget.service && note.text.trim().isEmpty && impaired.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Harap tuliskan catatan kendala untuk unit yang bermasalah.'),
-        ),
-      );
-      return;
-    }
-
-    if (widget.service && (problem.text.trim().isEmpty || action.text.trim().isEmpty)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Harap isi deskripsi kendala dan tindakan servis.'),
-        ),
-      );
-      return;
-    }
-
+  Future<void> _save() async {
+    if (_blocked || !_validate()) return;
     final command = <String, Object?>{
       'requestId': const Uuid().v4(),
-      'componentId': component.id,
-      'expectedVersion': component.version,
+      'componentId': _component.id,
+      'expectedVersion': _component.version,
       'activity': widget.service
           ? 'service'
           : widget.taskId != null
               ? 'periodic_check'
               : 'manual_check',
-      'condition': condition,
-      'usable': usable ?? (severe ? 'Tidak' : 'Ya'),
-      'impairedFunction':
-          condition == 'OK' ? 'Tidak Ada' : (impaired.text.trim().isEmpty ? 'Tidak Ada' : impaired.text.trim()),
-      'eventNote': note.text.trim(),
-      'summaryAction': summaryAction,
-      if (summaryAction == 'replace') 'summaryText': summary.text.trim(),
+      'condition': _condition,
+      'usable': _usable ?? (_condition == 'OK' ? 'Ya' : 'Tidak'),
+      'impairedFunction': _condition == 'OK'
+          ? 'Tidak Ada'
+          : (_impaired.text.trim().isEmpty ? 'Tidak Ada' : _impaired.text.trim()),
+      'eventNote': _note.text.trim(),
+      'summaryAction': _summaryAction,
+      if (_summaryAction == 'replace') 'summaryText': _summary.text.trim(),
       if (widget.taskId != null) 'taskId': widget.taskId,
       if (widget.service) ...{
-        'problem': problem.text.trim(),
-        'action': action.text.trim(),
+        'problem': _problem.text.trim(),
+        'action': _action.text.trim(),
       },
       if (widget.correctsEventId != null) ...{
         'correctsEventId': widget.correctsEventId,
-        'correctionReason': reason.text.trim(),
+        'correctionReason': _reason.text.trim(),
       },
     };
-    final pending = submission.submit(command);
+    final pending = _submission.submit(command);
     setState(() {});
     await pending;
-    await finish();
+    await _finish();
   }
 
-  Future<void> finish() async {
-    if (!mounted) return;
-    if (submission.state == SubmissionState.succeeded) {
-      setState(() => leaving = true);
-      await showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        barrierColor: Colors.black54,
-        builder: (sheetContext) => _buildSuccessBottomSheet(sheetContext),
-      );
-      if (mounted) {
-        Navigator.pop(context, true);
-      }
-    } else {
-      setState(() {});
+  Future<void> _recover() async {
+    if (_blocked && _submission.state != SubmissionState.uncertain) return;
+    final pending = _submission.recover();
+    setState(() {});
+    await pending;
+    await _finish();
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      _refreshing = true;
+      _refreshFailed = false;
+    });
+    try {
+      final latest = await Component.load(widget.gateway, _component.id);
+      if (!mounted) return;
+      setState(() {
+        _component = latest;
+        _submission.state = SubmissionState.idle;
+        _submission.error = null;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _refreshFailed = true);
+    } finally {
+      if (mounted) setState(() => _refreshing = false);
     }
+  }
+
+  Future<void> _finish() async {
+    if (!mounted) return;
+    if (_submission.state != SubmissionState.succeeded) {
+      setState(() {});
+      return;
+    }
+    setState(() => _leaving = true);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => _SuccessSheet(
+        title: widget.service ? 'Laporan servis tersimpan' : 'Pemeriksaan tersimpan',
+        body: widget.service
+            ? 'Catatan perbaikan dan kondisi terbaru komponen sudah diperbarui.'
+            : 'Hasil pemeriksaan rutin sudah disimpan ke sistem MGRS.',
+        onFinish: () => Navigator.pop(sheetContext),
+      ),
+    );
+    if (mounted) Navigator.pop(context, true);
   }
 
   @override
   Widget build(BuildContext context) {
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
     return PopScope(
-      canPop: leaving || (!dirty && !blocked),
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) leave();
+      canPop: _leaving || (!_dirty && !_blocked),
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _leave();
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
+        backgroundColor: MgrsColors.canvas,
+        appBar: MgrsDetailAppBar(
+          title: widget.service ? 'Catat servis' : 'Perbarui kondisi',
+          onBack: _blocked ? () {} : _leave,
+        ),
         body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  child: Form(
-                    key: form,
-                    onChanged: () => dirty = true,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildTopBar(context),
-                        const SizedBox(height: 16),
-                        _buildComponentIdentityCard(context),
-                        const SizedBox(height: 16),
-                        if (!widget.service) ...[
-                          _buildUpdateKondisiSection(context),
-                          const SizedBox(height: 16),
-                          _buildNotesSection(context),
-                        ] else ...[
-                          _buildServisFormFields(context),
-                        ],
-                        if (submission.error != null) ...[
-                          const SizedBox(height: 16),
-                          _buildSubmissionErrorBanner(context),
-                        ],
-                        const SizedBox(height: 24),
-                      ],
-                    ),
-                  ),
+          top: false,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: MgrsSizes.maxContentWidth),
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  padding: EdgeInsets.fromLTRB(20, 20, 20, 24 + keyboard),
+                  children: [
+                    _identity(),
+                    const SizedBox(height: MgrsSpacing.lg),
+                    if (_showValidation) ...[
+                      _message(
+                        title: 'Periksa kembali isian',
+                        body: 'Lengkapi bagian bertanda sebelum menyimpan.',
+                        tone: MgrsStatusTone.danger,
+                      ),
+                      const SizedBox(height: MgrsSpacing.base),
+                    ],
+                    if (widget.service) _serviceFields() else _checkingFields(),
+                    if (widget.correctsEventId != null) ...[
+                      const SizedBox(height: MgrsSpacing.base),
+                      MgrsMultilineField(
+                        label: 'Alasan koreksi *',
+                        controller: _reason,
+                        focusNode: _reasonFocus,
+                        onChanged: _changed,
+                        errorText: _showValidation && _reason.text.trim().isEmpty
+                            ? 'Tuliskan alasan koreksi.'
+                            : null,
+                      ),
+                    ],
+                    if (_submission.state != SubmissionState.idle &&
+                        _submission.state != SubmissionState.submitting &&
+                        _submission.state != SubmissionState.succeeded) ...[
+                      const SizedBox(height: MgrsSpacing.base),
+                      _submissionMessage(),
+                    ],
+                    if (_refreshFailed) ...[
+                      const SizedBox(height: MgrsSpacing.base),
+                      _message(
+                        title: 'Data terbaru belum dapat dimuat',
+                        body: 'Draft tetap aman. Periksa koneksi, lalu coba lagi.',
+                        tone: MgrsStatusTone.danger,
+                      ),
+                    ],
+                    const SizedBox(height: MgrsSpacing.xl),
+                    _primaryAction(),
+                  ],
                 ),
               ),
-              _buildBottomSubmitBar(context),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  // Top App Bar
-  Widget _buildTopBar(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
+  Widget _identity() => _section(
+        title: _component.code,
+        child: Wrap(
+          spacing: MgrsSpacing.sm,
+          runSpacing: MgrsSpacing.sm,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            PressableScale(
-              onTap: blocked ? null : leave,
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.chevron_left_rounded,
-                    color: Color(0xFF0F172A),
-                    size: 24,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.service ? 'Catat Servis' : 'Perbarui Kondisi',
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF0F172A),
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                Text(
-                  widget.service
-                      ? 'Tindakan Perbaikan Fisik Unit'
-                      : 'Pemeriksaan Rutin & Berkala',
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
-              ],
-            ),
+            Text(_component.kind),
+            MgrsStatusBadge(_component.condition),
+            MgrsStatusBadge(_component.usable == 'Ya' ? 'Layak Pakai' : 'Tidak Layak'),
           ],
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: widget.service ? const Color(0xFFEFF6FF) : const Color(0xFFF0FDF4),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 3,
-                backgroundColor:
-                    widget.service ? const Color(0xFF2563EB) : const Color(0xFF16A34A),
-              ),
-              const SizedBox(width: 5),
-              Text(
-                widget.service ? 'Perbaikan' : 'Rutin',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: widget.service ? const Color(0xFF2563EB) : const Color(0xFF15803D),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+      );
 
-  // Component Identity Card
-  Widget _buildComponentIdentityCard(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _checkingFields() => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: widget.service
-                      ? const Color(0xFFFEF2F2)
-                      : const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Icon(
-                    widget.service
-                        ? Icons.build_circle_outlined
-                        : Icons.check_circle_outline,
-                    color: widget.service
-                        ? const Color(0xFFEF4444)
-                        : const Color(0xFF2563EB),
-                    size: 22,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    component.code,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Komponen ${component.kind} Utama • MGRS',
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          _section(
+            title: 'Kondisi komponen',
+            child: _conditionChoices(),
           ),
-          if (!widget.service)
-            PressableScale(
-              onTap: blocked ? null : () => Navigator.pop(context),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: const Text(
-                  'Ganti',
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF475569),
-                  ),
-                ),
-              ),
-            )
-          else
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFEF2F2),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Text(
-                'Rusak',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFFDC2626),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  // Update Kondisi Radio Cards Section
-  Widget _buildUpdateKondisiSection(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Status Kondisi Hasil Cek *',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              Text(
-                'Wajib Diisi',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF2563EB),
-                ),
-              ),
-            ],
+          const SizedBox(height: MgrsSpacing.base),
+          MgrsMultilineField(
+            label: _isProblemCondition
+                ? 'Catatan pemeriksaan *'
+                : 'Catatan pemeriksaan · opsional',
+            controller: _note,
+            focusNode: _noteFocus,
+            onChanged: _changed,
+            errorText: _showValidation && _isProblemCondition &&
+                    _note.text.trim().isEmpty
+                ? 'Jelaskan kendala yang ditemukan.'
+                : null,
           ),
-          const SizedBox(height: 14),
-          // Option 1: Layak Pakai
-          _buildConditionRadioCard(
-            title: 'Layak Pakai',
-            description: 'Fisik prima & fungsi normal untuk operasi',
-            value: 'OK',
-            selected: condition == 'OK',
-            activeBorderColor: const Color(0xFF10B981),
-            activeBgColor: const Color(0xFFF0FDF4),
-            dotColor: const Color(0xFF10B981),
-            onSelect: () => setState(() {
-              condition = 'OK';
-              usable = 'Ya';
-            }),
-          ),
-          const SizedBox(height: 10),
-          // Option 2: Perlu Servis
-          _buildConditionRadioCard(
-            title: 'Perlu Servis',
-            description: 'Ada keausan minor, butuh pelumasan / kalibrasi',
-            value: 'Rusak Ringan',
-            selected: condition == 'Rusak Ringan' || condition == 'Perlu Servis',
-            activeBorderColor: const Color(0xFFF59E0B),
-            activeBgColor: const Color(0xFFFFFBEB),
-            dotColor: const Color(0xFFF59E0B),
-            onSelect: () => setState(() {
-              condition = 'Rusak Ringan';
-              usable = 'Ya';
-            }),
-          ),
-          const SizedBox(height: 10),
-          // Option 3: Gangguan Fungsi
-          _buildConditionRadioCard(
-            title: 'Gangguan Fungsi',
-            description: 'Bocor / rusak berat, tidak boleh dipasang',
-            value: 'Rusak Berat',
-            selected: condition == 'Rusak Berat',
-            activeBorderColor: const Color(0xFFEF4444),
-            activeBgColor: const Color(0xFFFEF2F2),
-            dotColor: const Color(0xFFEF4444),
-            onSelect: () => setState(() {
-              condition = 'Rusak Berat';
-              usable = 'Tidak';
-            }),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildConditionRadioCard({
-    required String title,
-    required String description,
-    required String value,
-    required bool selected,
-    required Color activeBorderColor,
-    required Color activeBgColor,
-    required Color dotColor,
-    required VoidCallback onSelect,
-  }) {
-    return PressableScale(
-      onTap: blocked ? null : onSelect,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: selected ? activeBgColor : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected ? activeBorderColor : const Color(0xFFE2E8F0),
-            width: selected ? 1.8 : 1.0,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: selected ? activeBorderColor : Colors.transparent,
-                border: Border.all(
-                  color: selected ? activeBorderColor : const Color(0xFFCBD5E1),
-                  width: 2,
-                ),
-              ),
-              child: selected
-                  ? const Center(
-                      child: Icon(Icons.check, size: 14, color: Colors.white),
-                    )
+          if (_isProblemCondition) ...[
+            const SizedBox(height: MgrsSpacing.base),
+            MgrsMultilineField(
+              label: 'Fungsi yang terganggu *',
+              controller: _impaired,
+              focusNode: _impairedFocus,
+              onChanged: _changed,
+              errorText: _showValidation && _impaired.text.trim().isEmpty
+                  ? 'Jelaskan fungsi yang terganggu.'
                   : null,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF0F172A),
-                    ),
+          ],
+        ],
+      );
+
+  Widget _serviceFields() => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          MgrsMultilineField(
+            label: 'Masalah / kendala fisik *',
+            controller: _problem,
+            focusNode: _problemFocus,
+            onChanged: _changed,
+            errorText: _showValidation && _problem.text.trim().isEmpty
+                ? 'Jelaskan masalah yang ditemukan.'
+                : null,
+          ),
+          const SizedBox(height: MgrsSpacing.base),
+          MgrsMultilineField(
+            label: 'Tindakan perbaikan *',
+            controller: _action,
+            focusNode: _actionFocus,
+            onChanged: _changed,
+            errorText: _showValidation && _action.text.trim().isEmpty
+                ? 'Tuliskan tindakan servis yang dilakukan.'
+                : null,
+          ),
+          const SizedBox(height: MgrsSpacing.base),
+          _section(
+            title: 'Kondisi setelah servis',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _conditionChoices(),
+                if (_showValidation && _condition == null) ...[
+                  const SizedBox(height: MgrsSpacing.sm),
+                  const Text(
+                    'Kondisi setelah servis belum dipilih',
+                    style: TextStyle(color: MgrsColors.danger, fontWeight: FontWeight.w700),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    description,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF64748B),
-                    ),
+                  const Text(
+                    'Pilih Layak pakai atau Perlu servis lanjutan.',
+                    style: TextStyle(color: MgrsColors.danger),
                   ),
                 ],
-              ),
+              ],
             ),
-            CircleAvatar(radius: 3.5, backgroundColor: dotColor),
+          ),
+          if (_isProblemCondition) ...[
+            const SizedBox(height: MgrsSpacing.base),
+            MgrsMultilineField(
+              label: 'Catatan kondisi setelah servis *',
+              controller: _note,
+              focusNode: _noteFocus,
+              onChanged: _changed,
+              errorText: _showValidation && _note.text.trim().isEmpty
+                  ? 'Jelaskan kondisi setelah servis.'
+                  : null,
+            ),
+            const SizedBox(height: MgrsSpacing.base),
+            MgrsMultilineField(
+              label: 'Fungsi yang masih terganggu *',
+              controller: _impaired,
+              focusNode: _impairedFocus,
+              onChanged: _changed,
+              errorText: _showValidation && _impaired.text.trim().isEmpty
+                  ? 'Jelaskan fungsi yang masih terganggu.'
+                  : null,
+            ),
+          ],
+        ],
+      );
+
+  Widget _conditionChoices() => Wrap(
+        spacing: MgrsSpacing.sm,
+        runSpacing: MgrsSpacing.sm,
+        children: widget.service
+            ? [
+                _choice('Layak pakai', 'OK', 'Ya'),
+                _choice('Perlu servis lanjutan', 'Service', 'Tidak'),
+              ]
+            : [
+                _choice('Layak pakai', 'OK', 'Ya'),
+                _choice('Rusak ringan', 'Rusak Ringan', 'Ya'),
+                _choice('Rusak berat', 'Rusak Berat', 'Tidak'),
+              ],
+      );
+
+  Widget _choice(String label, String value, String usable) => ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: MgrsSizes.minTouch),
+        child: ChoiceChip(
+          label: Text(label),
+          selected: _condition == value,
+          onSelected: _blocked
+              ? null
+              : (_) => setState(() {
+                    _condition = value;
+                    _usable = usable;
+                    _dirty = true;
+                    _showValidation = false;
+                  }),
+        ),
+      );
+
+  Widget _submissionMessage() {
+    return switch (_submission.state) {
+      SubmissionState.conflict => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _message(
+              title: 'Data telah diperbarui petugas lain',
+              body: 'Muat kondisi terbaru sebelum menyimpan kembali. Draft catatan Anda tetap aman.',
+              tone: MgrsStatusTone.warning,
+            ),
+            const SizedBox(height: MgrsSpacing.md),
+            MgrsButton.neutral(
+              label: 'Muat data terbaru',
+              loading: _refreshing,
+              onPressed: _refreshing ? null : _refresh,
+            ),
           ],
         ),
-      ),
+      SubmissionState.uncertain => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _message(
+              title: 'Status penyimpanan belum diketahui',
+              body: 'Periksa status sebelum mencoba menyimpan kembali.',
+              tone: MgrsStatusTone.warning,
+            ),
+            const SizedBox(height: MgrsSpacing.md),
+            MgrsButton.neutral(
+              label: 'Periksa status penyimpanan',
+              onPressed: _recover,
+            ),
+          ],
+        ),
+      SubmissionState.failed => _message(
+          title: 'Data belum dapat disimpan',
+          body: 'Periksa kembali isian, lalu coba simpan lagi.',
+          tone: MgrsStatusTone.danger,
+        ),
+      _ => const SizedBox.shrink(),
+    };
+  }
+
+  Widget _primaryAction() {
+    final submitting = _submission.state == SubmissionState.submitting;
+    return MgrsButton.primary(
+      label: widget.service ? 'Simpan laporan servis' : 'Simpan pemeriksaan',
+      loading: submitting,
+      onPressed: _blocked ? null : _save,
     );
   }
 
-  // Notes Section
-  Widget _buildNotesSection(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Catatan Pemeriksaan (Opsional)',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF0F172A),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: TextField(
-              controller: note,
-              maxLines: 4,
-              style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 13,
-                color: Color(0xFF334155),
-                height: 1.45,
-              ),
-              decoration: const InputDecoration(
-                hintText:
-                    'Kondisi katup & konektor bersih, segel utuh tanpa indikasi keausan mekanis, siap digunakan.',
-                hintStyle: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 13,
-                  color: Color(0xFF94A3B8),
-                ),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-                filled: false,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Servis Form Fields
-  Widget _buildServisFormFields(BuildContext context) {
-    return Column(
-      children: [
-        // 1. Masalah / Kendala Fisik
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-          ),
+  Widget _section({required String title, required Widget child}) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: MgrsColors.surface,
+          border: Border.all(color: MgrsColors.line),
+          borderRadius: BorderRadius.circular(MgrsRadii.compact),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(MgrsSpacing.base),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Masalah / Kendala Fisik *',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                  Text(
-                    'Wajib Diisi',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF2563EB),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: TextField(
-                  controller: problem,
-                  maxLines: 3,
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 13,
-                    color: Color(0xFF334155),
-                    height: 1.45,
-                  ),
-                  decoration: const InputDecoration(
-                    hintText: 'Tuliskan kerusakan atau gejala masalah...',
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
-                    filled: false,
-                  ),
-                ),
-              ),
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+              const SizedBox(height: MgrsSpacing.md),
+              child,
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        // 2. Tindakan Perbaikan
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Tindakan Perbaikan yang Dilakukan *',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                  Text(
-                    'Wajib Diisi',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF2563EB),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: TextField(
-                  controller: action,
-                  maxLines: 4,
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 13,
-                    color: Color(0xFF334155),
-                    height: 1.45,
-                  ),
-                  decoration: const InputDecoration(
-                    hintText: 'Tuliskan penanganan teknis yang dilakukan...',
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
-                    filled: false,
-                  ),
-                ),
-              ),
-            ],
-          ),
+      );
+
+  Widget _message({
+    required String title,
+    required String body,
+    required MgrsStatusTone tone,
+  }) => _section(
+        title: title,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            MgrsStatusBadge(
+              tone == MgrsStatusTone.danger ? 'Perlu diperiksa' : 'Perhatian',
+              tone: tone,
+            ),
+            const SizedBox(height: MgrsSpacing.sm),
+            Text(body),
+          ],
         ),
-        const SizedBox(height: 16),
-        // 3. Kondisi Hasil Setelah Servis
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Kondisi Hasil Setelah Servis *',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                  Text(
-                    'Wajib Diisi',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF2563EB),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              // Option A: Layak Pakai
-              _buildConditionRadioCard(
-                title: 'Layak Pakai (Selesai & Siap Pakai)',
-                description: 'Perbaikan sukses, unit kembali normal',
-                value: 'OK',
-                selected: condition == 'OK',
-                activeBorderColor: const Color(0xFF10B981),
-                activeBgColor: const Color(0xFFF0FDF4),
-                dotColor: const Color(0xFF10B981),
-                onSelect: () => setState(() {
-                  condition = 'OK';
-                  usable = 'Ya';
-                }),
-              ),
-              const SizedBox(height: 10),
-              // Option B: Masih Perlu Servis Lanjutan
-              _buildConditionRadioCard(
-                title: 'Masih Perlu Servis Lanjutan',
-                description: 'Belum tuntas, menunggu sparepart',
-                value: 'Rusak Ringan',
-                selected: condition == 'Rusak Ringan',
-                activeBorderColor: const Color(0xFFF59E0B),
-                activeBgColor: const Color(0xFFFFFBEB),
-                dotColor: const Color(0xFFF59E0B),
-                onSelect: () => setState(() {
-                  condition = 'Rusak Ringan';
-                  usable = 'Tidak';
-                }),
-              ),
-            ],
-          ),
+      );
+}
+
+class _SuccessSheet extends StatelessWidget {
+  const _SuccessSheet({
+    required this.title,
+    required this.body,
+    required this.onFinish,
+  });
+
+  final String title;
+  final String body;
+  final VoidCallback onFinish;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          MgrsSpacing.lg,
+          MgrsSpacing.xl,
+          MgrsSpacing.lg,
+          MgrsSpacing.xl + MediaQuery.viewInsetsOf(context).bottom,
         ),
-      ],
-    );
-  }
-
-  // Bottom Fixed Submit Button
-  Widget _buildBottomSubmitBar(BuildContext context) {
-    final isSubmitting = submission.state == SubmissionState.submitting;
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
-      ),
-      child: SizedBox(
-        width: double.infinity,
-        height: 50,
-        child: PressableScale(
-          onTap: blocked ? null : save,
-          child: Container(
-            decoration: BoxDecoration(
-              color: blocked
-                  ? const Color(0xFF94A3B8)
-                  : const Color(0xFF147CC1),
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: blocked
-                  ? null
-                  : const [
-                      BoxShadow(
-                        color: Color(0x25147CC1),
-                        blurRadius: 10,
-                        offset: Offset(0, 3),
-                      ),
-                    ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (isSubmitting)
-                  const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                else
-                  Icon(
-                    widget.service ? Icons.build_rounded : Icons.check_rounded,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                const SizedBox(width: 8),
-                Text(
-                  isSubmitting
-                      ? 'Menyimpan…'
-                      : widget.service
-                          ? 'Simpan & Selesaikan Servis'
-                          : 'Simpan & Selesaikan Tugas',
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const MgrsStatusBadge('Tersimpan', tone: MgrsStatusTone.success),
+            const SizedBox(height: MgrsSpacing.base),
+            Text(title, style: Theme.of(context).textTheme.headlineSmall),
+            const SizedBox(height: MgrsSpacing.sm),
+            Text(body),
+            const SizedBox(height: MgrsSpacing.xl),
+            MgrsButton.primary(label: 'Selesai', onPressed: onFinish),
+          ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildSubmissionErrorBanner(BuildContext context) {
-    final err = submission.error;
-    final isConflict = submission.state == SubmissionState.conflict;
-    final isUncertain = submission.state == SubmissionState.uncertain;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFEF2F2),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFFECACA)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.error_outline_rounded,
-                color: Color(0xFFB91C1C),
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  isConflict
-                      ? 'Konflik Data Pembaruan'
-                      : isUncertain
-                          ? 'Koneksi Terputus / Tidak Stabil'
-                          : 'Gagal Menyimpan Data',
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    color: Color(0xFFB91C1C),
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            failureMessage(err),
-            style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              color: Color(0xFF7F1D1D),
-              fontSize: 12,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              if (isConflict)
-                OutlinedButton.icon(
-                  onPressed: refreshing ? null : refresh,
-                  icon: const Icon(Icons.refresh_rounded, size: 16),
-                  label: const Text(
-                    'Perbarui Data Unit',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFB91C1C),
-                    side: const BorderSide(color: Color(0xFFFECACA)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                )
-              else
-                ElevatedButton.icon(
-                  onPressed: blocked
-                      ? null
-                      : (isUncertain ? submission.recover : save),
-                  icon: const Icon(Icons.replay_rounded,
-                      size: 16, color: Colors.white),
-                  label: const Text(
-                    'Coba Kirim Ulang',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFB91C1C),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSuccessBottomSheet(BuildContext ctx) {
-    final isService = widget.service;
-    final isOk = condition == 'OK';
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      padding: EdgeInsets.fromLTRB(
-        24,
-        16,
-        24,
-        MediaQuery.of(ctx).padding.bottom + 24,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE2E8F0),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: const Color(0xFFDCFCE7),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.2),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.check_circle_rounded,
-                color: Color(0xFF10B981),
-                size: 36,
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            isService
-                ? 'Laporan Servis Berhasil!'
-                : 'Pemeriksaan Berhasil!',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 19,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF0F172A),
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            isService
-                ? 'Catatan perbaikan telah disimpan dan status unit berhasil diperbarui.'
-                : 'Pemeriksaan rutin telah berhasil disimpan ke sistem MGRS.',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF64748B),
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 18),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Unit Komponen',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                    Text(
-                      '${component.code} (${component.kind})',
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF0F172A),
-                      ),
-                    ),
-                  ],
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Divider(height: 1, color: Color(0xFFE2E8F0)),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Status Kelayakan',
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isOk
-                            ? const Color(0xFFDCFCE7)
-                            : (condition == 'Rusak Ringan'
-                                ? const Color(0xFFFEF3C7)
-                                : const Color(0xFFFEE2E2)),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        isOk
-                            ? 'Layak Pakai (OK)'
-                            : (condition == 'Rusak Ringan'
-                                ? 'Perlu Servis'
-                                : (condition ?? 'Perlu Tindakan')),
-                        style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: isOk
-                              ? const Color(0xFF15803D)
-                              : (condition == 'Rusak Ringan'
-                                  ? const Color(0xFFB45309)
-                                  : const Color(0xFFB91C1C)),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (isService && action.text.trim().isNotEmpty) ...[
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Divider(height: 1, color: Color(0xFFE2E8F0)),
-                  ),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Tindakan',
-                        style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Text(
-                          action.text.trim(),
-                          textAlign: TextAlign.end,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF334155),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              onPressed: () => Navigator.pop(ctx),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF147CC1),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              child: const Text(
-                'Selesai & Kembali',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+      );
 }

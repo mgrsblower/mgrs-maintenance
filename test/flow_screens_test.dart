@@ -189,11 +189,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Perbarui Kondisi'), findsOneWidget);
+    expect(find.byType(CheckingScreen), findsOneWidget);
     expect(find.text('KPL-2026-084'), findsOneWidget);
-    expect(find.text('Status Kondisi Hasil Cek *'), findsOneWidget);
-    expect(find.text('Layak Pakai'), findsOneWidget);
-    expect(find.text('Simpan & Selesaikan Tugas'), findsOneWidget);
+    expect(find.text('Kondisi komponen'), findsOneWidget);
+    expect(find.text('Simpan pemeriksaan'), findsOneWidget);
   });
 
   testWidgets('CheckingScreen renders Form Catat Servis (11R-1)', (
@@ -223,11 +222,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Catat Servis'), findsOneWidget);
+    expect(find.byType(CheckingScreen), findsOneWidget);
     expect(find.text('TBG-2026-039'), findsOneWidget);
-    expect(find.text('Masalah / Kendala Fisik *'), findsOneWidget);
-    expect(find.text('Tindakan Perbaikan yang Dilakukan *'), findsOneWidget);
-    expect(find.text('Simpan & Selesaikan Servis'), findsOneWidget);
+    expect(find.text('Masalah / kendala fisik *'), findsOneWidget);
+    expect(find.text('Tindakan perbaikan *'), findsOneWidget);
+    expect(find.text('Simpan laporan servis'), findsOneWidget);
   });
 
   testWidgets('HomeSkeletonScreen renders loading placeholders', (
@@ -396,19 +395,17 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final submitButton = find.text('Simpan & Selesaikan Tugas');
+      final submitButton = find.text('Simpan pemeriksaan');
       expect(submitButton, findsOneWidget);
+      await tester.ensureVisible(submitButton);
       await tester.tap(submitButton);
       await tester.pumpAndSettle();
 
-      expect(find.text('Pemeriksaan Berhasil!'), findsOneWidget);
-      expect(find.text('Layak Pakai (OK)'), findsOneWidget);
-      expect(find.text('Selesai & Kembali'), findsOneWidget);
-
-      await tester.tap(find.text('Selesai & Kembali'));
+      expect(find.text('Pemeriksaan tersimpan'), findsOneWidget);
+      await tester.tap(find.text('Selesai'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Pemeriksaan Berhasil!'), findsNothing);
+      expect(find.text('Pemeriksaan tersimpan'), findsNothing);
     },
   );
 
@@ -439,17 +436,24 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final submitButton = find.text('Simpan & Selesaikan Servis');
-      expect(submitButton, findsOneWidget);
+      await tester.enterText(
+        find.byType(TextField).at(0),
+        'Tekanan turun saat diuji',
+      );
+      await tester.enterText(
+        find.byType(TextField).at(1),
+        'Mengganti segel dan menguji ulang',
+      );
+      await tester.tap(find.text('Layak pakai'));
+      final submitButton = find.text('Simpan laporan servis');
+      await tester.ensureVisible(submitButton);
       await tester.tap(submitButton);
       await tester.pumpAndSettle();
 
-      expect(find.text('Laporan Servis Berhasil!'), findsOneWidget);
-      expect(find.text('Selesai & Kembali'), findsOneWidget);
-
-      await tester.tap(find.text('Selesai & Kembali'));
+      expect(find.text('Laporan servis tersimpan'), findsOneWidget);
+      await tester.tap(find.text('Selesai'));
       await tester.pumpAndSettle();
-      expect(find.text('Laporan Servis Berhasil!'), findsNothing);
+      expect(find.text('Laporan servis tersimpan'), findsNothing);
     },
   );
 
@@ -559,13 +563,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final submitButton = find.text('Simpan & Selesaikan Tugas');
+    final submitButton = find.text('Simpan pemeriksaan');
     expect(submitButton, findsOneWidget);
+    await tester.ensureVisible(submitButton);
     await tester.tap(submitButton);
     await tester.pumpAndSettle();
 
-    expect(find.text('Pemeriksaan Berhasil!'), findsNothing);
-    expect(find.text('Konflik Data Pembaruan'), findsOneWidget);
+    expect(find.text('Pemeriksaan tersimpan'), findsNothing);
+    expect(find.text('Data telah diperbarui petugas lain'), findsOneWidget);
   });
 
   testWidgets(
