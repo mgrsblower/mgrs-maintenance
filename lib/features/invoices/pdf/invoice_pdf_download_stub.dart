@@ -9,10 +9,10 @@ const _invoicePdfChannel = MethodChannel(
 Future<String?> downloadInvoicePdf(Uint8List bytes, String fileName) async {
   if (Platform.isAndroid || Platform.isIOS) {
     try {
-      final location = await _invoicePdfChannel.invokeMethod<String>('saveInvoicePdf', {
-        'bytes': bytes,
-        'fileName': fileName,
-      });
+      final location = await _invoicePdfChannel.invokeMethod<String>(
+        'saveInvoicePdf',
+        {'bytes': bytes, 'fileName': fileName},
+      );
       if (location != null && location.isNotEmpty) return location;
     } catch (_) {
       // Fall back to direct file write if native channel is not registered
@@ -63,4 +63,3 @@ Future<void> shareInvoicePdf(String? location, String fileName) async {
     await NativePdfService.instance.sharePdf(location, title: fileName);
   } catch (_) {}
 }
-

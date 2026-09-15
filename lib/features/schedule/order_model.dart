@@ -96,10 +96,22 @@ class OrderanSewa {
     );
   }
 
-  static final _rentalDaysPattern = RegExp(r'\[SEWA_HARI:(\d+)\]', caseSensitive: false);
-  static final _eventDatePattern = RegExp(r'\[TGL_EVENT:(\d{4}-\d{2}-\d{2})\]', caseSensitive: false);
-  static final _cancellationPattern = RegExp(r'\[BATAL:\s*([^\]]+)\]', caseSensitive: false);
-  static final _unitAllocationPattern = RegExp(r'\[UNIT_ALOKASI:\s*[^\]]+\]', caseSensitive: false);
+  static final _rentalDaysPattern = RegExp(
+    r'\[SEWA_HARI:(\d+)\]',
+    caseSensitive: false,
+  );
+  static final _eventDatePattern = RegExp(
+    r'\[TGL_EVENT:(\d{4}-\d{2}-\d{2})\]',
+    caseSensitive: false,
+  );
+  static final _cancellationPattern = RegExp(
+    r'\[BATAL:\s*([^\]]+)\]',
+    caseSensitive: false,
+  );
+  static final _unitAllocationPattern = RegExp(
+    r'\[UNIT_ALOKASI:\s*[^\]]+\]',
+    caseSensitive: false,
+  );
 
   /// Rental duration in days extracted from [catatanOrderan] metadata tag `[SEWA_HARI:N]`, defaults to 1.
   int get rentalDays {
@@ -150,7 +162,11 @@ class OrderanSewa {
   /// Check if the order is completed or cancelled by status.
   bool get isCompletedOrCancelled {
     final s = (statusOrderan ?? '').trim().toLowerCase();
-    return s == 'selesai' || s == 'batal' || s == 'cancelled' || s == 'completed' || s == 'dibatalkan';
+    return s == 'selesai' ||
+        s == 'batal' ||
+        s == 'cancelled' ||
+        s == 'completed' ||
+        s == 'dibatalkan';
   }
 
   /// Check if the event or installation date has passed today.
@@ -160,7 +176,9 @@ class OrderanSewa {
     final today = DateTime(now.year, now.month, now.day);
     final dt = tanggalPemasangan!.toLocal();
     final itemDay = DateTime(dt.year, dt.month, dt.day);
-    final endDay = itemDay.add(Duration(days: rentalDays > 0 ? rentalDays - 1 : 0));
+    final endDay = itemDay.add(
+      Duration(days: rentalDays > 0 ? rentalDays - 1 : 0),
+    );
     return endDay.isBefore(today);
   }
 
@@ -219,10 +237,28 @@ class OrderanSewa {
     if (tanggalPemasangan == null) return 'Jadwal belum ditentukan';
     final dt = tanggalPemasangan!.toLocal();
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Ags',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
     ];
-    const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+    const days = [
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+      'Minggu',
+    ];
     final dayName = days[dt.weekday - 1];
     final monthName = months[dt.month - 1];
 
@@ -245,8 +281,18 @@ class OrderanSewa {
     if (tanggalPemasangan == null) return 'Belum dijadwalkan';
     final dt = tanggalPemasangan!.toLocal();
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Ags',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
     ];
     final monthName = months[dt.month - 1];
 
@@ -265,10 +311,28 @@ class OrderanSewa {
     if (tanggalPemasangan == null) return 'Belum dijadwalkan';
     final dt = tanggalPemasangan!.toLocal();
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Ags',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
     ];
-    const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+    const days = [
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+      'Minggu',
+    ];
     final dayName = days[dt.weekday - 1];
     final monthName = months[dt.month - 1];
     final dayStr = dt.day.toString().padLeft(2, '0');

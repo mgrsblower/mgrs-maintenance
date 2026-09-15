@@ -9,11 +9,7 @@ import 'order_detail_screen.dart';
 import 'order_model.dart';
 
 class UpcomingOrdersScreen extends StatefulWidget {
-  const UpcomingOrdersScreen({
-    super.key,
-    required this.gateway,
-    this.user,
-  });
+  const UpcomingOrdersScreen({super.key, required this.gateway, this.user});
 
   final MaintenanceGateway gateway;
   final UserProfile? user;
@@ -47,8 +43,10 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
       error = null;
     });
     try {
-      final fetched = await widget.gateway
-          .fetchUpcomingOrders(limit: 50, forceRefresh: true);
+      final fetched = await widget.gateway.fetchUpcomingOrders(
+        limit: 50,
+        forceRefresh: true,
+      );
       if (mounted) {
         setState(() {
           orders = fetched;
@@ -87,10 +85,8 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
     if (widget.user == null) return;
     final created = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => CreateOrderScreen(
-          gateway: widget.gateway,
-          user: widget.user!,
-        ),
+        builder: (_) =>
+            CreateOrderScreen(gateway: widget.gateway, user: widget.user!),
       ),
     );
     if (created == true) loadOrders();
@@ -116,7 +112,7 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
               Text(
                 'Orderan',
                 style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
+                  fontFamily: 'Inter',
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: MgrsColors.ink,
@@ -127,7 +123,7 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
               Text(
                 'Jadwal pemasangan dan persewaan',
                 style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
+                  fontFamily: 'Inter',
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                   color: MgrsColors.muted,
@@ -145,7 +141,7 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                   label: const Text(
                     'Buat order',
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
@@ -226,10 +222,7 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                 constraints: const BoxConstraints(
                   minHeight: MgrsSizes.minTouch,
                 ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 4,
-                  vertical: 2,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 decoration: BoxDecoration(
                   color: isSelected ? MgrsColors.ink : MgrsColors.surface,
                   borderRadius: BorderRadius.circular(MgrsRadii.pill),
@@ -248,10 +241,11 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
+                            fontFamily: 'Inter',
                             fontSize: 11,
-                            fontWeight:
-                                isSelected ? FontWeight.w700 : FontWeight.w600,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w600,
                             color: isSelected ? Colors.white : MgrsColors.ink,
                           ),
                         ),
@@ -271,7 +265,7 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                         child: Text(
                           '$count',
                           style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
+                            fontFamily: 'Inter',
                             fontSize: 9.5,
                             fontWeight: FontWeight.w700,
                             color: isSelected ? Colors.white : MgrsColors.muted,
@@ -328,108 +322,99 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                     ? LayoutBuilder(
                         builder: (context, constraints) =>
                             SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: constraints.maxHeight,
+                                ),
+                                child: const Center(
+                                  child: MgrsStateView.loading(
+                                    title: 'Memuat daftar orderan...',
+                                  ),
+                                ),
+                              ),
+                            ),
+                      )
+                    : error != null
+                    ? LayoutBuilder(
+                        builder: (context, constraints) => SingleChildScrollView(
                           physics: const AlwaysScrollableScrollPhysics(),
                           child: ConstrainedBox(
                             constraints: BoxConstraints(
                               minHeight: constraints.maxHeight,
                             ),
-                            child: const Center(
-                              child: MgrsStateView.loading(
-                                title: 'Memuat daftar orderan...',
+                            child: Center(
+                              child: MgrsStateView.error(
+                                title: 'Daftar orderan gagal dimuat',
+                                message:
+                                    'Periksa koneksi internet Anda lalu coba lagi.',
+                                actionLabel: 'Muat data terbaru',
+                                onAction: loadOrders,
                               ),
                             ),
                           ),
                         ),
                       )
-                    : error != null
-                        ? LayoutBuilder(
-                            builder: (context, constraints) =>
-                                SingleChildScrollView(
+                    : orders.isEmpty
+                    ? LayoutBuilder(
+                        builder: (context, constraints) => SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight,
+                            ),
+                            child: Center(
+                              child: MgrsStateView.empty(
+                                title: 'Belum ada orderan mendatang',
+                                message:
+                                    'Belum ada jadwal sewa blower tersimpan.',
+                                actionLabel: 'Buat orderan baru',
+                                onAction: _openCreateOrder,
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                    : list.isEmpty
+                    ? LayoutBuilder(
+                        builder: (context, constraints) =>
+                            SingleChildScrollView(
                               physics: const AlwaysScrollableScrollPhysics(),
                               child: ConstrainedBox(
                                 constraints: BoxConstraints(
                                   minHeight: constraints.maxHeight,
                                 ),
                                 child: Center(
-                                  child: MgrsStateView.error(
-                                    title: 'Daftar orderan gagal dimuat',
-                                    message:
-                                        'Periksa koneksi internet Anda lalu coba lagi.',
-                                    actionLabel: 'Muat data terbaru',
-                                    onAction: loadOrders,
+                                  child: MgrsStateView.noResults(
+                                    query: searchController.text.isNotEmpty
+                                        ? searchController.text
+                                        : activeFilter,
+                                    onReset: () {
+                                      setState(() {
+                                        searchController.clear();
+                                        activeFilter = 'Semua';
+                                      });
+                                    },
                                   ),
                                 ),
                               ),
                             ),
-                          )
-                        : orders.isEmpty
-                            ? LayoutBuilder(
-                                builder: (context, constraints) =>
-                                    SingleChildScrollView(
-                                  physics:
-                                      const AlwaysScrollableScrollPhysics(),
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minHeight: constraints.maxHeight,
-                                    ),
-                                    child: Center(
-                                      child: MgrsStateView.empty(
-                                        title: 'Belum ada orderan mendatang',
-                                        message:
-                                            'Belum ada jadwal sewa blower tersimpan.',
-                                        actionLabel: 'Buat orderan baru',
-                                        onAction: _openCreateOrder,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              )
-                            : list.isEmpty
-                                ? LayoutBuilder(
-                                    builder: (context, constraints) =>
-                                        SingleChildScrollView(
-                                      physics:
-                                          const AlwaysScrollableScrollPhysics(),
-                                      child: ConstrainedBox(
-                                        constraints: BoxConstraints(
-                                          minHeight: constraints.maxHeight,
-                                        ),
-                                        child: Center(
-                                          child: MgrsStateView.noResults(
-                                            query: searchController
-                                                    .text.isNotEmpty
-                                                ? searchController.text
-                                                : activeFilter,
-                                            onReset: () {
-                                              setState(() {
-                                                searchController.clear();
-                                                activeFilter = 'Semua';
-                                              });
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                : ListView.builder(
-                                    physics:
-                                        const AlwaysScrollableScrollPhysics(
-                                      parent: BouncingScrollPhysics(),
-                                    ),
-                                    padding: const EdgeInsets.fromLTRB(
-                                      MgrsSpacing.md,
-                                      MgrsSpacing.xs,
-                                      MgrsSpacing.md,
-                                      80,
-                                    ),
-                                    itemCount: list.length,
-                                    itemBuilder: (context, index) {
-                                      return _buildOrderCard(
-                                        context,
-                                        list[index],
-                                      );
-                                    },
-                                  ),
+                      )
+                    : ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
+                        padding: const EdgeInsets.fromLTRB(
+                          MgrsSpacing.md,
+                          MgrsSpacing.xs,
+                          MgrsSpacing.md,
+                          80,
+                        ),
+                        itemCount: list.length,
+                        itemBuilder: (context, index) {
+                          return _buildOrderCard(context, list[index]);
+                        },
+                      ),
               ),
             ),
           ],
@@ -439,16 +424,16 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
   }
 
   Widget _buildOrderCard(BuildContext context, OrderanSewa order) {
-    final statusText = order.statusOrderan != null &&
-            order.statusOrderan!.isNotEmpty
+    final statusText =
+        order.statusOrderan != null && order.statusOrderan!.isNotEmpty
         ? order.statusOrderan!
         : (order.isPast ? 'Selesai' : 'Terjadwal');
 
     final statusTone = order.isCancelled
         ? MgrsStatusTone.danger
         : (order.statusOrderan == 'Selesai' || order.isPast)
-            ? MgrsStatusTone.success
-            : MgrsStatusTone.warning;
+        ? MgrsStatusTone.success
+        : MgrsStatusTone.warning;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: MgrsSpacing.sm),
@@ -492,7 +477,7 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                   Text(
                     order.displayCode,
                     style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: MgrsColors.action,
@@ -505,7 +490,7 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
               Text(
                 order.namaEvent,
                 style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
+                  fontFamily: 'Inter',
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                   color: MgrsColors.ink,
@@ -520,7 +505,7 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                 Text(
                   order.namaClient!,
                   style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
+                    fontFamily: 'Inter',
                     fontSize: 11.5,
                     fontWeight: FontWeight.w500,
                     color: MgrsColors.muted,
@@ -554,7 +539,7 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                               ? '${order.tanggalPemasangan!.day}/${order.tanggalPemasangan!.month}/${order.tanggalPemasangan!.year}'
                               : 'Tanggal belum ditentukan',
                           style: const TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
+                            fontFamily: 'Inter',
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: MgrsColors.ink,
@@ -579,7 +564,7 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                           text:
                               '${order.jumlahUnit} Unit (${order.durasiSewaText})',
                           style: const TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
+                            fontFamily: 'Inter',
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: MgrsColors.ink,
@@ -605,7 +590,7 @@ class _UpcomingOrdersScreenState extends State<UpcomingOrdersScreen> {
                       child: Text(
                         order.alamat!,
                         style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
+                          fontFamily: 'Inter',
                           fontSize: 11,
                           color: MgrsColors.muted,
                           height: 1.2,

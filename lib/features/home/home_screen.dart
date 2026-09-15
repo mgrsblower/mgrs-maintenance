@@ -175,7 +175,8 @@ class _HomeScreenState extends State<HomeScreen>
         Expanded(
           child: Semantics(
             button: true,
-            label: 'Buka profil ${widget.user.displayName}',
+            label: 'Profil pengguna, ${widget.user.displayName}',
+            excludeSemantics: true,
             child: InkWell(
               onTap: () => _showUserProfileBottomSheet(context),
               borderRadius: BorderRadius.circular(MgrsRadii.compact),

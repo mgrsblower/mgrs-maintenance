@@ -27,7 +27,8 @@ class CheckingGateway extends MaintenanceGateway {
   final submitCompleter = Completer<Object?>();
   final calls = <({String name, Map<String, Object?> params})>[];
 
-  int get submitCalls => calls.where((call) => call.name == 'maintenance_submit').length;
+  int get submitCalls =>
+      calls.where((call) => call.name == 'maintenance_submit').length;
   int get receiptCalls =>
       calls.where((call) => call.name == 'maintenance_request_result').length;
   int get reloadCalls =>
@@ -61,9 +62,9 @@ class CheckingGateway extends MaintenanceGateway {
     if (name != 'maintenance_submit') return null;
     return switch (submitOutcome) {
       SubmitOutcome.success => {
-          'eventId': 'event-saved',
-          'condition': (params['p_command'] as Map)['condition'],
-        },
+        'eventId': 'event-saved',
+        'condition': (params['p_command'] as Map)['condition'],
+      },
       SubmitOutcome.knownFailure => throw const AppFailure('invalid_input'),
       SubmitOutcome.uncertain => throw Exception('SQL secret'),
       SubmitOutcome.conflict => throw const AppFailure('conflict'),
@@ -104,9 +105,9 @@ Widget checkingApp(
             builder: (context) => Scaffold(
               body: Center(
                 child: FilledButton(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => screen),
-                  ),
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute<void>(builder: (_) => screen)),
                   child: const Text('Buka pemeriksaan'),
                 ),
               ),
@@ -132,11 +133,7 @@ Future<void> pumpChecking(
         size: Size(width, 844),
         textScaler: TextScaler.linear(textScale),
       ),
-      child: checkingApp(
-        gateway,
-        service: service,
-        routeHarness: routeHarness,
-      ),
+      child: checkingApp(gateway, service: service, routeHarness: routeHarness),
     ),
   );
   if (routeHarness) {
@@ -152,6 +149,7 @@ Future<void> revealAndTap(WidgetTester tester, String label) async {
     180,
     scrollable: find.byType(Scrollable).first,
   );
+  await tester.pumpAndSettle();
   await tester.tap(target);
   await tester.pump();
 }
@@ -183,46 +181,57 @@ Future<void> fillServiceFields(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('idle uses shared shell and service required inputs start empty', (
-    tester,
-  ) async {
-    await pumpChecking(tester, CheckingGateway(), service: true);
+  testWidgets(
+    'idle uses shared shell and service required inputs start empty',
+    (tester) async {
+      await pumpChecking(tester, CheckingGateway(), service: true);
 
-    expectSharedCheckingComponents();
-    expect(find.text('Catat servis'), findsOneWidget);
-    expect(find.text('KPL-2026-084'), findsOneWidget);
-    expect(
-      tester.widget<TextField>(fieldWithLabel('Masalah / kendala fisik *')).controller!.text,
-      isEmpty,
-    );
-    expect(
-      tester.widget<TextField>(fieldWithLabel('Tindakan perbaikan *')).controller!.text,
-      isEmpty,
-    );
-  });
+      expectSharedCheckingComponents();
+      expect(find.text('Catat servis'), findsOneWidget);
+      expect(find.text('KPL-2026-084'), findsOneWidget);
+      expect(
+        tester
+            .widget<TextField>(fieldWithLabel('Masalah / kendala fisik *'))
+            .controller!
+            .text,
+        isEmpty,
+      );
+      expect(
+        tester
+            .widget<TextField>(fieldWithLabel('Tindakan perbaikan *'))
+            .controller!
+            .text,
+        isEmpty,
+      );
+    },
+  );
 
-  testWidgets('invalid service submit shows inline errors and focuses first field', (
-    tester,
-  ) async {
-    await pumpChecking(tester, CheckingGateway(), service: true);
-    await revealAndTap(tester, 'Simpan laporan servis');
+  testWidgets(
+    'invalid service submit shows inline errors and focuses first field',
+    (tester) async {
+      await pumpChecking(tester, CheckingGateway(), service: true);
+      await revealAndTap(tester, 'Simpan laporan servis');
 
-    expect(find.text('Periksa kembali isian'), findsOneWidget);
-    expect(find.text('Jelaskan masalah yang ditemukan.'), findsOneWidget);
-    expect(
-      find.text('Tuliskan tindakan servis yang dilakukan.'),
-      findsOneWidget,
-    );
-    expect(find.text('Kondisi setelah servis belum dipilih'), findsOneWidget);
-    expect(
-      find.text('Pilih Layak pakai atau Perlu servis lanjutan.'),
-      findsOneWidget,
-    );
-    expect(
-      tester.widget<TextField>(fieldWithLabel('Masalah / kendala fisik *')).focusNode!.hasFocus,
-      isTrue,
-    );
-  });
+      expect(find.text('Periksa kembali isian'), findsOneWidget);
+      expect(find.text('Jelaskan masalah yang ditemukan.'), findsOneWidget);
+      expect(
+        find.text('Tuliskan tindakan servis yang dilakukan.'),
+        findsOneWidget,
+      );
+      expect(find.text('Kondisi setelah servis belum dipilih'), findsOneWidget);
+      expect(
+        find.text('Pilih Layak pakai atau Perlu servis lanjutan.'),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<TextField>(fieldWithLabel('Masalah / kendala fisik *'))
+            .focusNode!
+            .hasFocus,
+        isTrue,
+      );
+    },
+  );
 
   testWidgets('pending submit disables actions and exposes loading state', (
     tester,
@@ -278,44 +287,45 @@ void main() {
     expect(find.text('Pemeriksaan tersimpan'), findsOneWidget);
   });
 
-  testWidgets('conflict keeps draft through failed reload then clears on success', (
-    tester,
-  ) async {
-    final gateway = CheckingGateway(
-      submitOutcome: SubmitOutcome.conflict,
-      reloadFailure: Exception('SQL secret'),
-    );
-    await pumpChecking(tester, gateway);
-    final note = fieldWithLabel('Catatan pemeriksaan · opsional');
-    await tester.enterText(note, 'Draft penting petugas');
-    await revealAndTap(tester, 'Rusak berat');
-    await tester.enterText(
-      fieldWithLabel('Fungsi yang terganggu *'),
-      'Tekanan tidak stabil',
-    );
-    await revealAndTap(tester, 'Simpan pemeriksaan');
-    await tester.pumpAndSettle();
+  testWidgets(
+    'conflict keeps draft through failed reload then clears on success',
+    (tester) async {
+      final gateway = CheckingGateway(
+        submitOutcome: SubmitOutcome.conflict,
+        reloadFailure: Exception('SQL secret'),
+      );
+      await pumpChecking(tester, gateway);
+      final note = fieldWithLabel('Catatan pemeriksaan · opsional');
+      await tester.enterText(note, 'Draft penting petugas');
+      await revealAndTap(tester, 'Rusak berat');
+      await tester.enterText(
+        fieldWithLabel('Fungsi yang terganggu *'),
+        'Tekanan tidak stabil',
+      );
+      await revealAndTap(tester, 'Simpan pemeriksaan');
+      await tester.pumpAndSettle();
 
-    expect(find.text('Data telah diperbarui petugas lain'), findsOneWidget);
-    expect(
-      find.text(
-        'Muat kondisi terbaru sebelum menyimpan kembali. Draft catatan Anda tetap aman.',
-      ),
-      findsOneWidget,
-    );
-    await revealAndTap(tester, 'Muat data terbaru');
-    await tester.pumpAndSettle();
-    expect(gateway.reloadCalls, 1);
-    expect(find.text('Draft penting petugas'), findsOneWidget);
-    expect(find.textContaining('SQL secret'), findsNothing);
+      expect(find.text('Data telah diperbarui petugas lain'), findsOneWidget);
+      expect(
+        find.text(
+          'Muat kondisi terbaru sebelum menyimpan kembali. Draft catatan Anda tetap aman.',
+        ),
+        findsOneWidget,
+      );
+      await revealAndTap(tester, 'Muat data terbaru');
+      await tester.pumpAndSettle();
+      expect(gateway.reloadCalls, 1);
+      expect(find.text('Draft penting petugas'), findsOneWidget);
+      expect(find.textContaining('SQL secret'), findsNothing);
 
-    gateway.reloadFailure = null;
-    await revealAndTap(tester, 'Muat data terbaru');
-    await tester.pumpAndSettle();
-    expect(gateway.reloadCalls, 2);
-    expect(find.text('Draft penting petugas'), findsOneWidget);
-    expect(find.text('Rusak berat'), findsOneWidget);
-  });
+      gateway.reloadFailure = null;
+      await revealAndTap(tester, 'Muat data terbaru');
+      await tester.pumpAndSettle();
+      expect(gateway.reloadCalls, 2);
+      expect(find.text('Draft penting petugas'), findsOneWidget);
+      expect(find.text('Rusak berat'), findsOneWidget);
+    },
+  );
 
   testWidgets('service follow-up requires and submits condition details', (
     tester,
@@ -348,9 +358,11 @@ void main() {
     await revealAndTap(tester, 'Simpan laporan servis');
     await tester.pumpAndSettle();
 
-    final command = gateway.calls
-        .singleWhere((call) => call.name == 'maintenance_submit')
-        .params['p_command'] as Map;
+    final command =
+        gateway.calls
+                .singleWhere((call) => call.name == 'maintenance_submit')
+                .params['p_command']
+            as Map;
     expect(command['condition'], 'Service');
     expect(command['usable'], 'Tidak');
     expect(command['eventNote'], 'Masih perlu penggantian katup');
@@ -373,7 +385,9 @@ void main() {
 
         expect(gateway.submitCalls, 1);
         expect(
-          find.text(service ? 'Laporan servis tersimpan' : 'Pemeriksaan tersimpan'),
+          find.text(
+            service ? 'Laporan servis tersimpan' : 'Pemeriksaan tersimpan',
+          ),
           findsOneWidget,
         );
         expect(
@@ -392,11 +406,7 @@ void main() {
   testWidgets('choice-only edit requires discard confirmation on back', (
     tester,
   ) async {
-    await pumpChecking(
-      tester,
-      CheckingGateway(),
-      routeHarness: true,
-    );
+    await pumpChecking(tester, CheckingGateway(), routeHarness: true);
     await revealAndTap(tester, 'Rusak berat');
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
@@ -420,12 +430,16 @@ void main() {
       textScale: 2,
     );
 
-    expectSharedCheckingComponents();
+    expect(find.byType(MgrsDetailAppBar), findsOneWidget);
+    expect(find.byType(MgrsStatusBadge), findsWidgets);
+    expect(find.byType(MgrsMultilineField), findsWidgets);
     await tester.scrollUntilVisible(
       find.text('Simpan laporan servis'),
-      220,
+      180,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.pumpAndSettle();
+    expect(find.byType(MgrsButton), findsWidgets);
     expect(find.text('Simpan laporan servis'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

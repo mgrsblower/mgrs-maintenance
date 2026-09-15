@@ -554,7 +554,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     Text(
                       'Belum ada riwayat pemeriksaan atau servis',
                       style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF64748B),
@@ -622,7 +622,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     Text(
                       'Perbarui Kondisi',
                       style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: isDamaged
@@ -672,7 +672,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
                     Text(
                       'Catat Servis',
                       style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: isDamaged
@@ -722,7 +722,7 @@ class _ComponentDetailScreenState extends State<ComponentDetailScreen> {
               Text(
                 'Mode Pantau Status • Hanya Baca',
                 style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
+                  fontFamily: 'Inter',
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF64748B),

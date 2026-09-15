@@ -111,87 +111,88 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 child: CircularProgressIndicator(color: MgrsColors.action),
               )
             : _error != null
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(MgrsSpacing.xl),
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(MgrsSpacing.xl),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        size: 40,
+                        color: MgrsColors.danger,
+                      ),
+                      const SizedBox(height: MgrsSpacing.md),
+                      Text(
+                        _error!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14,
+                          color: MgrsColors.danger,
+                        ),
+                      ),
+                      const SizedBox(height: MgrsSpacing.md),
+                      ElevatedButton(
+                        onPressed: _loadOrderDetail,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: MgrsColors.action,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Coba Lagi'),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : Column(
+                children: [
+                  _buildTopBar(context),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: MgrsSpacing.md,
+                        vertical: MgrsSpacing.xs,
+                      ),
                       child: Column(
-                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Icon(
-                            Icons.error_outline_rounded,
-                            size: 40,
-                            color: MgrsColors.danger,
-                          ),
-                          const SizedBox(height: MgrsSpacing.md),
-                          Text(
-                            _error!,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 14,
-                              color: MgrsColors.danger,
+                          _buildOrderHeaderCard(context),
+                          const SizedBox(height: MgrsSpacing.sm),
+                          _buildVenueCard(context),
+                          const SizedBox(height: MgrsSpacing.sm),
+                          if (widget.gateway != null && _order != null) ...[
+                            UnitAllocationCard(
+                              gateway: widget.gateway!,
+                              order: _order!,
+                              isEditable:
+                                  (widget.user?.isTechnician == true ||
+                                      widget.user?.isAdmin == true) &&
+                                  !_order!.isCompletedOrCancelled,
                             ),
-                          ),
-                          const SizedBox(height: MgrsSpacing.md),
-                          ElevatedButton(
-                            onPressed: _loadOrderDetail,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: MgrsColors.action,
-                              foregroundColor: Colors.white,
-                            ),
-                            child: const Text('Coba Lagi'),
-                          ),
+                            const SizedBox(height: MgrsSpacing.sm),
+                          ],
+                          _buildCustomerCard(context),
+                          const SizedBox(height: MgrsSpacing.sm),
+                          _buildEventNotesCard(context),
+                          const SizedBox(height: MgrsSpacing.sm),
+                          _buildInvoiceCard(context),
+                          const SizedBox(height: MgrsSpacing.lg),
                         ],
                       ),
                     ),
-                  )
-                : Column(
-                    children: [
-                      _buildTopBar(context),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          physics: const BouncingScrollPhysics(),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: MgrsSpacing.md,
-                            vertical: MgrsSpacing.xs,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _buildOrderHeaderCard(context),
-                              const SizedBox(height: MgrsSpacing.sm),
-                              _buildVenueCard(context),
-                              const SizedBox(height: MgrsSpacing.sm),
-                              if (widget.gateway != null && _order != null) ...[
-                                UnitAllocationCard(
-                                  gateway: widget.gateway!,
-                                  order: _order!,
-                                  isEditable:
-                                      (widget.user?.isTechnician == true ||
-                                              widget.user?.isAdmin == true) &&
-                                          !_order!.isCompletedOrCancelled,
-                                ),
-                                const SizedBox(height: MgrsSpacing.sm),
-                              ],
-                              _buildCustomerCard(context),
-                              const SizedBox(height: MgrsSpacing.sm),
-                              _buildEventNotesCard(context),
-                              const SizedBox(height: MgrsSpacing.sm),
-                              _buildInvoiceCard(context),
-                              const SizedBox(height: MgrsSpacing.lg),
-                            ],
-                          ),
-                        ),
-                      ),
-                      _buildBottomCta(context),
-                    ],
                   ),
+                  _buildBottomCta(context),
+                ],
+              ),
       ),
     );
   }
 
   Widget _buildTopBar(BuildContext context) {
-    final canManage = widget.user?.canManageOrders == true &&
+    final canManage =
+        widget.user?.canManageOrders == true &&
         _order != null &&
         !_order!.isCompletedOrCancelled;
 
@@ -217,7 +218,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               'Detail order',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
+                fontFamily: 'Inter',
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
                 color: MgrsColors.ink,
@@ -250,7 +251,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       Text(
                         'Batalkan Order',
                         style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
+                          fontFamily: 'Inter',
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: MgrsColors.danger,
@@ -274,8 +275,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final isDone = order?.statusOrderan?.toLowerCase() == 'selesai';
     final isCancelled = order?.isCancelled ?? false;
 
-    final statusText =
-        isCancelled ? 'Dibatalkan' : (isDone ? 'Selesai' : 'Aktif');
+    final statusText = isCancelled
+        ? 'Dibatalkan'
+        : (isDone ? 'Selesai' : 'Aktif');
     final statusTone = isCancelled
         ? MgrsStatusTone.danger
         : (isDone ? MgrsStatusTone.success : MgrsStatusTone.warning);
@@ -299,7 +301,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               Text(
                 displayCode,
                 style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
+                  fontFamily: 'Inter',
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: MgrsColors.ink,
@@ -313,7 +315,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           Text(
             order?.namaEvent ?? '-',
             style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
+              fontFamily: 'Inter',
               fontSize: 14,
               fontWeight: FontWeight.w700,
               color: MgrsColors.ink,
@@ -326,14 +328,18 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               decoration: BoxDecoration(
                 color: MgrsColors.dangerSoft,
                 borderRadius: BorderRadius.circular(MgrsRadii.control),
-                border:
-                    Border.all(color: MgrsColors.danger.withValues(alpha: 0.2)),
+                border: Border.all(
+                  color: MgrsColors.danger.withValues(alpha: 0.2),
+                ),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.cancel_rounded,
-                      color: MgrsColors.danger, size: 18),
+                  const Icon(
+                    Icons.cancel_rounded,
+                    color: MgrsColors.danger,
+                    size: 18,
+                  ),
                   const SizedBox(width: MgrsSpacing.sm),
                   Expanded(
                     child: Column(
@@ -342,7 +348,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         const Text(
                           'Orderan Ini Telah Dibatalkan',
                           style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
+                            fontFamily: 'Inter',
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
                             color: MgrsColors.danger,
@@ -353,7 +359,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                           Text(
                             'Alasan: ${order!.cancellationReason}',
                             style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
+                              fontFamily: 'Inter',
                               fontSize: 11.5,
                               color: MgrsColors.ink,
                             ),
@@ -378,7 +384,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   const Text(
                     'Pemasangan',
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                       color: MgrsColors.muted,
@@ -390,7 +396,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         ? order!.formattedDate
                         : 'Jadwal belum ditentukan',
                     style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: MgrsColors.ink,
@@ -404,7 +410,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   const Text(
                     'Durasi Sewa',
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                       color: MgrsColors.muted,
@@ -414,7 +420,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   Text(
                     order?.durasiSewaText ?? '1 Hari',
                     style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: MgrsColors.action,
@@ -428,7 +434,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   const Text(
                     'Kebutuhan',
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                       color: MgrsColors.muted,
@@ -438,7 +444,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   Text(
                     '${order?.jumlahUnit ?? 1} Unit',
                     style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: MgrsColors.ink,
@@ -502,7 +508,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               const Text(
                 'Lokasi Acara',
                 style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
+                  fontFamily: 'Inter',
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: MgrsColors.ink,
@@ -515,7 +521,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     if (!ok && context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Peta lokasi acara tidak dapat dibuka.'),
+                          content: Text(
+                            'Peta lokasi acara tidak dapat dibuka.',
+                          ),
                         ),
                       );
                     }
@@ -534,13 +542,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: const [
-                        Icon(Icons.near_me_rounded,
-                            size: 14, color: MgrsColors.action),
+                        Icon(
+                          Icons.near_me_rounded,
+                          size: 14,
+                          color: MgrsColors.action,
+                        ),
                         SizedBox(width: 4),
                         Text(
                           'Petunjuk Arah',
                           style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
+                            fontFamily: 'Inter',
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: MgrsColors.action,
@@ -576,7 +587,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 child: Text(
                   order?.alamat ?? 'Alamat lokasi belum diisi',
                   style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
+                    fontFamily: 'Inter',
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: MgrsColors.ink,
@@ -606,7 +617,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           const Text(
             'Informasi Klien & Kontak',
             style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
+              fontFamily: 'Inter',
               fontSize: 14,
               fontWeight: FontWeight.w700,
               color: MgrsColors.ink,
@@ -622,7 +633,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     const Text(
                       'Nama Klien',
                       style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                         color: MgrsColors.muted,
@@ -632,7 +643,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     Text(
                       order?.namaClient ?? '-',
                       style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: MgrsColors.ink,
@@ -648,7 +659,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     const Text(
                       'WhatsApp',
                       style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                         color: MgrsColors.muted,
@@ -658,7 +669,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     Text(
                       order?.nomorWhatsapp ?? '-',
                       style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: MgrsColors.ink,
@@ -691,7 +702,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           const Text(
             'Catatan Khusus Acara',
             style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
+              fontFamily: 'Inter',
               fontSize: 14,
               fontWeight: FontWeight.w700,
               color: MgrsColors.ink,
@@ -701,7 +712,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           Text(
             note,
             style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
+              fontFamily: 'Inter',
               fontSize: 13,
               color: MgrsColors.ink,
               height: 1.4,
@@ -736,7 +747,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               const Text(
                 'Rincian Invoice',
                 style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
+                  fontFamily: 'Inter',
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: MgrsColors.ink,
@@ -748,8 +759,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   tone: inv.isPaid
                       ? MgrsStatusTone.success
                       : (inv.isCancelled
-                          ? MgrsStatusTone.danger
-                          : MgrsStatusTone.warning),
+                            ? MgrsStatusTone.danger
+                            : MgrsStatusTone.warning),
                 ),
             ],
           ),
@@ -758,7 +769,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             Text(
               inv.invoiceReference,
               style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
+                fontFamily: 'Inter',
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: MgrsColors.ink,
@@ -771,7 +782,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 const Text(
                   'Total Tagihan:',
                   style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
+                    fontFamily: 'Inter',
                     fontSize: 12,
                     color: MgrsColors.muted,
                   ),
@@ -779,7 +790,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 Text(
                   inv.totalAmountFormatted,
                   style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
+                    fontFamily: 'Inter',
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: MgrsColors.action,
@@ -795,7 +806,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   const Text(
                     'Telah Dibayar:',
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 12,
                       color: MgrsColors.muted,
                     ),
@@ -803,7 +814,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   Text(
                     inv.paidAmountFormatted,
                     style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: MgrsColors.success,
@@ -839,7 +850,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             const Text(
               'Belum ada invoice terkait orderan ini.',
               style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
+                fontFamily: 'Inter',
                 fontSize: 12,
                 color: MgrsColors.muted,
               ),
@@ -909,7 +920,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
 
     final isPast = order.statusOrderan?.toLowerCase() == 'selesai';
-    final canComplete = !isPast &&
+    final canComplete =
+        !isPast &&
         (widget.user?.canManageOrders == true ||
             widget.user?.isTechnician == true ||
             widget.user?.isAdmin == true);
@@ -974,9 +986,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             final ok = await order.launchWhatsApp();
             if (!ok && mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Tidak dapat membuka WhatsApp.'),
-                ),
+                const SnackBar(content: Text('Tidak dapat membuka WhatsApp.')),
               );
             }
           } else {
@@ -991,7 +1001,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         label: const Text(
           'Hubungi Pemesan',
           style: TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
+            fontFamily: 'Inter',
             fontSize: 13,
             fontWeight: FontWeight.w700,
           ),
@@ -1021,7 +1031,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         title: const Text(
           'Selesaikan order?',
           style: TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
+            fontFamily: 'Inter',
             fontSize: 16,
             fontWeight: FontWeight.w800,
             color: MgrsColors.ink,
@@ -1034,7 +1044,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             Text(
               'Apakah event "${order.namaEvent}" (${order.displayCode}) dengan ${order.jumlahUnit} unit blower telah selesai?',
               style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
+                fontFamily: 'Inter',
                 fontSize: 13,
                 color: MgrsColors.ink,
                 height: 1.4,
@@ -1044,7 +1054,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             const Text(
               'Status order akan diubah menjadi Selesai.',
               style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
+                fontFamily: 'Inter',
                 fontSize: 12,
                 color: MgrsColors.muted,
                 height: 1.4,
@@ -1059,9 +1069,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: MgrsColors.ink,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: MgrsColors.ink),
             child: const Text('Ya, Selesaikan'),
           ),
         ],
@@ -1080,7 +1088,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           const SnackBar(
             content: Text(
               'Orderan berhasil ditandai selesai.',
-              style: TextStyle(fontFamily: 'Plus Jakarta Sans'),
+              style: TextStyle(fontFamily: 'Inter'),
             ),
             backgroundColor: MgrsColors.success,
             behavior: SnackBarBehavior.floating,
@@ -1092,7 +1100,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           const SnackBar(
             content: Text(
               'Status order belum dapat diperbarui. Periksa koneksi Anda.',
-              style: TextStyle(fontFamily: 'Plus Jakarta Sans'),
+              style: TextStyle(fontFamily: 'Inter'),
             ),
             backgroundColor: MgrsColors.danger,
             behavior: SnackBarBehavior.floating,
@@ -1148,7 +1156,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     child: Text(
                       'Batalkan Orderan?',
                       style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: MgrsColors.ink,
@@ -1165,7 +1173,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     Text(
                       'Event "${order.namaEvent}" (${order.displayCode}) akan dibatalkan dan dihapus dari jadwal aktif pemasangan.',
                       style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 13,
                         color: MgrsColors.muted,
                         height: 1.4,
@@ -1177,7 +1185,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFFBEB),
-                          borderRadius: BorderRadius.circular(MgrsRadii.control),
+                          borderRadius: BorderRadius.circular(
+                            MgrsRadii.control,
+                          ),
                           border: Border.all(color: const Color(0xFFFDE68A)),
                         ),
                         child: Row(
@@ -1193,7 +1203,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                               child: Text(
                                 'Perhatian: Invoice memiliki pembayaran tercatat sebesar ${inv.paidAmountFormatted}. Pastikan penyelesaian refund atau koordinasi dana dilakukan.',
                                 style: const TextStyle(
-                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontFamily: 'Inter',
                                   fontSize: 11.5,
                                   color: Color(0xFF92400E),
                                   height: 1.4,
@@ -1233,7 +1243,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                     child: Text(
                                       'Batalkan invoice yang belum dibayar',
                                       style: TextStyle(
-                                        fontFamily: 'Plus Jakarta Sans',
+                                        fontFamily: 'Inter',
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
                                         color: MgrsColors.ink,
@@ -1247,7 +1257,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                 child: Text(
                                   'Invoice terkait (${inv.invoiceReference}) yang belum dibayar akan otomatis dibatalkan jika opsi ini aktif.',
                                   style: const TextStyle(
-                                    fontFamily: 'Plus Jakarta Sans',
+                                    fontFamily: 'Inter',
                                     fontSize: 11.5,
                                     color: MgrsColors.muted,
                                   ),
@@ -1316,8 +1326,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
         final currentNote = order.catatanOrderan ?? '';
         final cancelTag = '[BATAL: $reason]';
-        final updatedNote =
-            currentNote.isNotEmpty ? '$currentNote\n$cancelTag' : cancelTag;
+        final updatedNote = currentNote.isNotEmpty
+            ? '$currentNote\n$cancelTag'
+            : cancelTag;
 
         setState(() {
           _order = order.copyWith(
@@ -1335,7 +1346,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           const SnackBar(
             content: Text(
               'Orderan berhasil dibatalkan dan invoice terkait telah dihapus.',
-              style: TextStyle(fontFamily: 'Plus Jakarta Sans'),
+              style: TextStyle(fontFamily: 'Inter'),
             ),
             backgroundColor: MgrsColors.danger,
             behavior: SnackBarBehavior.floating,
@@ -1347,7 +1358,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           const SnackBar(
             content: Text(
               'Orderan belum dapat dibatalkan. Periksa koneksi Anda.',
-              style: TextStyle(fontFamily: 'Plus Jakarta Sans'),
+              style: TextStyle(fontFamily: 'Inter'),
             ),
             backgroundColor: MgrsColors.danger,
             behavior: SnackBarBehavior.floating,

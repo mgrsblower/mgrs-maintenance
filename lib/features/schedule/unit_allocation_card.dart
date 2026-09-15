@@ -48,8 +48,9 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
 
   void _initUnits() {
     final existing = List<AllocatedUnit>.from(widget.order.allocatedUnits);
-    final targetCount =
-        widget.order.jumlahUnit > 0 ? widget.order.jumlahUnit : 1;
+    final targetCount = widget.order.jumlahUnit > 0
+        ? widget.order.jumlahUnit
+        : 1;
 
     while (existing.length < targetCount) {
       existing.add(AllocatedUnit(unitIndex: existing.length + 1));
@@ -71,10 +72,7 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
   Future<void> _saveCurrentAllocation() async {
     try {
       final orderanId = widget.order.orderanId ?? widget.order.id;
-      await widget.gateway.saveOrderUnitAllocation(
-        orderanId,
-        _units,
-      );
+      await widget.gateway.saveOrderUnitAllocation(orderanId, _units);
       widget.onAllocationChanged?.call(_units);
     } catch (_) {
       if (mounted) {
@@ -114,17 +112,17 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
       final oldUnit = _units[unitIndex];
       _units[unitIndex] = switch (kind) {
         'Kepala' => oldUnit.copyWith(
-            kepalaSticker: cleanSelected,
-            clearKepala: cleanSelected == null,
-          ),
+          kepalaSticker: cleanSelected,
+          clearKepala: cleanSelected == null,
+        ),
         'Batang' => oldUnit.copyWith(
-            batangSticker: cleanSelected,
-            clearBatang: cleanSelected == null,
-          ),
+          batangSticker: cleanSelected,
+          clearBatang: cleanSelected == null,
+        ),
         'Tabung' => oldUnit.copyWith(
-            tabungSticker: cleanSelected,
-            clearTabung: cleanSelected == null,
-          ),
+          tabungSticker: cleanSelected,
+          clearTabung: cleanSelected == null,
+        ),
         _ => oldUnit,
       };
     });
@@ -312,16 +310,14 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
                 return;
               }
 
-              final exactMatch =
-                  searchResults.cast<Map<String, Object?>?>().firstWhere(
-                        (c) =>
-                            c?['nomor_stiker']
-                                ?.toString()
-                                .trim()
-                                .toUpperCase() ==
-                            normalizedCode,
-                        orElse: () => null,
-                      );
+              final exactMatch = searchResults
+                  .cast<Map<String, Object?>?>()
+                  .firstWhere(
+                    (c) =>
+                        c?['nomor_stiker']?.toString().trim().toUpperCase() ==
+                        normalizedCode,
+                    orElse: () => null,
+                  );
 
               if (exactMatch == null) {
                 setDialogState(() {
@@ -358,30 +354,32 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
                 return;
               }
 
-              final history =
-                  await widget.gateway.fetchComponentOrderUsageHistory(
-                normalizedCode,
-                forceRefresh: true,
-              );
+              final history = await widget.gateway
+                  .fetchComponentOrderUsageHistory(
+                    normalizedCode,
+                    forceRefresh: true,
+                  );
               final currentOrderId = widget.order.id;
               final currentOrderanId = widget.order.orderanId;
 
-              final activeHistory =
-                  history.cast<Map<String, Object?>?>().firstWhere(
-                (h) {
-                  if (h == null) return false;
-                  final hOrderId = h['orderan_id']?.toString().trim();
-                  final status =
-                      h['status_orderan']?.toString().trim().toLowerCase();
-                  final isCurrent = hOrderId == currentOrderId ||
-                      hOrderId == currentOrderanId;
-                  final isInactive = status == 'selesai' ||
-                      status == 'dibatalkan' ||
-                      status == 'batal';
-                  return !isCurrent && !isInactive;
-                },
-                orElse: () => null,
-              );
+              final activeHistory = history
+                  .cast<Map<String, Object?>?>()
+                  .firstWhere((h) {
+                    if (h == null) return false;
+                    final hOrderId = h['orderan_id']?.toString().trim();
+                    final status = h['status_orderan']
+                        ?.toString()
+                        .trim()
+                        .toLowerCase();
+                    final isCurrent =
+                        hOrderId == currentOrderId ||
+                        hOrderId == currentOrderanId;
+                    final isInactive =
+                        status == 'selesai' ||
+                        status == 'dibatalkan' ||
+                        status == 'batal';
+                    return !isCurrent && !isInactive;
+                  }, orElse: () => null);
 
               if (activeHistory != null) {
                 final otherOrder =
@@ -461,7 +459,7 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
                   child: Text(
                     'Scan barcode komponen',
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                       color: MgrsColors.ink,
@@ -486,8 +484,9 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
                             if (isProcessing) return;
                             final barcodes = capture.barcodes;
                             for (final barcode in barcodes) {
-                              final val =
-                                  barcode.rawValue?.trim().toUpperCase();
+                              final val = barcode.rawValue
+                                  ?.trim()
+                                  .toUpperCase();
                               if (val != null && val.isNotEmpty) {
                                 processCode(val);
                                 return;
@@ -503,14 +502,15 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
                         padding: const EdgeInsets.all(MgrsSpacing.sm),
                         decoration: BoxDecoration(
                           color: MgrsColors.dangerSoft,
-                          borderRadius:
-                              BorderRadius.circular(MgrsRadii.control),
+                          borderRadius: BorderRadius.circular(
+                            MgrsRadii.control,
+                          ),
                           border: Border.all(color: MgrsColors.danger),
                         ),
                         child: Text(
                           dialogError!,
                           style: const TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
+                            fontFamily: 'Inter',
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: MgrsColors.danger,
@@ -522,7 +522,7 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
                     const Text(
                       'Kode stiker:',
                       style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: MgrsColors.muted,
@@ -539,8 +539,9 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
                           vertical: MgrsSpacing.sm,
                         ),
                         border: OutlineInputBorder(
-                          borderRadius:
-                              BorderRadius.circular(MgrsRadii.control),
+                          borderRadius: BorderRadius.circular(
+                            MgrsRadii.control,
+                          ),
                         ),
                       ),
                       onSubmitted: (val) {
@@ -608,7 +609,7 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
               const Text(
                 'Alokasi Unit Blower',
                 style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
+                  fontFamily: 'Inter',
                   fontSize: 15,
                   fontWeight: FontWeight.w800,
                   color: MgrsColors.ink,
@@ -621,7 +622,7 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
           Text(
             '$completedCount dari $totalCount unit lengkap',
             style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
+              fontFamily: 'Inter',
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: MgrsColors.muted,
@@ -690,7 +691,8 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _units.length,
-            separatorBuilder: (_, index) => const SizedBox(height: MgrsSpacing.sm),
+            separatorBuilder: (_, index) =>
+                const SizedBox(height: MgrsSpacing.sm),
             itemBuilder: (context, index) {
               return _buildUnitAllocationRow(index);
             },
@@ -723,7 +725,7 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
               Text(
                 'Unit ${unitIndex + 1}',
                 style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
+                  fontFamily: 'Inter',
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: MgrsColors.ink,
@@ -815,7 +817,7 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
             Text(
               kind,
               style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
+                fontFamily: 'Inter',
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
                 color: MgrsColors.muted,
@@ -826,7 +828,7 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
               Text(
                 sticker,
                 style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
+                  fontFamily: 'Inter',
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
                   color: MgrsColors.action,
@@ -837,7 +839,7 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
               Text(
                 '${wearCount ?? 0}x pakai',
                 style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
+                  fontFamily: 'Inter',
                   fontSize: 10,
                   fontWeight: FontWeight.w500,
                   color: MgrsColors.muted,
@@ -867,7 +869,7 @@ class _UnitAllocationCardState extends State<UnitAllocationCard> {
               const Text(
                 'Pilih',
                 style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
+                  fontFamily: 'Inter',
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: MgrsColors.muted,

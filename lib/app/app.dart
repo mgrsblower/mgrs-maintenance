@@ -341,7 +341,7 @@ class _MaintenanceHomeState extends State<MaintenanceHome>
               ? 'Beralih ke Mode PIC (Orderan & Invoice)'
               : 'Beralih ke Mode Servis (Teknisi Maintenance)',
           style: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
+            fontFamily: 'Inter',
             fontWeight: FontWeight.w600,
           ),
         ),

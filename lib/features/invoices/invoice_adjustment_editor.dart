@@ -26,7 +26,10 @@ class InvoiceAdjustmentEditor extends StatelessWidget {
       key: Key('invoice-adjustment-remove-$index'),
       onPressed: readOnly || !canRemove ? null : onRemove,
       tooltip: 'Hapus penyesuaian',
-      icon: const Icon(Icons.remove_circle_outline_rounded, color: Color(0xFFDC2626)),
+      icon: const Icon(
+        Icons.remove_circle_outline_rounded,
+        color: Color(0xFFDC2626),
+      ),
     );
 
     return LayoutBuilder(
@@ -42,12 +45,17 @@ class InvoiceAdjustmentEditor extends StatelessWidget {
                   key: Key('invoice-adjustment-description-$index'),
                   controller: descriptionController,
                   readOnly: readOnly,
-                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                  style: const TextStyle(fontFamily: 'Inter', fontSize: 13),
                   decoration: InputDecoration(
                     labelText: 'Deskripsi Penyesuaian',
                     hintText: 'Misal: Diskon, Tambahan Kabel, Transport',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                   ),
                   onChanged: (_) => onChanged(),
                 ),
@@ -60,12 +68,20 @@ class InvoiceAdjustmentEditor extends StatelessWidget {
                         controller: amountController,
                         readOnly: readOnly,
                         keyboardType: TextInputType.number,
-                        style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 13,
+                        ),
                         decoration: InputDecoration(
                           labelText: 'Nominal (+ / -)',
                           prefixText: 'Rp ',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                         ),
                         onChanged: (_) => onChanged(),
                       ),
@@ -90,12 +106,17 @@ class InvoiceAdjustmentEditor extends StatelessWidget {
                   key: Key('invoice-adjustment-description-$index'),
                   controller: descriptionController,
                   readOnly: readOnly,
-                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                  style: const TextStyle(fontFamily: 'Inter', fontSize: 13),
                   decoration: InputDecoration(
                     labelText: 'Deskripsi',
                     hintText: 'Misal: Diskon, Transport',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                   ),
                   onChanged: (_) => onChanged(),
                 ),
@@ -108,12 +129,17 @@ class InvoiceAdjustmentEditor extends StatelessWidget {
                   controller: amountController,
                   readOnly: readOnly,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                  style: const TextStyle(fontFamily: 'Inter', fontSize: 13),
                   decoration: InputDecoration(
                     labelText: 'Nominal (+ / -)',
                     prefixText: 'Rp ',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                   ),
                   onChanged: (_) => onChanged(),
                 ),

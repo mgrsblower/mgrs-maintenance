@@ -162,8 +162,8 @@ void main() {
       await tester.tap(avatarFinder);
       await tester.pumpAndSettle();
 
-      // 3. Verify Mode Tampilan (Khusus Admin) section is present in sheet
-      expect(find.text('Mode Tampilan (Khusus Admin)'), findsOneWidget);
+      // 3. Verify the admin display-mode section is present in the sheet.
+      expect(find.text('Mode tampilan'), findsOneWidget);
       expect(find.text('Mode PIC'), findsOneWidget);
       expect(find.text('Mode Servis'), findsOneWidget);
 

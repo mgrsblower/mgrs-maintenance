@@ -186,7 +186,7 @@ class _ScanScreenState extends State<ScanScreen>
           child: Text(
             label,
             style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
+              fontFamily: 'Inter',
               fontSize: 12,
               fontWeight: FontWeight.w800,
               color: isSelected ? const Color(0xFF0F172A) : Colors.white,
@@ -586,7 +586,7 @@ class _ScanScreenState extends State<ScanScreen>
                                 Text(
                                   'Scanner Cepat Lapangan',
                                   style: TextStyle(
-                                    fontFamily: 'Plus Jakarta Sans',
+                                    fontFamily: 'Inter',
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
                                     color: Colors.white,
@@ -788,7 +788,7 @@ class _ScanScreenState extends State<ScanScreen>
                   Text(
                     comp.code,
                     style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF0F172A),
@@ -806,7 +806,7 @@ class _ScanScreenState extends State<ScanScreen>
                     child: Text(
                       comp.kind,
                       style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF2563EB),
@@ -835,7 +835,7 @@ class _ScanScreenState extends State<ScanScreen>
                     Text(
                       badgeText,
                       style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
@@ -851,7 +851,7 @@ class _ScanScreenState extends State<ScanScreen>
           Text(
             lastCheckText,
             style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
+              fontFamily: 'Inter',
               fontSize: 12,
               color: Color(0xFF64748B),
             ),
@@ -877,7 +877,7 @@ class _ScanScreenState extends State<ScanScreen>
                   Text(
                     'Mode Pantau Status • Hanya Baca',
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF475569),
@@ -906,7 +906,7 @@ class _ScanScreenState extends State<ScanScreen>
                     Text(
                       'CATATAN KONDISI FISIK',
                       style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF64748B),
@@ -919,7 +919,7 @@ class _ScanScreenState extends State<ScanScreen>
                 Text(
                   noteText,
                   style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
+                    fontFamily: 'Inter',
                     fontSize: 12,
                     color: Color(0xFF334155),
                     height: 1.4,
@@ -972,7 +972,7 @@ class _ScanScreenState extends State<ScanScreen>
                           ? 'Catat Servis Unit Ini'
                           : 'Perbarui Kondisi Unit',
                       style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -1012,7 +1012,7 @@ class _ScanScreenState extends State<ScanScreen>
                       label: const Text(
                         'Buka Detail',
                         style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
+                          fontFamily: 'Inter',
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
@@ -1043,7 +1043,7 @@ class _ScanScreenState extends State<ScanScreen>
                       label: const Text(
                         'Pindai Berikutnya',
                         style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
+                          fontFamily: 'Inter',
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -1200,7 +1200,7 @@ class ScanStatusPanel extends StatelessWidget {
                     Text(
                       title,
                       style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF0F172A),
@@ -1211,7 +1211,7 @@ class ScanStatusPanel extends StatelessWidget {
                       Text(
                         description,
                         style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
+                          fontFamily: 'Inter',
                           fontSize: 12,
                           height: 1.35,
                           color: Color(0xFF64748B),

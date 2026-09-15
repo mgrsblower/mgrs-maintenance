@@ -267,9 +267,11 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e is AppFailure
-              ? e.message
-              : 'Invoice belum dapat disimpan. Silakan coba lagi.'),
+          content: Text(
+            e is AppFailure
+                ? e.message
+                : 'Invoice belum dapat disimpan. Silakan coba lagi.',
+          ),
           backgroundColor: const Color(0xFF9F2F2D),
         ),
       );
@@ -395,7 +397,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
               Text(
                 _refController.text,
                 style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
+                  fontFamily: 'Inter',
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                   color: Color(0xFF18181B),
@@ -421,7 +423,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                     child: Text(
                       _paymentStatus.label,
                       style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 10.5,
                         fontWeight: FontWeight.w700,
                         color: statusText,
@@ -432,7 +434,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                   Text(
                     _isEditing ? 'Mode Edit Rincian' : 'Dokumen Tagihan Resmi',
                     style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                       color: Color(0xFF71717A),
@@ -471,7 +473,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                     Text(
                       _isEditing ? 'Pratinjau' : 'Ubah',
                       style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 11.5,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF18181B),
@@ -527,7 +529,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
           Text(
             clientName,
             style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
+              fontFamily: 'Inter',
               fontSize: 16,
               fontWeight: FontWeight.w800,
               color: Color(0xFF18181B),
@@ -537,7 +539,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
           Text(
             '$eventName${phone.isNotEmpty ? " • $phone" : ""}',
             style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
+              fontFamily: 'Inter',
               fontSize: 12.5,
               fontWeight: FontWeight.w500,
               color: Color(0xFF71717A),
@@ -547,7 +549,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
           Text(
             'Tgl Invoice: ${_invoiceDateController.text.trim()} • Jatuh Tempo: ${_dueDateController.text.trim()}',
             style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
+              fontFamily: 'Inter',
               fontSize: 11,
               color: Color(0xFFA1A1AA),
             ),
@@ -559,7 +561,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
           const Text(
             'RINCIAN SEWA',
             style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
+              fontFamily: 'Inter',
               fontSize: 10.5,
               fontWeight: FontWeight.w700,
               color: Color(0xFFA1A1AA),
@@ -578,7 +580,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                     const Text(
                       'Sewa Mistyfan Blower MGRS',
                       style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF18181B),
@@ -588,7 +590,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                     Text(
                       '$qty Unit × $days Hari @ ${InvoiceRecord.formatRupiah(unitPrice)}',
                       style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 11.5,
                         color: Color(0xFF71717A),
                       ),
@@ -599,7 +601,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
               Text(
                 InvoiceRecord.formatRupiah(calc.subtotal),
                 style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
+                  fontFamily: 'Inter',
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF18181B),
@@ -623,7 +625,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                             ? adj.descCtrl.text.trim()
                             : 'Penyesuaian Biaya',
                         style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
+                          fontFamily: 'Inter',
                           fontSize: 12,
                           color: Color(0xFF71717A),
                         ),
@@ -633,7 +635,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                           num.tryParse(adj.amountCtrl.text) ?? 0,
                         ),
                         style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
+                          fontFamily: 'Inter',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF18181B),
@@ -700,7 +702,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                 Text(
                   'BCA 2302619141 a/n MADNUR',
                   style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
+                    fontFamily: 'Inter',
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF18181B),
@@ -726,7 +728,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
         Text(
           label,
           style: TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
+            fontFamily: 'Inter',
             fontSize: isBold ? 13 : 12,
             fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
             color: const Color(0xFF71717A),
@@ -735,7 +737,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
         Text(
           value,
           style: TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
+            fontFamily: 'Inter',
             fontSize: isBold ? 13.5 : 12,
             fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
             color: valueColor ?? const Color(0xFF18181B),
@@ -758,7 +760,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
             const Text(
               'INFORMASI KLIEN & ACARA',
               style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
+                fontFamily: 'Inter',
                 fontSize: 10.5,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFFA1A1AA),
@@ -768,29 +770,20 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
             const SizedBox(height: 8),
             TextFormField(
               controller: _customerNameController,
-              style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 13,
-              ),
+              style: const TextStyle(fontFamily: 'Inter', fontSize: 13),
               decoration: _inputDecoration('Nama Klien'),
             ),
             const SizedBox(height: 8),
             TextFormField(
               controller: _customerPhoneController,
               keyboardType: TextInputType.phone,
-              style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 13,
-              ),
+              style: const TextStyle(fontFamily: 'Inter', fontSize: 13),
               decoration: _inputDecoration('No. WhatsApp Klien'),
             ),
             const SizedBox(height: 8),
             TextFormField(
               controller: _productController,
-              style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 13,
-              ),
+              style: const TextStyle(fontFamily: 'Inter', fontSize: 13),
               decoration: _inputDecoration('Nama Acara / Keterangan'),
             ),
             const SizedBox(height: 14),
@@ -800,10 +793,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                 Expanded(
                   child: TextFormField(
                     controller: _invoiceDateController,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 12.5,
-                    ),
+                    style: const TextStyle(fontFamily: 'Inter', fontSize: 12.5),
                     decoration: _inputDecoration('Tanggal Invoice'),
                   ),
                 ),
@@ -811,10 +801,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                 Expanded(
                   child: TextFormField(
                     controller: _dueDateController,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 12.5,
-                    ),
+                    style: const TextStyle(fontFamily: 'Inter', fontSize: 12.5),
                     decoration: _inputDecoration('Jatuh Tempo'),
                   ),
                 ),
@@ -824,7 +811,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
             const Text(
               'KUANTITAS & HARGA SEWA',
               style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
+                fontFamily: 'Inter',
                 fontSize: 10.5,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFFA1A1AA),
@@ -839,10 +826,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                   child: TextFormField(
                     controller: _qtyController,
                     keyboardType: TextInputType.number,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 13,
-                    ),
+                    style: const TextStyle(fontFamily: 'Inter', fontSize: 13),
                     decoration: _inputDecoration('Unit'),
                   ),
                 ),
@@ -851,10 +835,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                   child: TextFormField(
                     controller: _daysController,
                     keyboardType: TextInputType.number,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 13,
-                    ),
+                    style: const TextStyle(fontFamily: 'Inter', fontSize: 13),
                     decoration: _inputDecoration('Durasi (Hari)'),
                   ),
                 ),
@@ -864,10 +845,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                   child: TextFormField(
                     controller: _unitPriceController,
                     keyboardType: TextInputType.number,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 13,
-                    ),
+                    style: const TextStyle(fontFamily: 'Inter', fontSize: 13),
                     decoration: _inputDecoration('Harga Satuan', prefix: 'Rp '),
                   ),
                 ),
@@ -881,7 +859,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                 const Text(
                   'PENYESUAIAN / DISKON',
                   style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
+                    fontFamily: 'Inter',
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFFA1A1AA),
@@ -914,7 +892,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                 child: Text(
                   'Tidak ada penyesuaian biaya tambahan.',
                   style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
+                    fontFamily: 'Inter',
                     fontSize: 11.5,
                     color: Color(0xFFA1A1AA),
                   ),
@@ -975,10 +953,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
                   child: TextFormField(
                     controller: _paidAmountController,
                     keyboardType: TextInputType.number,
-                    style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 13,
-                    ),
+                    style: const TextStyle(fontFamily: 'Inter', fontSize: 13),
                     decoration: _inputDecoration('Terbayar', prefix: 'Rp '),
                   ),
                 ),
@@ -995,13 +970,13 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
       isDense: true,
       labelText: label,
       labelStyle: const TextStyle(
-        fontFamily: 'Plus Jakarta Sans',
+        fontFamily: 'Inter',
         fontSize: 12,
         color: Color(0xFF71717A),
       ),
       prefixText: prefix,
       prefixStyle: const TextStyle(
-        fontFamily: 'Plus Jakarta Sans',
+        fontFamily: 'Inter',
         fontWeight: FontWeight.w700,
         color: Color(0xFF18181B),
       ),
@@ -1045,7 +1020,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
             Text(
               label,
               style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
+                fontFamily: 'Inter',
                 fontSize: _footerLabelSize,
                 fontWeight: FontWeight.w700,
                 color: textColor,
@@ -1120,7 +1095,7 @@ Terima kasih atas kerja sama dan kepercayaannya!''';
               label,
               maxLines: 1,
               style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
+                fontFamily: 'Inter',
                 fontSize: _footerLabelSize,
                 fontWeight: FontWeight.w700,
                 color: textColor,

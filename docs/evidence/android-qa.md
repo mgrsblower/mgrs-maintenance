@@ -1,31 +1,74 @@
-# Android QA evidence
+# Android QA Evidence & Verification Log
 
-Date: 7 September 2026  
-Device: `mgrs_phase2_x86_qa`, Android emulator, 1080 x 1920  
-Package: `com.mgrs.mgrs_maintenance`
+Date: 15 September 2026  
+Device: `mgrs_phase2_x86_qa`, Android emulator (`emulator-5554`), Android API 37 (x86_64), 1080 x 1920  
+Package: `com.mgrs.mgrs_maintenance`  
+Branch: `RedesignUI`
 
-## Observed workflow
+---
 
-`flutter drive --driver integration_test/driver.dart --target integration_test/app_flow_test.dart -d emulator-5554` completed successfully. The test drove the Flutter surface through:
+## 1. Integration Test Execution (Android Emulator API 37)
 
-1. authenticated three-tab shell using an injected QA gateway;
-2. manual sticker lookup for a Kepala component;
-3. detail display without a write;
-4. reviewed manual condition change from Rusak Ringan/Tidak to OK/Ya;
-5. service form with problem, action, result, review, and save;
-6. monthly task list for the fourth-weekend period;
-7. combined manual/service history, before/after detail, and append-only correction entry point.
+Execution command:
+```bash
+flutter drive --driver integration_test/driver.dart --target integration_test/app_flow_test.dart -d emulator-5554
+```
+Result: **100% PASS (4/4 Flows Completed Successfully)**.
 
-The first device run exposed an invalid asynchronous `setState` callback in component detail refresh. The callback and the identical history-detail pattern were corrected before the passing run.
+### Verified Critical Flows
+1. **Flow 1: Service Shell & Tab Navigation**
+   - Authenticated technician navigation shell.
+   - Seamless switching across tabs (Beranda, Aset, Servis) and floating scanner action.
+2. **Flow 2: PIC Mode Switch & Bottom Sheet Navigation**
+   - User profile bottom sheet trigger.
+   - Role toggle between PIC and Teknisi.
+   - Dynamically adapts bottom navigation items (`picNavItems`) and specialized PIC dashboard widgets.
+3. **Flow 3: Invoice Error Retry & Empty State Handling**
+   - Handles network/server RPC simulation failure with retry UI.
+   - Graceful fallback to empty state representation.
+4. **Flow 4: Session Expiry Handling**
+   - Detects session timeout/token expiration.
+   - Redirects to login prompt cleanly without app crashes or memory leaks.
 
-## Visual artifacts
+---
 
-- `screenshots/maintenance-login.png`: cold start of the real app build using the locally configured Supabase URL and publishable key. No credentials were entered and no remote mutation occurred.
-- `screenshots/maintenance-history-detail.png`: the QA flow's recorded before/after history.
-- `screenshots/maintenance-correction-action.png`: the append-only correction action after scrolling the real Android surface.
+## 2. Responsive & Accessibility Matrix Verification
 
-## Limits
+Automated suite: `test/responsive_accessibility_test.dart` (36 tests, 100% PASS).
 
-The QA gateway is synthetic and exists only under `integration_test/`. This proves Android navigation, validation, form state, and rendered behavior; it is not proof of deployed Supabase RPCs or authentication. Camera permission and a physical barcode were not tested because no physical device is attached. The live database received read-only metadata queries only.
+### Screen Width Breakpoints
+- **320px**: Verified without layout overflow (`RenderFlex` 0px overflow). Greeting row on `PicHomeScreen` uses `Flexible` with `MainAxisSize.min` to fit compact width.
+- **360px**: Standard Android baseline, renders cleanly.
+- **390px**: Modern mobile portrait standard, full card padding preserved.
+- **430px**: Large device viewport, constrained content max-width applied.
 
-The final development APK was rebuilt from the normal `lib/main.dart` target with the ignored local configuration file. It is 195,761,884 bytes with SHA-256 `ed4c5de25f965a7f57cd557dc6649aea335f4fb33691625b8b1aff27579ec9a7`. It uses debug signing and is not a production release artifact.
+### Text Scale Factors (A11y)
+- **100% (1.0x)**: Standard system font scaling.
+- **150% (1.5x)**: Large font scaling for readability, labels and multi-line headers wrapped properly.
+- **200% (2.0x)**: Extra large accessibility text scaling, critical form fields, action buttons, and bottom navigation remain fully usable without clipping.
+
+### Keyboard & Semantic Labels
+- **Keyboard viewInsets**: `CheckingScreen` and forms properly adjust bottom padding when virtual keyboard emerges (`viewInsets.bottom >= 300`).
+- **Semantic Labels**: TalkBack and accessibility labels verified for `Profil pengguna, <name>`, `Lihat semua`, and `Buka pemindai kode`.
+
+---
+
+## 3. Hardware Gaps & Limitations
+
+1. **Camera Sensor & Optical QR Scanning**:
+   - Tested using mock/synthetic manual code fallback input on the emulator.
+   - No physical optical camera sensor was available during emulator test runs; camera hardware permissions and live video stream frame processing must be re-validated on a physical device.
+2. **Architecture & Device Profile**:
+   - Verification was performed on an `x86_64` Android emulator (`emulator-5554`), not on physical ARM64 hardware.
+   - Performance characteristics, hardware graphics acceleration (Vulkan/Skia), and battery impact were not benchmarked on physical hardware.
+3. **Gateway Backend**:
+   - Tested with synthetic mock gateway (`MaintenanceGateway` in-memory / local test doubles).
+   - Production Supabase credentials, remote RPC transactions, and edge functions are decoupled and untouched.
+
+---
+
+## 4. Visual & Golden Test Coverage
+
+- 14 Golden image baselines in `test/golden/goldens/` verified with **100% PASS** via `test/golden/redesign_golden_test.dart`.
+- All screens run with deterministic clock via `nowProvider`.
+

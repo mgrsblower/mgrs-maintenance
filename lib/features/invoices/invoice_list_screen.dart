@@ -257,7 +257,7 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
             Text(
               'Hapus Invoice?',
               style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
+                fontFamily: 'Inter',
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
@@ -267,7 +267,7 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
         content: Text(
           'Invoice ${item.invoiceReference} (${item.customerName}) akan dihapus secara permanen.',
           style: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
+            fontFamily: 'Inter',
             fontSize: 13,
             color: Color(0xFF475569),
           ),

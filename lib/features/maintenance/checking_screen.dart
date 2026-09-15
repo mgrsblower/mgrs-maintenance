@@ -48,7 +48,7 @@ class _CheckingScreenState extends State<CheckingScreen> {
   late final SubmissionController _submission;
   String? _condition;
   String? _usable;
-  String _summaryAction = 'keep';
+  final String _summaryAction = 'keep';
   bool _dirty = false;
   bool _leaving = false;
   bool _refreshing = false;

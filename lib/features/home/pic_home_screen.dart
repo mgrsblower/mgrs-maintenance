@@ -14,7 +14,10 @@ class PicHomeScreen extends StatefulWidget {
     required this.onOpenInvoicesTab,
     this.adminMode,
     this.onSwitchAdminMode,
+    this.nowProvider = DateTime.now,
   });
+
+  final DateTime Function() nowProvider;
 
   final MaintenanceGateway gateway;
   final UserProfile user;
@@ -71,7 +74,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
     try {
       final list = _allOrders;
       if (list.isEmpty) return 0;
-      final now = DateTime.now();
+      final now = widget.nowProvider();
       var count = 0;
       for (var i = 0; i < list.length; i++) {
         final dt = list[i].tanggalPemasangan;
@@ -89,7 +92,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
     try {
       final list = _upcomingOrders;
       if (list.isEmpty) return 0;
-      final now = DateTime.now();
+      final now = widget.nowProvider();
       var count = 0;
       for (var i = 0; i < list.length; i++) {
         final dt = list[i].tanggalPemasangan;
@@ -131,7 +134,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
   }
 
   String _getGreeting() {
-    final hour = DateTime.now().hour;
+    final hour = widget.nowProvider().hour;
     if (hour < 11) return 'Selamat Pagi!';
     if (hour < 15) return 'Selamat Siang!';
     if (hour < 18) return 'Selamat Sore!';
@@ -202,7 +205,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                           child: Text(
                             widget.user.initials,
                             style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
+                              fontFamily: 'Inter',
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
                               color: Colors.white,
@@ -218,7 +221,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                             Text(
                               widget.user.displayName,
                               style: const TextStyle(
-                                fontFamily: 'Plus Jakarta Sans',
+                                fontFamily: 'Inter',
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
                                 color: Color(0xFF0F172A),
@@ -239,7 +242,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                                   child: Text(
                                     widget.user.role,
                                     style: const TextStyle(
-                                      fontFamily: 'Plus Jakarta Sans',
+                                      fontFamily: 'Inter',
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
                                       color: Color(0xFF2563EB),
@@ -254,7 +257,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
-                                        fontFamily: 'Plus Jakarta Sans',
+                                        fontFamily: 'Inter',
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
                                         color: Color(0xFF64748B),
@@ -290,7 +293,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                             ? 'Sistem MGRS • Akun Administrator'
                             : 'Sistem MGRS • Terhubung (Mode PIC)',
                         style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
+                          fontFamily: 'Inter',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF334155),
@@ -321,7 +324,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                             Text(
                               'Mode Tampilan (Khusus Admin)',
                               style: TextStyle(
-                                fontFamily: 'Plus Jakarta Sans',
+                                fontFamily: 'Inter',
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
                                 color: Color(0xFF0F172A),
@@ -333,7 +336,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                         const Text(
                           'Pilih peran tampilan operasional yang ingin Anda akses:',
                           style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
+                            fontFamily: 'Inter',
                             fontSize: 11,
                             color: Color(0xFF64748B),
                           ),
@@ -385,7 +388,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                                         Text(
                                           'Mode PIC',
                                           style: TextStyle(
-                                            fontFamily: 'Plus Jakarta Sans',
+                                            fontFamily: 'Inter',
                                             fontSize: 11.5,
                                             fontWeight: widget.adminMode == AdminAppMode.pic
                                                 ? FontWeight.w700
@@ -437,7 +440,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                                         Text(
                                           'Mode Servis',
                                           style: TextStyle(
-                                            fontFamily: 'Plus Jakarta Sans',
+                                            fontFamily: 'Inter',
                                             fontSize: 11.5,
                                             fontWeight: widget.adminMode == AdminAppMode.service
                                                 ? FontWeight.w700
@@ -481,7 +484,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                         Text(
                           'Keluar dari Akun',
                           style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
+                            fontFamily: 'Inter',
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFFDC2626),
@@ -507,7 +510,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
         title: const Text(
           'Konfirmasi Keluar',
           style: TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
+            fontFamily: 'Inter',
             fontWeight: FontWeight.w800,
             fontSize: 18,
           ),
@@ -515,7 +518,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
         content: const Text(
           'Apakah Anda yakin ingin keluar dari akun MGRS?',
           style: TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
+            fontFamily: 'Inter',
             fontSize: 14,
             color: Color(0xFF475569),
           ),
@@ -528,7 +531,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
             child: const Text(
               'Batal',
               style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
+                fontFamily: 'Inter',
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF64748B),
               ),
@@ -548,7 +551,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
             child: const Text(
               'Ya, Keluar',
               style: TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
+                fontFamily: 'Inter',
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -595,7 +598,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                             _error!,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
+                              fontFamily: 'Inter',
                               fontSize: 14,
                               color: Color(0xFF64748B),
                             ),
@@ -663,7 +666,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                     child: Text(
                       widget.user.initials,
                       style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF334155),
@@ -681,7 +684,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                           Text(
                             _getGreeting(),
                             style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
+                              fontFamily: 'Inter',
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                               color: Color(0xFF64748B),
@@ -701,7 +704,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
+                          fontFamily: 'Inter',
                           fontSize: 17,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF0F172A),
@@ -769,7 +772,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                           size: 12, color: Color(0xFF22380E)),
                       const SizedBox(width: 5),
                       Text(
-                        _formatMonthName(DateTime.now()),
+                        _formatMonthName(widget.nowProvider()),
                         style: const TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 11,
@@ -854,7 +857,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                   const Text(
                     'Ringkasan Orderan',
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF0F172A),
@@ -869,7 +872,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                       color: Color(0xFF64748B),
@@ -893,7 +896,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                   Text(
                     'Data Terkini',
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF334155),
@@ -906,51 +909,57 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
         ),
         const SizedBox(height: 12),
         // 3 Vibrant Solid Status Cards: Total Order, Akan Datang, Selesai (style identik HomeScreen)
-        Row(
-          children: [
-            // Card 1: Total Order (Blue Solid)
-            Expanded(
-              child: _buildGradientStatusCard(
-                icon: Icons.assignment_outlined,
-                percentage: '100%',
-                count: '$_totalOrdersCount',
-                title: 'Total Order',
-                subtitle: 'Semua riwayat',
-                solidColor: const Color(0xFF147CC1),
-                onTap: widget.onOpenOrdersTab,
-              ),
-            ),
-            const SizedBox(width: 10),
-            // Card 2: Akan Datang (Amber Solid)
-            Expanded(
-              child: _buildGradientStatusCard(
-                icon: Icons.event_available_rounded,
-                percentage: _totalOrdersCount > 0
-                    ? '${((_upcomingCount / _totalOrdersCount) * 100).round()}%'
-                    : '0%',
-                count: '$_upcomingCount',
-                title: 'Akan Datang',
-                subtitle: '$_todayOrdersCount hari ini',
-                solidColor: const Color(0xFFD97706),
-                onTap: widget.onOpenOrdersTab,
-              ),
-            ),
-            const SizedBox(width: 10),
-            // Card 3: Selesai (Emerald Solid)
-            Expanded(
-              child: _buildGradientStatusCard(
-                icon: Icons.check_circle_outline_rounded,
-                percentage: _totalOrdersCount > 0
-                    ? '${((_pastCount / _totalOrdersCount) * 100).round()}%'
-                    : '0%',
-                count: '$_pastCount',
-                title: 'Selesai',
-                subtitle: 'Event beres',
-                solidColor: const Color(0xFF059669),
-                onTap: widget.onOpenOrdersTab,
-              ),
-            ),
-          ],
+        Builder(
+          builder: (context) {
+            final isCompact = MediaQuery.sizeOf(context).width < 360;
+            final cardSpacing = isCompact ? 8.0 : 10.0;
+            return Row(
+              children: [
+                // Card 1: Total Order (Blue Solid)
+                Expanded(
+                  child: _buildGradientStatusCard(
+                    icon: Icons.assignment_outlined,
+                    percentage: '100%',
+                    count: '$_totalOrdersCount',
+                    title: 'Total Order',
+                    subtitle: 'Semua riwayat',
+                    solidColor: const Color(0xFF147CC1),
+                    onTap: widget.onOpenOrdersTab,
+                  ),
+                ),
+                SizedBox(width: cardSpacing),
+                // Card 2: Akan Datang (Amber Solid)
+                Expanded(
+                  child: _buildGradientStatusCard(
+                    icon: Icons.event_available_rounded,
+                    percentage: _totalOrdersCount > 0
+                        ? '${((_upcomingCount / _totalOrdersCount) * 100).round()}%'
+                        : '0%',
+                    count: '$_upcomingCount',
+                    title: 'Akan Datang',
+                    subtitle: '$_todayOrdersCount hari ini',
+                    solidColor: const Color(0xFFD97706),
+                    onTap: widget.onOpenOrdersTab,
+                  ),
+                ),
+                SizedBox(width: cardSpacing),
+                // Card 3: Selesai (Emerald Solid)
+                Expanded(
+                  child: _buildGradientStatusCard(
+                    icon: Icons.check_circle_outline_rounded,
+                    percentage: _totalOrdersCount > 0
+                        ? '${((_pastCount / _totalOrdersCount) * 100).round()}%'
+                        : '0%',
+                    count: '$_pastCount',
+                    title: 'Selesai',
+                    subtitle: 'Event beres',
+                    solidColor: const Color(0xFF059669),
+                    onTap: widget.onOpenOrdersTab,
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ],
     );
@@ -965,99 +974,119 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
     required Color solidColor,
     required VoidCallback onTap,
   }) {
-    return PressableScale(
-      onTap: onTap,
-      child: Container(
-        height: 120,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
-        decoration: BoxDecoration(
-          color: solidColor,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: solidColor.withValues(alpha: 0.28),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+    return Builder(
+      builder: (context) {
+        final isCompact = MediaQuery.sizeOf(context).width < 360;
+        final cardPadding = isCompact
+            ? const EdgeInsets.symmetric(horizontal: 8, vertical: 10)
+            : const EdgeInsets.symmetric(horizontal: 10, vertical: 11);
+        final iconBoxSize = isCompact ? 26.0 : 28.0;
+        final iconSize = isCompact ? 14.0 : 15.0;
+
+        final badge = Container(
+          padding: isCompact
+              ? const EdgeInsets.symmetric(horizontal: 5, vertical: 2)
+              : const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.24),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            percentage,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
+          ),
+        );
+
+        return PressableScale(
+          onTap: onTap,
+          child: Container(
+            height: 120,
+            padding: cardPadding,
+            decoration: BoxDecoration(
+              color: solidColor,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: solidColor.withValues(alpha: 0.28),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.22),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(icon, color: Colors.white, size: 15),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.24),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    percentage,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      width: iconBoxSize,
+                      height: iconBoxSize,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(icon, color: Colors.white, size: iconSize),
                     ),
-                  ),
+                    if (isCompact) ...[
+                      const SizedBox(width: 4),
+                      Flexible(child: badge),
+                    ] else
+                      badge,
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      count,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        height: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white.withValues(alpha: 0.85),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  count,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    height: 1.1,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white.withValues(alpha: 0.85),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -1143,7 +1172,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                 Text(
                   'Tidak ada orderan mendatang saat ini',
                   style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
+                    fontFamily: 'Inter',
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF334155),
@@ -1154,7 +1183,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                   'Jadwal pemasangan diperbarui otomatis saat ada orderan baru.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
+                    fontFamily: 'Inter',
                     fontSize: 11,
                     color: Color(0xFF64748B),
                   ),
@@ -1252,85 +1281,146 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 1. Header: [ ● ORD-XXX • 10 Unit (1 Hari) ]  ...  [ Terjadwal ]
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: BoxDecoration(
-                          color: dotColor,
-                          borderRadius: BorderRadius.circular(2),
+            Builder(
+              builder: (context) {
+                final isCompact = MediaQuery.sizeOf(context).width < 360;
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (isCompact)
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                color: dotColor,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text.rich(
+                                TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: order.displayCode,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF0F172A),
+                                      ),
+                                    ),
+                                    const TextSpan(
+                                      text: ' • ',
+                                      style: TextStyle(color: Color(0xFF94A3B8)),
+                                    ),
+                                    TextSpan(
+                                      text: '${order.jumlahUnit} Unit',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF475569),
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: ' (${order.durasiSewaText})',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 11.5,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 6),
+                      )
+                    else
                       Flexible(
-                        child: Text(
-                          order.displayCode,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF0F172A),
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                color: dotColor,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                order.displayCode,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF0F172A),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              '• ',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 11,
+                                color: Color(0xFF94A3B8),
+                              ),
+                            ),
+                            Text(
+                              '${order.jumlahUnit} Unit',
+                              style: const TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF475569),
+                              ),
+                            ),
+                            Text(
+                              ' (${order.durasiSewaText})',
+                              style: const TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      const Text(
-                        '• ',
+                    const SizedBox(width: 8),
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: statusBg,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: statusBorder),
+                      ),
+                      child: Text(
+                        statusText,
                         style: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 11,
-                          color: Color(0xFF94A3B8),
+                          fontFamily: 'Inter',
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: statusColor,
                         ),
                       ),
-                      Text(
-                        '${order.jumlahUnit} Unit',
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF475569),
-                        ),
-                      ),
-                      Text(
-                        ' (${order.durasiSewaText})',
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: statusBg,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: statusBorder),
-                  ),
-                  child: Text(
-                    statusText,
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      color: statusColor,
                     ),
-                  ),
-                ),
-              ],
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 10),
 
@@ -1338,7 +1428,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
             Text(
               order.namaEvent,
               style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
+                fontFamily: 'Inter',
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
                 color: Color(0xFF0F172A),
@@ -1354,7 +1444,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
+                  fontFamily: 'Inter',
                   fontSize: 11.5,
                   fontWeight: FontWeight.w500,
                   color: Color(0xFF64748B),
@@ -1377,7 +1467,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 11.5,
                         color: Color(0xFF64748B),
                         height: 1.35,
@@ -1417,7 +1507,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
+                              fontFamily: 'Inter',
                               fontSize: 11.5,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF475569),
@@ -1451,7 +1541,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                                 Text(
                                   'Maps',
                                   style: TextStyle(
-                                    fontFamily: 'Plus Jakarta Sans',
+                                    fontFamily: 'Inter',
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w700,
                                     color: Color(0xFF2563EB),
@@ -1482,7 +1572,7 @@ class _PicHomeScreenState extends State<PicHomeScreen> {
                                 Text(
                                   'WA',
                                   style: TextStyle(
-                                    fontFamily: 'Plus Jakarta Sans',
+                                    fontFamily: 'Inter',
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w700,
                                     color: Color(0xFF16A34A),

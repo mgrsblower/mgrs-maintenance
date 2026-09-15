@@ -233,9 +233,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: MgrsColors.surface,
-      appBar: const MgrsDetailAppBar(
-        title: 'Buat order',
-      ),
+      appBar: const MgrsDetailAppBar(title: 'Buat order'),
       body: SafeArea(
         child: Column(
           children: [
@@ -328,8 +326,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                 unitSuffix: 'Unit',
                                 min: 1,
                                 max: 30,
-                                onChanged:
-                                    (v) => setState(() => _unitCount = v),
+                                onChanged: (v) =>
+                                    setState(() => _unitCount = v),
                               ),
                               const SizedBox(height: MgrsSpacing.xs),
                               _buildStepperBox(
@@ -338,8 +336,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                 unitSuffix: 'Hari',
                                 min: 1,
                                 max: 14,
-                                onChanged:
-                                    (v) => setState(() => _rentalDays = v),
+                                onChanged: (v) =>
+                                    setState(() => _rentalDays = v),
                               ),
                             ],
                           );
@@ -353,8 +351,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                 unitSuffix: 'Unit',
                                 min: 1,
                                 max: 30,
-                                onChanged:
-                                    (v) => setState(() => _unitCount = v),
+                                onChanged: (v) =>
+                                    setState(() => _unitCount = v),
                               ),
                             ),
                             const SizedBox(width: MgrsSpacing.sm),
@@ -365,8 +363,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                                 unitSuffix: 'Hari',
                                 min: 1,
                                 max: 14,
-                                onChanged:
-                                    (v) => setState(() => _rentalDays = v),
+                                onChanged: (v) =>
+                                    setState(() => _rentalDays = v),
                               ),
                             ),
                           ],
@@ -447,7 +445,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 Text(
                   title,
                   style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
+                    fontFamily: 'Inter',
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
                     color: MgrsColors.danger,
@@ -457,7 +455,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 Text(
                   subtitle,
                   style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
+                    fontFamily: 'Inter',
                     fontSize: 12,
                     color: MgrsColors.ink,
                   ),
@@ -470,10 +468,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  Widget _buildSectionHeader({
-    required IconData icon,
-    required String title,
-  }) {
+  Widget _buildSectionHeader({required IconData icon, required String title}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: MgrsSpacing.xs),
       child: Row(
@@ -483,7 +478,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           Text(
             title.toUpperCase(),
             style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
+              fontFamily: 'Inter',
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.8,
@@ -512,7 +507,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         Text(
           label,
           style: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
+            fontFamily: 'Inter',
             fontSize: 12,
             fontWeight: FontWeight.w700,
             color: MgrsColors.ink,
@@ -526,7 +521,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           maxLines: maxLines,
           onChanged: onChanged,
           style: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
+            fontFamily: 'Inter',
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: MgrsColors.ink,
@@ -534,7 +529,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
+              fontFamily: 'Inter',
               fontSize: 12.5,
               color: MgrsColors.muted,
             ),
@@ -569,7 +564,10 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(MgrsRadii.control),
-              borderSide: const BorderSide(color: MgrsColors.danger, width: 1.5),
+              borderSide: const BorderSide(
+                color: MgrsColors.danger,
+                width: 1.5,
+              ),
             ),
           ),
         ),
@@ -584,7 +582,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         const Text(
           'Tanggal Pemasangan *',
           style: TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
+            fontFamily: 'Inter',
             fontSize: 12,
             fontWeight: FontWeight.w700,
             color: MgrsColors.ink,
@@ -616,7 +614,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   child: Text(
                     _formatDateFull(_selectedDate),
                     style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: MgrsColors.ink,
@@ -650,7 +648,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         Text(
           title,
           style: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
+            fontFamily: 'Inter',
             fontSize: 12,
             fontWeight: FontWeight.w700,
             color: MgrsColors.ink,
@@ -688,7 +686,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               Text(
                 '$value $unitSuffix',
                 style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
+                  fontFamily: 'Inter',
                   fontSize: 13.5,
                   fontWeight: FontWeight.w800,
                   color: MgrsColors.ink,
@@ -740,7 +738,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     const Text(
                       'Estimasi Total Tagihan',
                       style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: MgrsColors.muted,
@@ -749,7 +747,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     Text(
                       '$_unitCount Unit × $_rentalDays Hari',
                       style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: MgrsColors.ink,
@@ -761,7 +759,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
               Text(
                 InvoiceRecord.formatRupiah(_totalInvoiceAmount),
                 style: const TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
+                  fontFamily: 'Inter',
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                   color: MgrsColors.action,
@@ -784,7 +782,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 child: Text(
                   'Invoice otomatis diterbitkan untuk setiap order baru dan dapat dikelola pada tab Invoice.',
                   style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
+                    fontFamily: 'Inter',
                     fontSize: 11,
                     color: MgrsColors.muted,
                   ),

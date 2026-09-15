@@ -30,7 +30,10 @@ class InvoicePdfExportHelper {
           canPop: false,
           child: Dialog(
             key: const Key('invoice-pdf-progress-dialog'),
-            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 24,
+              vertical: 24,
+            ),
             backgroundColor: MgrsColors.surface,
             elevation: 8,
             shape: RoundedRectangleBorder(
@@ -67,7 +70,7 @@ class InvoicePdfExportHelper {
                       'Mengekspor PDF...',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF18181B),
@@ -78,7 +81,7 @@ class InvoicePdfExportHelper {
                       invoice.invoiceReference,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF71717A),
@@ -88,7 +91,7 @@ class InvoicePdfExportHelper {
                       'sedang diproses',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 12,
                         color: Color(0xFFA1A1AA),
                       ),
@@ -109,7 +112,7 @@ class InvoicePdfExportHelper {
                         child: const Text(
                           'Memproses...',
                           style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
+                            fontFamily: 'Inter',
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
@@ -140,7 +143,10 @@ class InvoicePdfExportHelper {
       );
 
       final result = await service.export(payload: payload, fileName: fileName);
-      final fileLocation = await downloadInvoicePdf(result.bytes, result.fileName);
+      final fileLocation = await downloadInvoicePdf(
+        result.bytes,
+        result.fileName,
+      );
 
       // Tutup dialog progress
       if (progressNavigator?.mounted ?? false) {
@@ -169,9 +175,11 @@ class InvoicePdfExportHelper {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e is AppFailure
-              ? e.message
-              : 'PDF belum dapat diekspor. Silakan coba lagi.'),
+          content: Text(
+            e is AppFailure
+                ? e.message
+                : 'PDF belum dapat diekspor. Silakan coba lagi.',
+          ),
           backgroundColor: MgrsColors.danger,
           duration: const Duration(seconds: 4),
         ),
@@ -199,7 +207,10 @@ class InvoicePdfExportHelper {
         canPop: false,
         child: Dialog(
           key: const Key('invoice-pdf-success-dialog'),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
           backgroundColor: MgrsColors.surface,
           elevation: 8,
           shape: RoundedRectangleBorder(
@@ -233,7 +244,7 @@ class InvoicePdfExportHelper {
                     'Sukses',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 17,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF18181B),
@@ -244,7 +255,7 @@ class InvoicePdfExportHelper {
                     invoice.invoiceReference,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF71717A),
@@ -254,7 +265,7 @@ class InvoicePdfExportHelper {
                     'Berhasil Export PDF',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 12,
                       color: Color(0xFF346538),
                       fontWeight: FontWeight.w600,
@@ -263,7 +274,10 @@ class InvoicePdfExportHelper {
                   const SizedBox(height: 14),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF4F4F5),
                       borderRadius: BorderRadius.circular(8),
@@ -271,14 +285,17 @@ class InvoicePdfExportHelper {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.folder_outlined,
-                            size: 14, color: Color(0xFF71717A)),
+                        const Icon(
+                          Icons.folder_outlined,
+                          size: 14,
+                          color: Color(0xFF71717A),
+                        ),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
                             _storageLocationDescription(),
                             style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
+                              fontFamily: 'Inter',
                               fontSize: 10.5,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF52525B),
@@ -301,12 +318,18 @@ class InvoicePdfExportHelper {
                                     await pdfService.previewPdf(fileLocation);
                                   } catch (e) {
                                     if (!dialogContext.mounted) return;
-                                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                    ScaffoldMessenger.of(
+                                      dialogContext,
+                                    ).showSnackBar(
                                       SnackBar(
-                                        content: Text(e is AppFailure
-                                            ? e.message
-                                            : 'PDF belum dapat dibuka. Silakan coba lagi.'),
-                                        backgroundColor: const Color(0xFF9F2F2D),
+                                        content: Text(
+                                          e is AppFailure
+                                              ? e.message
+                                              : 'PDF belum dapat dibuka. Silakan coba lagi.',
+                                        ),
+                                        backgroundColor: const Color(
+                                          0xFF9F2F2D,
+                                        ),
                                         duration: const Duration(seconds: 4),
                                       ),
                                     );
@@ -321,7 +344,7 @@ class InvoicePdfExportHelper {
                           child: const Text(
                             'Buka File',
                             style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
+                              fontFamily: 'Inter',
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                             ),
@@ -344,11 +367,15 @@ class InvoicePdfExportHelper {
                                   );
                                 } catch (e) {
                                   if (!dialogContext.mounted) return;
-                                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                                  ScaffoldMessenger.of(
+                                    dialogContext,
+                                  ).showSnackBar(
                                     SnackBar(
-                                      content: Text(e is AppFailure
-                                          ? e.message
-                                          : 'PDF belum dapat dibagikan. Silakan coba lagi.'),
+                                      content: Text(
+                                        e is AppFailure
+                                            ? e.message
+                                            : 'PDF belum dapat dibagikan. Silakan coba lagi.',
+                                      ),
                                       backgroundColor: const Color(0xFF9F2F2D),
                                       duration: const Duration(seconds: 4),
                                     ),
@@ -392,20 +419,20 @@ class _InvoicePdfCircleAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Tooltip(
-        message: label,
-        child: IconButton(
-          onPressed: onPressed,
-          icon: Icon(icon, color: Colors.white, size: 18),
-          style: IconButton.styleFrom(
-            minimumSize: const Size(42, 42),
-            maximumSize: const Size(42, 42),
-            backgroundColor: backgroundColor,
-            disabledBackgroundColor: const Color(0xFFE4E4E7),
-            disabledForegroundColor: Colors.white,
-            shape: const CircleBorder(),
-          ),
-        ),
-      );
+    message: label,
+    child: IconButton(
+      onPressed: onPressed,
+      icon: Icon(icon, color: Colors.white, size: 18),
+      style: IconButton.styleFrom(
+        minimumSize: const Size(42, 42),
+        maximumSize: const Size(42, 42),
+        backgroundColor: backgroundColor,
+        disabledBackgroundColor: const Color(0xFFE4E4E7),
+        disabledForegroundColor: Colors.white,
+        shape: const CircleBorder(),
+      ),
+    ),
+  );
 }
 
 String _storageLocationDescription() {

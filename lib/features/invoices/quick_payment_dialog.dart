@@ -96,9 +96,11 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e is AppFailure
-              ? e.message
-              : 'Status pembayaran belum dapat disimpan. Silakan coba lagi.'),
+          content: Text(
+            e is AppFailure
+                ? e.message
+                : 'Status pembayaran belum dapat disimpan. Silakan coba lagi.',
+          ),
           backgroundColor: const Color(0xFF9F2F2D),
         ),
       );
@@ -135,7 +137,7 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
                         const Text(
                           'Atur Pembayaran',
                           style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
+                            fontFamily: 'Inter',
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
                             color: Color(0xFF18181B),
@@ -145,7 +147,7 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
                         Text(
                           '${widget.invoice.invoiceReference} • ${widget.invoice.customerName.isNotEmpty ? widget.invoice.customerName : "Klien MGRS"}',
                           style: const TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
+                            fontFamily: 'Inter',
                             fontSize: 11.5,
                             color: Color(0xFF71717A),
                             fontWeight: FontWeight.w500,
@@ -155,8 +157,11 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded,
-                        size: 20, color: Color(0xFF71717A)),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      size: 20,
+                      color: Color(0xFF71717A),
+                    ),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     onPressed: () => Navigator.of(context).pop(),
@@ -173,7 +178,7 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
                   const Text(
                     'Total Tagihan',
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 12,
                       color: Color(0xFF71717A),
                     ),
@@ -181,7 +186,7 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
                   Text(
                     widget.invoice.totalAmountFormatted,
                     style: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 13.5,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF18181B),
@@ -196,7 +201,7 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
                   Text(
                     isLunas ? 'Status Pembayaran' : 'Sisa Tagihan',
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 12,
                       color: isLunas
                           ? const Color(0xFF346538)
@@ -205,11 +210,9 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
                     ),
                   ),
                   Text(
-                    isLunas
-                        ? 'Lunas'
-                        : InvoiceRecord.formatRupiah(remaining),
+                    isLunas ? 'Lunas' : InvoiceRecord.formatRupiah(remaining),
                     style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 13.5,
                       fontWeight: FontWeight.w800,
                       color: isLunas
@@ -223,7 +226,7 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
               const Text(
                 'PILIH STATUS',
                 style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
+                  fontFamily: 'Inter',
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFFA1A1AA),
@@ -265,7 +268,7 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
                   keyboardType: TextInputType.number,
                   autofocus: true,
                   style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
+                    fontFamily: 'Inter',
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF18181B),
@@ -274,13 +277,13 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
                     isDense: true,
                     labelText: 'Nominal DP / Terbayar',
                     labelStyle: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontSize: 12,
                       color: Color(0xFF71717A),
                     ),
                     prefixText: 'Rp ',
                     prefixStyle: const TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
+                      fontFamily: 'Inter',
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF18181B),
                     ),
@@ -293,7 +296,9 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
                       borderSide: const BorderSide(color: Color(0xFF18181B)),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                   ),
                 ),
               ],
@@ -322,7 +327,7 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
                       : const Text(
                           'Simpan Status Pembayaran',
                           style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
+                            fontFamily: 'Inter',
                             fontWeight: FontWeight.w700,
                             fontSize: 12.5,
                           ),
@@ -347,8 +352,9 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
           setState(() {
             _status = status;
             if (status == InvoicePaymentStatus.paid) {
-              _paidController.text =
-                  widget.invoice.totalAmount.toInt().toString();
+              _paidController.text = widget.invoice.totalAmount
+                  .toInt()
+                  .toString();
             } else if (status == InvoicePaymentStatus.unpaid) {
               _paidController.text = '0';
             }
@@ -365,7 +371,7 @@ class _QuickPaymentDialogState extends State<QuickPaymentDialog> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
+              fontFamily: 'Inter',
               fontSize: 11,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               color: isSelected ? Colors.white : const Color(0xFF71717A),

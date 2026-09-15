@@ -122,7 +122,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('ORD-2026-088'), findsOneWidget);
-      expect(find.text('Detail Orderan'), findsOneWidget);
+      expect(find.text('Detail order'), findsOneWidget);
       expect(find.text('Jadwal belum ditentukan'), findsOneWidget);
       expect(find.text('4 Unit'), findsOneWidget);
       expect(find.text('PT Pertamina (Persero)'), findsWidgets);
@@ -226,6 +226,12 @@ void main() {
     expect(find.text('TBG-2026-039'), findsOneWidget);
     expect(find.text('Masalah / kendala fisik *'), findsOneWidget);
     expect(find.text('Tindakan perbaikan *'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Simpan laporan servis'),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     expect(find.text('Simpan laporan servis'), findsOneWidget);
   });
 
@@ -446,7 +452,12 @@ void main() {
       );
       await tester.tap(find.text('Layak pakai'));
       final submitButton = find.text('Simpan laporan servis');
-      await tester.ensureVisible(submitButton);
+      await tester.scrollUntilVisible(
+        submitButton,
+        180,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
       await tester.tap(submitButton);
       await tester.pumpAndSettle();
 
@@ -582,11 +593,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Orderan Mendatang'), findsOneWidget);
+      expect(find.text('Orderan'), findsOneWidget);
       expect(find.text('Festival Musik Senayan'), findsOneWidget);
       expect(find.text('Expo Industri Kemayoran'), findsOneWidget);
-      expect(find.text('8 Unit'), findsOneWidget);
-      expect(find.text('5 Unit'), findsOneWidget);
+      expect(find.textContaining('8 Unit'), findsOneWidget);
+      expect(find.textContaining('5 Unit'), findsOneWidget);
 
       // Filter by search query
       await tester.enterText(find.byType(TextField), 'Senayan');
@@ -621,19 +632,16 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('ORD-20260909-999'), findsOneWidget);
-      expect(
-        find.text('Nama Event: Konser Musik Gelora Bung Karno'),
-        findsOneWidget,
-      );
+      expect(find.text('Konser Musik Gelora Bung Karno'), findsOneWidget);
       expect(find.text('GBK Senayan Pintu 10'), findsOneWidget);
       expect(find.text('12 Unit'), findsOneWidget);
       expect(find.text('3 Hari'), findsOneWidget);
-      expect(find.text('Catatan Orderan'), findsOneWidget);
+      expect(find.text('Catatan Khusus Acara'), findsOneWidget);
       expect(find.text('Harap pasang sebelum jam 10 pagi'), findsOneWidget);
-      expect(find.text('Data Pemesan'), findsOneWidget);
+      expect(find.text('Informasi Klien & Kontak'), findsOneWidget);
       expect(find.text('PT Promotor Jaya'), findsWidgets);
       expect(find.text('081122334455'), findsOneWidget);
-      expect(find.text('Buka di Google Maps'), findsOneWidget);
+      expect(find.text('Petunjuk Arah'), findsOneWidget);
       expect(find.text('Hubungi Pemesan'), findsOneWidget);
     },
   );

@@ -89,11 +89,13 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
 
     _customerNameController.text = order.namaClient ?? '';
     _customerPhoneController.text = order.nomorWhatsapp ?? '';
-    _productController.text =
-        order.namaEvent.isNotEmpty ? order.namaEvent : 'Sewa Mistyfan';
+    _productController.text = order.namaEvent.isNotEmpty
+        ? order.namaEvent
+        : 'Sewa Mistyfan';
     _qtyController.text = order.jumlahUnit.toString();
-    _daysController.text =
-        order.rentalDays > 0 ? order.rentalDays.toString() : '1';
+    _daysController.text = order.rentalDays > 0
+        ? order.rentalDays.toString()
+        : '1';
     setState(() {});
   }
 
@@ -102,8 +104,10 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
 
     final now = DateTime.now();
     final todayStr = now.toIso8601String().substring(0, 10);
-    final dueStr =
-        now.add(const Duration(days: 7)).toIso8601String().substring(0, 10);
+    final dueStr = now
+        .add(const Duration(days: 7))
+        .toIso8601String()
+        .substring(0, 10);
 
     final qty = num.tryParse(_qtyController.text.trim()) ?? 1;
     final days = num.tryParse(_daysController.text.trim()) ?? 1;
@@ -128,8 +132,9 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
       'total_amount': total,
       'paid_amount': 0,
       'payment_status': 'unpaid',
-      'invoice_source':
-          _isManualReimbursement ? 'manual_reimbursement' : 'order',
+      'invoice_source': _isManualReimbursement
+          ? 'manual_reimbursement'
+          : 'order',
       'customer_name': _customerNameController.text.trim(),
       'customer_phone': _customerPhoneController.text.trim(),
       'adjustments': <Map<String, Object?>>[],
@@ -155,9 +160,11 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
       setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e is AppFailure
-              ? e.message
-              : 'Invoice belum dapat dibuat. Silakan coba lagi.'),
+          content: Text(
+            e is AppFailure
+                ? e.message
+                : 'Invoice belum dapat dibuat. Silakan coba lagi.',
+          ),
           backgroundColor: const Color(0xFFDC2626),
         ),
       );
@@ -189,7 +196,7 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
+                        fontFamily: 'Inter',
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF0F172A),
@@ -197,8 +204,11 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded,
-                        size: 20, color: Color(0xFF64748B)),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      size: 20,
+                      color: Color(0xFF64748B),
+                    ),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -245,7 +255,7 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                           child: Text(
                             'Dari Order Sewa',
                             style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
+                              fontFamily: 'Inter',
                               fontSize: 12,
                               fontWeight: !_isManualReimbursement
                                   ? FontWeight.w700
@@ -267,7 +277,8 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                             _generateReference();
                             _customerNameController.clear();
                             _customerPhoneController.clear();
-                            _productController.text = 'Reimbursement Operasional';
+                            _productController.text =
+                                'Reimbursement Operasional';
                           });
                         },
                         borderRadius: BorderRadius.circular(10),
@@ -292,7 +303,7 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                           child: Text(
                             'Manual Reimbursement',
                             style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
+                              fontFamily: 'Inter',
                               fontSize: 12,
                               fontWeight: _isManualReimbursement
                                   ? FontWeight.w700
@@ -321,7 +332,7 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                           const Text(
                             'Pilih Orderan Terjadwal:',
                             style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
+                              fontFamily: 'Inter',
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFF334155),
@@ -332,7 +343,9 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                             const Center(
                               child: Padding(
                                 padding: EdgeInsets.all(12),
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               ),
                             )
                           else if (_availableOrders.isEmpty)
@@ -345,7 +358,7 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                               child: const Text(
                                 'Belum ada data orderan terjadwal.',
                                 style: TextStyle(
-                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontFamily: 'Inter',
                                   fontSize: 12,
                                   color: Color(0xFFDC2626),
                                 ),
@@ -353,14 +366,19 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                             )
                           else
                             DropdownButtonFormField<OrderanSewa>(
-                              key: ValueKey<String>(_selectedOrder?.id ?? 'none'),
+                              key: ValueKey<String>(
+                                _selectedOrder?.id ?? 'none',
+                              ),
                               initialValue: _selectedOrder,
                               isExpanded: true,
                               decoration: InputDecoration(
                                 border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10)),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
                                 contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 10),
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
                               ),
                               items: _availableOrders.map((ord) {
                                 return DropdownMenuItem(
@@ -381,16 +399,22 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                         TextFormField(
                           controller: _refController,
                           style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                            fontFamily: 'Inter',
+                            fontSize: 13,
+                          ),
                           decoration: InputDecoration(
                             labelText: 'No. Referensi Invoice',
                             border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10)),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                             contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 10),
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
                           ),
-                          validator: (v) =>
-                              v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
+                          validator: (v) => v == null || v.trim().isEmpty
+                              ? 'Wajib diisi'
+                              : null,
                         ),
                         const SizedBox(height: 12),
                         Row(
@@ -399,19 +423,24 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                               child: TextFormField(
                                 controller: _customerNameController,
                                 style: const TextStyle(
-                                    fontFamily: 'Plus Jakarta Sans',
-                                    fontSize: 13),
+                                  fontFamily: 'Inter',
+                                  fontSize: 13,
+                                ),
                                 decoration: InputDecoration(
                                   labelText: _isManualReimbursement
                                       ? 'Penerima Reimbursement'
                                       : 'Nama Klien',
                                   border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10)),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
                                   contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 10),
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
                                 ),
-                                validator: (v) =>
-                                    v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
+                                validator: (v) => v == null || v.trim().isEmpty
+                                    ? 'Wajib diisi'
+                                    : null,
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -420,14 +449,18 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                                 controller: _customerPhoneController,
                                 keyboardType: TextInputType.phone,
                                 style: const TextStyle(
-                                    fontFamily: 'Plus Jakarta Sans',
-                                    fontSize: 13),
+                                  fontFamily: 'Inter',
+                                  fontSize: 13,
+                                ),
                                 decoration: InputDecoration(
                                   labelText: 'No. WhatsApp',
                                   border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10)),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
                                   contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 10),
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
                                 ),
                               ),
                             ),
@@ -437,16 +470,22 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                         TextFormField(
                           controller: _productController,
                           style: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans', fontSize: 13),
+                            fontFamily: 'Inter',
+                            fontSize: 13,
+                          ),
                           decoration: InputDecoration(
                             labelText: 'Acara / Deskripsi Tagihan',
                             border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10)),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                             contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 10),
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
                           ),
-                          validator: (v) =>
-                              v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
+                          validator: (v) => v == null || v.trim().isEmpty
+                              ? 'Wajib diisi'
+                              : null,
                         ),
                         const SizedBox(height: 12),
                         Row(
@@ -456,14 +495,18 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                                 controller: _qtyController,
                                 keyboardType: TextInputType.number,
                                 style: const TextStyle(
-                                    fontFamily: 'Plus Jakarta Sans',
-                                    fontSize: 13),
+                                  fontFamily: 'Inter',
+                                  fontSize: 13,
+                                ),
                                 decoration: InputDecoration(
                                   labelText: 'Unit',
                                   border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10)),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
                                   contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 10),
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
                                 ),
                               ),
                             ),
@@ -473,14 +516,18 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                                 controller: _daysController,
                                 keyboardType: TextInputType.number,
                                 style: const TextStyle(
-                                    fontFamily: 'Plus Jakarta Sans',
-                                    fontSize: 13),
+                                  fontFamily: 'Inter',
+                                  fontSize: 13,
+                                ),
                                 decoration: InputDecoration(
                                   labelText: 'Hari',
                                   border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10)),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
                                   contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 10),
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
                                 ),
                               ),
                             ),
@@ -491,15 +538,19 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                                 controller: _unitPriceController,
                                 keyboardType: TextInputType.number,
                                 style: const TextStyle(
-                                    fontFamily: 'Plus Jakarta Sans',
-                                    fontSize: 13),
+                                  fontFamily: 'Inter',
+                                  fontSize: 13,
+                                ),
                                 decoration: InputDecoration(
                                   labelText: 'Harga Satuan',
                                   prefixText: 'Rp ',
                                   border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10)),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
                                   contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 10),
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
                                 ),
                               ),
                             ),
@@ -528,12 +579,14 @@ class _CreateInvoiceDialogState extends State<CreateInvoiceDialog> {
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Text(
                           'Buat dan Simpan Invoice',
                           style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
+                            fontFamily: 'Inter',
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
                           ),
