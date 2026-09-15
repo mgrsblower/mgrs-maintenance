@@ -3,11 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../app/gateway.dart';
 import '../../shared/pressable.dart';
 import '../components/component.dart';
 import '../components/component_detail_screen.dart';
 import '../maintenance/checking_screen.dart';
+import 'scan_state.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({
@@ -33,10 +35,16 @@ class _ScanScreenState extends State<ScanScreen>
   late final MobileScannerController camera;
   late final AnimationController _laserController;
   late final Animation<double> _laserAnimation;
-  late bool scanning;
-  bool busy = false;
-  Object? error;
-  Component? scannedComponent;
+  late final ScanStateMachine _scanMachine;
+  late final TextEditingController _manualController;
+  late bool _cameraRunning;
+
+  Component? get scannedComponent => _scanMachine.state.component;
+
+  double get _scannerControlsBottom => switch (_scanMachine.state.phase) {
+    ScanPhase.permissionDenied || ScanPhase.notFound => 270,
+    _ => 230,
+  };
 
   // Lens & Touch to Focus state
   String _activeLensMode = '1x';
@@ -45,20 +53,23 @@ class _ScanScreenState extends State<ScanScreen>
   bool _showFocusRing = false;
 
   static bool get _isTestEnvironment {
-    return WidgetsBinding.instance.runtimeType
-        .toString()
-        .contains('TestWidgetsFlutterBinding');
+    return WidgetsBinding.instance.runtimeType.toString().contains(
+      'TestWidgetsFlutterBinding',
+    );
   }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    scannedComponent = widget.initialComponent;
-    scanning = widget.initialComponent == null;
+    _scanMachine = ScanStateMachine(initialComponent: widget.initialComponent)
+      ..addListener(_handleScanStateChanged);
+    _manualController = TextEditingController();
+    _cameraRunning = widget.initialComponent == null;
     camera = MobileScannerController(
       autoStart: widget.initialComponent == null,
-      lensType: CameraLensType.normal, // Default ke Lensa Utama 1x (Bukan Ultra Wide 0.5x)
+      lensType: CameraLensType
+          .normal, // Default ke Lensa Utama 1x (Bukan Ultra Wide 0.5x)
       facing: CameraFacing.back,
       detectionSpeed: DetectionSpeed.noDuplicates,
     );
@@ -80,9 +91,17 @@ class _ScanScreenState extends State<ScanScreen>
   void dispose() {
     _focusTimer?.cancel();
     _laserController.dispose();
+    _scanMachine
+      ..removeListener(_handleScanStateChanged)
+      ..dispose();
+    _manualController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     unawaited(camera.dispose());
     super.dispose();
+  }
+
+  void _handleScanStateChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _switchLensMode(String mode) async {
@@ -100,8 +119,9 @@ class _ScanScreenState extends State<ScanScreen>
         );
         await camera.resetZoomScale();
       } else if (mode == '2x') {
-        final supported =
-            await camera.getSupportedLenses(facing: CameraFacing.back);
+        final supported = await camera.getSupportedLenses(
+          facing: CameraFacing.back,
+        );
         if (supported.contains(CameraLensType.zoom)) {
           await camera.switchCamera(
             const SelectCamera(lensType: CameraLensType.zoom),
@@ -180,66 +200,63 @@ class _ScanScreenState extends State<ScanScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      if (!scanning && scannedComponent == null) {
+      final phase = _scanMachine.state.phase;
+      final canResumeCamera =
+          phase != ScanPhase.result && phase != ScanPhase.lookingUp;
+      if (!_cameraRunning && canResumeCamera) {
+        if (phase == ScanPhase.permissionDenied ||
+            phase == ScanPhase.unavailable) {
+          _scanMachine.reset();
+        }
         unawaited(camera.start());
-        setState(() => scanning = true);
+        _cameraRunning = true;
       }
     } else if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused) {
-      if (scanning) {
+      if (_cameraRunning) {
         unawaited(camera.stop());
-        setState(() => scanning = false);
+        _cameraRunning = false;
       }
     }
   }
 
   Future<void> lookup(String raw) async {
-    final value = raw.trim();
-    if (value.isEmpty || busy) return;
-    setState(() {
-      busy = true;
-      error = null;
-    });
+    if (!_scanMachine.beginLookup(raw)) return;
+    final value = _scanMachine.state.lastSubmittedCode!;
     try {
       final res = await widget.gateway.rpc('maintenance_lookup_component', {
         'p_code': value,
       });
       if (!mounted) return;
-      if (res is List) {
-        if (res.isEmpty) {
-          setState(() {
-            error = const AppFailure('not_found');
-            scannedComponent = null;
-          });
-        } else if (res.length > 1) {
-          setState(() {
-            error = const AppFailure('ambiguous');
-            scannedComponent = null;
-          });
-        } else {
-          final c = Component(res.first as Map<String, Object?>);
-          unawaited(camera.stop());
-          setState(() {
-            scannedComponent = c;
-            scanning = false;
-            error = null;
-          });
-        }
-      } else {
-        setState(() {
-          error = const AppFailure('not_found');
-          scannedComponent = null;
-        });
+      _scanMachine.complete(res);
+      if (_scanMachine.state.phase == ScanPhase.result) {
+        await camera.stop();
+        _cameraRunning = false;
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          error = e;
-          scannedComponent = null;
-        });
+      if (mounted) _scanMachine.fail(e);
+    }
+  }
+
+  Future<void> _restartScanner() async {
+    _manualController.clear();
+    _scanMachine.reset();
+    try {
+      await camera.start();
+      _cameraRunning = true;
+    } catch (_) {
+      _scanMachine.cameraFailure(permissionDenied: false);
+    }
+  }
+
+  Future<void> _openAppSettings() async {
+    try {
+      final opened = await launchUrl(Uri.parse('app-settings:'));
+      if (!opened && mounted) {
+        _scanMachine.cameraFailure(permissionDenied: true);
       }
-    } finally {
-      if (mounted) setState(() => busy = false);
+    } catch (_) {
+      if (mounted) _scanMachine.cameraFailure(permissionDenied: true);
     }
   }
 
@@ -384,10 +401,11 @@ class _ScanScreenState extends State<ScanScreen>
                         final t = _laserAnimation.value;
                         // Moves between 10% and 90% (28px to 252px)
                         final posY = 28.0 + t * (280.0 - 56.0);
-                        final opacity = (t < 0.1
-                                ? (t / 0.1)
-                                : (t > 0.9 ? ((1.0 - t) / 0.1) : 1.0))
-                            .clamp(0.0, 1.0);
+                        final opacity =
+                            (t < 0.1
+                                    ? (t / 0.1)
+                                    : (t > 0.9 ? ((1.0 - t) / 0.1) : 1.0))
+                                .clamp(0.0, 1.0);
 
                         return Positioned(
                           top: posY,
@@ -402,14 +420,12 @@ class _ScanScreenState extends State<ScanScreen>
                                 borderRadius: BorderRadius.circular(2),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.white
-                                        .withValues(alpha: 0.95),
+                                    color: Colors.white.withValues(alpha: 0.95),
                                     blurRadius: 10,
                                     spreadRadius: 1,
                                   ),
                                   BoxShadow(
-                                    color: Colors.white
-                                        .withValues(alpha: 0.6),
+                                    color: Colors.white.withValues(alpha: 0.6),
                                     blurRadius: 20,
                                     spreadRadius: 2,
                                   ),
@@ -429,14 +445,8 @@ class _ScanScreenState extends State<ScanScreen>
           // 4. Touch-to-Focus Animated Ring (Apple Camera Yellow Target)
           if (_focusPoint != null && _showFocusRing)
             Positioned(
-              left: (_focusPoint!.dx - 32).clamp(
-                0.0,
-                screenSize.width - 64,
-              ),
-              top: (_focusPoint!.dy - 32).clamp(
-                0.0,
-                screenSize.height - 64,
-              ),
+              left: (_focusPoint!.dx - 32).clamp(0.0, screenSize.width - 64),
+              top: (_focusPoint!.dy - 32).clamp(0.0, screenSize.height - 64),
               child: IgnorePointer(
                 child: TweenAnimationBuilder<double>(
                   tween: Tween(begin: 1.3, end: 1.0),
@@ -479,7 +489,8 @@ class _ScanScreenState extends State<ScanScreen>
             Positioned(
               left: 0,
               right: 0,
-              bottom: 148 + MediaQuery.paddingOf(context).bottom,
+              bottom:
+                  _scannerControlsBottom + MediaQuery.paddingOf(context).bottom,
               child: Center(
                 child: Container(
                   padding: const EdgeInsets.all(3),
@@ -519,8 +530,10 @@ class _ScanScreenState extends State<ScanScreen>
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -537,37 +550,53 @@ class _ScanScreenState extends State<ScanScreen>
                           ),
                         ),
                         child: const Center(
-                          child: Icon(Icons.close_rounded,
-                              color: Colors.white, size: 22),
+                          child: Icon(
+                            Icons.close_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
                         ),
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.55),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2)),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          CircleAvatar(
-                              radius: 3.5, backgroundColor: Color(0xFF10B981)),
-                          SizedBox(width: 7),
-                          Text(
-                            'Scanner Cepat Lapangan',
-                            style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                              letterSpacing: -0.2,
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 7,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.55),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircleAvatar(
+                                  radius: 3.5,
+                                  backgroundColor: Color(0xFF10B981),
+                                ),
+                                SizedBox(width: 7),
+                                Text(
+                                  'Scanner Cepat Lapangan',
+                                  style: TextStyle(
+                                    fontFamily: 'Plus Jakarta Sans',
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
                     ValueListenableBuilder<MobileScannerState>(
@@ -588,8 +617,9 @@ class _ScanScreenState extends State<ScanScreen>
                             height: 40,
                             decoration: BoxDecoration(
                               color: isOn
-                                  ? const Color(0xFFFBBF24)
-                                      .withValues(alpha: 0.3)
+                                  ? const Color(
+                                      0xFFFBBF24,
+                                    ).withValues(alpha: 0.3)
                                   : Colors.black.withValues(alpha: 0.45),
                               shape: BoxShape.circle,
                               border: Border.all(
@@ -607,8 +637,8 @@ class _ScanScreenState extends State<ScanScreen>
                                 color: isOn
                                     ? const Color(0xFFFBBF24)
                                     : (isUnavailable
-                                        ? Colors.white38
-                                        : Colors.white),
+                                          ? Colors.white38
+                                          : Colors.white),
                                 size: 20,
                               ),
                             ),
@@ -668,114 +698,21 @@ class _ScanScreenState extends State<ScanScreen>
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            if (busy) ...[
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                  SizedBox(width: 12),
-                  Text(
-                    'Mencari data komponen...',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF334155),
-                    ),
-                  ),
-                ],
-              ),
-            ] else if (error != null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF2F2),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFFECACA)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.error_outline_rounded,
-                      color: Color(0xFFDC2626),
-                      size: 22,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        failureMessage(error),
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF991B1B),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
-                height: 44,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      error = null;
-                      scanning = true;
-                    });
-                    unawaited(camera.start());
-                  },
-                  icon: const Icon(Icons.refresh_rounded, size: 18),
-                  label: const Text(
-                    'Pindai Ulang',
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF147CC1),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-            ] else ...[
-              const Icon(
-                Icons.qr_code_scanner_rounded,
-                size: 32,
-                color: Color(0xFF147CC1),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Arahkan Kamera ke Barcode Komponen',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Sistem akan memeriksa nomor stiker resmi unit blower MGRS.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 12,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-            ],
+            const SizedBox(height: 12),
+            ScanStatusPanel(
+              state: _scanMachine.state,
+              manualController: _manualController,
+              onSubmit: lookup,
+              onRetry: () {
+                final code = _scanMachine.state.lastSubmittedCode;
+                if (code == null) {
+                  unawaited(_restartScanner());
+                } else {
+                  unawaited(lookup(code));
+                }
+              },
+              onOpenSettings: () => unawaited(_openAppSettings()),
+            ),
           ],
         ),
       );
@@ -788,15 +725,15 @@ class _ScanScreenState extends State<ScanScreen>
     final badgeColor = isOk
         ? const Color(0xFF10B981)
         : (isService || isRusakBerat
-            ? const Color(0xFFEF4444)
-            : const Color(0xFFF59E0B));
+              ? const Color(0xFFEF4444)
+              : const Color(0xFFF59E0B));
     final badgeText = isOk
         ? 'LAYAK PAKAI'
         : (isService
-            ? 'PERLU SERVIS'
-            : (isRusakBerat ? 'GANGGUAN FUNGSI' : 'PERLU TINDAKAN'));
-    final lastCheckText = comp.lastCheckingAt != null &&
-            comp.lastCheckingAt!.length >= 10
+              ? 'PERLU SERVIS'
+              : (isRusakBerat ? 'GANGGUAN FUNGSI' : 'PERLU TINDAKAN'));
+    final lastCheckText =
+        comp.lastCheckingAt != null && comp.lastCheckingAt!.length >= 10
         ? 'Pemeriksaan Terakhir: ${comp.lastCheckingAt!.substring(0, 10)}'
         : 'Pemeriksaan Terakhir: Belum pernah diperiksa';
     final noteText = comp.note != null && comp.note!.trim().isNotEmpty
@@ -804,6 +741,7 @@ class _ScanScreenState extends State<ScanScreen>
         : 'Tidak ada catatan kendala fisik.';
 
     return Container(
+      key: const Key('scan-phase-result'),
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
@@ -838,10 +776,14 @@ class _ScanScreenState extends State<ScanScreen>
           const SizedBox(height: 14),
 
           // Code + Badge
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            alignment: WrapAlignment.spaceBetween,
             children: [
-              Row(
+              Wrap(
+                spacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Text(
                     comp.code,
@@ -852,10 +794,11 @@ class _ScanScreenState extends State<ScanScreen>
                       color: Color(0xFF0F172A),
                     ),
                   ),
-                  const SizedBox(width: 8),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFEFF6FF),
                       borderRadius: BorderRadius.circular(6),
@@ -873,8 +816,10 @@ class _ScanScreenState extends State<ScanScreen>
                 ],
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: badgeColor,
                   borderRadius: BorderRadius.circular(20),
@@ -923,7 +868,11 @@ class _ScanScreenState extends State<ScanScreen>
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.remove_red_eye_outlined, size: 13, color: Color(0xFF64748B)),
+                  Icon(
+                    Icons.remove_red_eye_outlined,
+                    size: 13,
+                    color: Color(0xFF64748B),
+                  ),
                   SizedBox(width: 6),
                   Text(
                     'Mode Pantau Status • Hanya Baca',
@@ -1042,8 +991,13 @@ class _ScanScreenState extends State<ScanScreen>
                   child: SizedBox(
                     height: 44,
                     child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).push<void>(
+                      onPressed: () async {
+                        try {
+                          await camera.stop();
+                          _cameraRunning = false;
+                        } catch (_) {}
+                        if (!context.mounted) return;
+                        await Navigator.of(context).push<void>(
                           MaterialPageRoute(
                             builder: (_) => ComponentDetailScreen(
                               gateway: widget.gateway,
@@ -1080,15 +1034,12 @@ class _ScanScreenState extends State<ScanScreen>
                   child: SizedBox(
                     height: 44,
                     child: ElevatedButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          scannedComponent = null;
-                          scanning = true;
-                        });
-                        unawaited(camera.start());
-                      },
-                      icon: const Icon(Icons.crop_free_rounded,
-                          color: Colors.white, size: 16),
+                      onPressed: () => unawaited(_restartScanner()),
+                      icon: const Icon(
+                        Icons.crop_free_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
                       label: const Text(
                         'Pindai Berikutnya',
                         style: TextStyle(
@@ -1122,97 +1073,217 @@ class _ScanScreenState extends State<ScanScreen>
   ) {
     final isPermissionDenied =
         error.errorCode == MobileScannerErrorCode.permissionDenied;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final expected = isPermissionDenied
+          ? ScanPhase.permissionDenied
+          : ScanPhase.unavailable;
+      final current = _scanMachine.state.phase;
+      final canReportCameraFailure =
+          current == ScanPhase.camera ||
+          current == ScanPhase.permissionDenied ||
+          current == ScanPhase.unavailable;
+      if (canReportCameraFailure && current != expected) {
+        _cameraRunning = false;
+        _scanMachine.cameraFailure(permissionDenied: isPermissionDenied);
+      }
+    });
 
-    return Container(
+    return ColoredBox(
       color: const Color(0xFF0F172A),
-      alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: 28),
+      child: Center(
+        child: Icon(
+          isPermissionDenied
+              ? Icons.no_photography_outlined
+              : Icons.videocam_off_outlined,
+          color: Colors.white54,
+          size: 56,
+        ),
+      ),
+    );
+  }
+}
+
+class ScanStatusPanel extends StatelessWidget {
+  const ScanStatusPanel({
+    super.key,
+    required this.state,
+    required this.manualController,
+    required this.onSubmit,
+    required this.onRetry,
+    required this.onOpenSettings,
+  });
+
+  final ScanState state;
+  final TextEditingController manualController;
+  final ValueChanged<String> onSubmit;
+  final VoidCallback onRetry;
+  final VoidCallback onOpenSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    final isLookingUp = state.phase == ScanPhase.lookingUp;
+    final (title, description, icon, color) = switch (state.phase) {
+      ScanPhase.camera => (
+        'Arahkan Kamera ke Barcode Komponen',
+        'Pindai nomor stiker resmi unit blower MGRS.',
+        Icons.qr_code_scanner_rounded,
+        const Color(0xFF147CC1),
+      ),
+      ScanPhase.lookingUp => (
+        'Mencari data komponen',
+        'Tunggu sebentar. Kami sedang memeriksa kode.',
+        Icons.manage_search_rounded,
+        const Color(0xFF147CC1),
+      ),
+      ScanPhase.permissionDenied => (
+        'Izin kamera diperlukan',
+        state.message ?? 'Izinkan kamera atau masukkan kode secara manual.',
+        Icons.no_photography_outlined,
+        const Color(0xFFDC2626),
+      ),
+      ScanPhase.unavailable => (
+        'Kamera tidak tersedia',
+        state.message ?? 'Masukkan kode komponen secara manual.',
+        Icons.videocam_off_outlined,
+        const Color(0xFFDC2626),
+      ),
+      ScanPhase.notFound => (
+        'Komponen tidak ditemukan',
+        state.message ?? 'Periksa kode lalu coba lagi.',
+        Icons.search_off_rounded,
+        const Color(0xFFDC2626),
+      ),
+      ScanPhase.ambiguous => (
+        'Perjelas nomor stiker',
+        state.message ?? 'Masukkan nomor stiker lengkap.',
+        Icons.content_copy_rounded,
+        const Color(0xFFF59E0B),
+      ),
+      ScanPhase.networkFailure => (
+        'Koneksi terputus',
+        state.message ?? 'Periksa jaringan lalu coba lagi.',
+        Icons.cloud_off_outlined,
+        const Color(0xFFDC2626),
+      ),
+      ScanPhase.result => (
+        'Komponen ditemukan',
+        '',
+        Icons.check_circle_outline_rounded,
+        const Color(0xFF10B981),
+      ),
+    };
+
+    return Semantics(
+      liveRegion: true,
       child: Column(
+        key: Key('scan-phase-${state.phase.name}'),
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            width: 68,
-            height: 68,
-            decoration: BoxDecoration(
-              color: isPermissionDenied
-                  ? const Color(0xFFFEF2F2)
-                  : Colors.white.withValues(alpha: 0.08),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isPermissionDenied
-                    ? const Color(0xFFFECACA)
-                    : Colors.white.withValues(alpha: 0.15),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (isLookingUp)
+                const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                )
+              else
+                Icon(icon, color: color, size: 26),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    if (description.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        description,
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 12,
+                          height: 1.35,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (state.phase == ScanPhase.permissionDenied) ...[
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: onOpenSettings,
+              icon: const Icon(Icons.settings_outlined, size: 18),
+              label: const Text('Buka pengaturan'),
+            ),
+          ],
+          if (state.phase == ScanPhase.notFound &&
+              state.lastSubmittedCode != null) ...[
+            const SizedBox(height: 10),
+            TextButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Coba kode ini lagi'),
+            ),
+          ],
+          if (state.allowsManualEntry) ...[
+            const SizedBox(height: 12),
+            TextField(
+              key: const Key('scan-manual-code-field'),
+              controller: manualController,
+              enabled: !isLookingUp,
+              textCapitalization: TextCapitalization.characters,
+              textInputAction: TextInputAction.search,
+              onSubmitted: isLookingUp ? null : onSubmit,
+              decoration: InputDecoration(
+                labelText: 'Nomor stiker komponen',
+                hintText: 'Contoh: KPL-001',
+                prefixIcon: const Icon(Icons.keyboard_outlined),
+                filled: true,
+                fillColor: const Color(0xFFF8FAFC),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                ),
               ),
             ),
-            child: Center(
-              child: Icon(
-                isPermissionDenied
-                    ? Icons.no_photography_outlined
-                    : Icons.videocam_off_outlined,
-                color: isPermissionDenied
-                    ? const Color(0xFFDC2626)
-                    : Colors.white70,
-                size: 32,
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 44,
+              child: ElevatedButton.icon(
+                key: const Key('scan-manual-submit'),
+                onPressed: isLookingUp
+                    ? null
+                    : () => onSubmit(manualController.text),
+                icon: const Icon(Icons.search_rounded, size: 18),
+                label: const Text('Cari komponen'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF147CC1),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            isPermissionDenied
-                ? 'Izin Akses Kamera Diperlukan'
-                : 'Kamera Tidak Tersedia',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            isPermissionDenied
-                ? 'Aplikasi membutuhkan akses kamera untuk memindai barcode unit di lapangan. Silakan izinkan akses kamera pada perangkat Anda.'
-                : 'Kamera perangkat sedang digunakan oleh aplikasi lain atau tidak didukung.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: Colors.white.withValues(alpha: 0.7),
-              height: 1.45,
-            ),
-          ),
-          const SizedBox(height: 22),
-          ElevatedButton.icon(
-            onPressed: () {
-              unawaited(camera.start());
-              setState(() {});
-            },
-            icon: const Icon(Icons.refresh_rounded,
-                size: 18, color: Colors.white),
-            label: Text(
-              isPermissionDenied
-                  ? 'Beri Izin / Coba Lagi'
-                  : 'Hubungkan Ulang Kamera',
-              style: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF147CC1),
-              elevation: 0,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
+          ],
         ],
       ),
     );
